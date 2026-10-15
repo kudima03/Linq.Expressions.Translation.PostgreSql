@@ -1630,7 +1630,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsLongestNumber()
     {
         Expression query = Orders.Executed(q => q.Max(o => o.Number.Length));
@@ -1646,7 +1646,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMinimumUpperCaseNumber()
     {
         Expression query = Orders.Executed(q => q.Min(o => o.Number.ToUpper()));
@@ -1662,7 +1662,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsMatchingStrings()
     {
         Expression query = Orders.Executed(q => q.Count(o => o.Number.StartsWith("A")));
@@ -1679,7 +1679,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAnyMatchingString()
     {
         Expression query = Orders.Executed(q => q.Any(o => o.Number.Contains("ab")));

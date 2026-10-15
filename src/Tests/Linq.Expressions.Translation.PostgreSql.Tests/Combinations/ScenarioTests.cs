@@ -49,7 +49,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsCustomersWithoutOrders()
     {
         Expression query = Customers
@@ -216,7 +216,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsOrdersAboveCustomerAverage()
     {
         Expression query = Orders
@@ -243,7 +243,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsLatestOrderOfEachCustomer()
     {
         Expression query = Orders
@@ -270,7 +270,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComputesShareOfTotalRevenue()
     {
         Expression query = Orders
@@ -512,7 +512,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PagesCustomersWithOrderCountsAndFilter()
     {
         string region = "EU";

@@ -353,7 +353,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersExistsOrdersAndTakes()
     {
         Expression query = Customers
@@ -464,7 +464,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsPagedFilteredRows()
     {
         Expression query = Customers
@@ -491,7 +491,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsPagedProjection()
     {
         Expression query = Orders
@@ -516,7 +516,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstOfFilteredDistinctOrderedRows()
     {
         Expression query = Customers
@@ -543,7 +543,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAnyAfterLongChain()
     {
         Expression query = Customers
@@ -566,7 +566,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesLastAfterFilterAndProjection()
     {
         Expression query = Customers

@@ -1136,7 +1136,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsRowsAboveCapturedLimit()
     {
         decimal limit = 100m;
@@ -1155,7 +1155,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsColumnTimesCapturedRate()
     {
         decimal rate = 1.25m;

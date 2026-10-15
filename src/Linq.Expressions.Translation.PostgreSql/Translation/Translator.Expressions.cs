@@ -69,7 +69,7 @@ internal sealed partial class Translator
     {
         return expression switch
         {
-            ParameterExpression parameter => _bindings[parameter],
+            ParameterExpression parameter => _bindings[parameter].Shape,
             MemberExpression member => Member(member),
             NewExpression creation => New(creation),
             MemberInitExpression initialization => Initialization(initialization),
@@ -237,7 +237,7 @@ internal sealed partial class Translator
         }
         SqlExpression one = Scalar(first);
         SqlExpression other = Scalar(second);
-        bool nullable = one.Nullable || other.Nullable;
+        bool nullable = (one.Nullable || other.Nullable) && !IsCorrelation(left, right);
         string symbol =
             nullable ? (negated ? "IS DISTINCT FROM" : "IS NOT DISTINCT FROM")
             : negated ? "<>"

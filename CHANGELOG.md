@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Translation of comparison, logical, arithmetic, bitwise and conditional operators, `??`, numeric and enum conversions, string concatenation and `Nullable<T>` members, preserving C# null semantics.
 - Translation of `string` members, `Math` functions, date and time parts and arithmetic, `DateTime.Now`/`UtcNow`, `Guid.NewGuid`, `Enum.HasFlag` and `ToString` of numbers and `Guid`.
 - Translation of `Contains` on in-memory collections into `IN (...)` (with a separate `IS NULL` check for null elements) and on array columns into `= ANY (...)`.
+- Translation of terminal operators — `Count`, `LongCount`, `Sum`, `Average`, `Min`, `Max`, `Any`, `All`, `Contains`, `First`, `Single`, `Last`, `ElementAt` and their `OrDefault` forms — into a single statement, and of the same operators inside lambdas into `EXISTS`, `IN (SELECT ...)` and scalar subqueries.
 - Inline literals for numbers, strings, booleans, enums, `Guid`, `DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`, `TimeSpan` and arrays; captured variables and parameter-free subtrees are evaluated in memory.
 - Table and column mapping by type and property names, overridable with `[Table]`, `[Column]` and `[NotMapped]`.
 - `NotSupportedException` naming the offending member, method or node for constructs that cannot be translated.

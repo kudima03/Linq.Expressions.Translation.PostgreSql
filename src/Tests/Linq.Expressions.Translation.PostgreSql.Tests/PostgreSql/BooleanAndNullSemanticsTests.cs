@@ -485,7 +485,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsNothingAsZero()
     {
         Expression query = Orders.Where(o => false).Executed(q => q.Sum(o => o.Total));
@@ -502,7 +502,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LeavesAverageOfNothingNull()
     {
         Expression query = Orders
@@ -521,7 +521,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LeavesMinimumOfNothingNull()
     {
         Expression query = Orders.Where(o => false).Executed(q => q.Min(o => o.Total));
@@ -538,7 +538,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsNothingAsZero()
     {
         Expression query = Orders.Where(o => false).Executed(q => q.Count());
@@ -555,7 +555,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAllOfNothingAsTrue()
     {
         Expression query = Orders.Where(o => false).Executed(q => q.All(o => o.IsPaid));

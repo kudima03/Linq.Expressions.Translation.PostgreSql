@@ -53,7 +53,7 @@ public sealed record PostgreSqlQueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TranslatesTerminalOperatorCapturedFromProvider()
     {
         Expression query = Customers.Executed(q => q.Count());

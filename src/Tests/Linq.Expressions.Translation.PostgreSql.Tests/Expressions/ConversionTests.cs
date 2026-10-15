@@ -669,7 +669,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsCastColumn()
     {
         Expression query = Orders.Executed(q => q.Sum(o => (decimal)o.Quantity));

@@ -86,7 +86,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Count", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsUserDefinedMethodInsideSubquery()
     {
         Expression query = Customers.Where(c => Orders.Any(o => Helper(o.Id))).Expression;
@@ -97,7 +97,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Helper", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsUserDefinedMethodInsideAggregate()
     {
         Expression query = Orders.Executed(q => q.Sum(o => Count(o.Number)));
@@ -604,7 +604,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Any", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsArraySelect()
     {
         Expression query = Orders

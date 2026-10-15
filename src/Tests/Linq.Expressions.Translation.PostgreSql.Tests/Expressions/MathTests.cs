@@ -890,7 +890,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsAbsoluteValues()
     {
         Expression query = Orders.Executed(q => q.Sum(o => Math.Abs(o.Total)));
@@ -906,7 +906,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsRoundedValues()
     {
         Expression query = Orders.Executed(q =>
@@ -924,7 +924,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AveragesPowers()
     {
         Expression query = Orders.Executed(q => q.Average(o => Math.Pow(o.Weight, 2)));
@@ -940,7 +940,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMaximumOfSquareRoot()
     {
         Expression query = Orders.Executed(q => q.Max(o => Math.Sqrt(o.Weight)));

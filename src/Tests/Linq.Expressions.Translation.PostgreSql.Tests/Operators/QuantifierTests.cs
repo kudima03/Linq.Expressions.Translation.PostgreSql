@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record QuantifierTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAnyRowExists()
     {
         Expression query = Customers.Executed(q => q.Any());
@@ -20,7 +20,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAnyRowMatches()
     {
         Expression query = Customers.Executed(q => q.Any(c => c.IsActive));
@@ -39,7 +39,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAnyRowMatchesComparison()
     {
         Expression query = Customers.Executed(q => q.Any(c => c.Id > 100));
@@ -58,7 +58,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAnyFilteredRowExists()
     {
         Expression query = Customers.Where(c => c.Region == "EU").Executed(q => q.Any());
@@ -77,7 +77,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAnyFilteredRowMatches()
     {
         Expression query = Customers
@@ -98,7 +98,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAnyRowAfterPaging()
     {
         Expression query = Customers
@@ -147,7 +147,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAllRowsMatch()
     {
         Expression query = Customers.Executed(q => q.All(c => c.IsActive));
@@ -166,7 +166,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAllRowsMatchComparison()
     {
         Expression query = Customers.Executed(q => q.All(c => c.Id > 5));
@@ -185,7 +185,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAllRowsMatchConjunction()
     {
         Expression query = Customers.Executed(q => q.All(c => c.IsActive && (c.Id > 5)));
@@ -204,7 +204,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAllFilteredRowsMatch()
     {
         Expression query = Customers
@@ -225,7 +225,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAllNullableRowsMatchWithNullAsMismatch()
     {
         Expression query = Customers.Executed(q => q.All(c => c.Email == null));
@@ -244,7 +244,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksContainsOfScalar()
     {
         Expression query = Customers.Select(c => c.Id).Executed(q => q.Contains(5));
@@ -262,7 +262,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksContainsOfCapturedValue()
     {
         int wanted = 42;
@@ -282,7 +282,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksContainsOfString()
     {
         Expression query = Customers.Select(c => c.Name).Executed(q => q.Contains("Ann"));
@@ -300,7 +300,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksContainsInFilteredRows()
     {
         Expression query = Customers
@@ -322,7 +322,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksContainsOfGuid()
     {
         Expression query = Orders
@@ -344,7 +344,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksContainsOfPagedRows()
     {
         Expression query = Customers

@@ -603,7 +603,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Except", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsInMemoryCollectionAsSubquerySource()
     {
         Expression query = Customers
@@ -675,7 +675,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Helper", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsUnsupportedExpressionDeepInsideNestedSubqueries()
     {
         Expression query = Customers

@@ -43,7 +43,10 @@ internal sealed partial class Translator
     {
         Type owner = call.Method.DeclaringType!;
         string name = call.Method.Name;
-        return name == nameof(Equals) && call.Method.GetParameters().All(IsComparable)
+        return owner == typeof(Queryable) ? Subquery(call)
+            : owner == typeof(Enumerable) && name != nameof(Enumerable.Contains)
+                ? Enumerated(call)
+            : name == nameof(Equals) && call.Method.GetParameters().All(IsComparable)
                 ? Equated(call)
             : name == nameof(ToString) && call.Arguments.Count == 0 ? Stringified(call)
             : name == nameof(Enumerable.Contains) && owner != typeof(string)
@@ -56,6 +59,12 @@ internal sealed partial class Translator
             : name == nameof(Guid.NewGuid)
                 ? new SqlFunction("GEN_RANDOM_UUID", [], typeof(Guid))
             : throw Unsupported.Method(call.Method);
+    }
+
+    private SqlExpression Enumerated(MethodCallExpression call)
+    {
+        _ = call.Arguments[0] is MethodCallExpression source ? Sql(source) : null;
+        throw Unsupported.Method(call.Method);
     }
 
     private SqlExpression Stringified(MethodCallExpression call)

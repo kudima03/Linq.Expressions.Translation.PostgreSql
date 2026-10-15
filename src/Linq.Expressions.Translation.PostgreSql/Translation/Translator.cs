@@ -8,7 +8,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Translation;
 
 internal sealed partial class Translator
 {
-    private readonly Dictionary<ParameterExpression, Shape> _bindings = [];
+    private readonly Dictionary<ParameterExpression, Binding> _bindings = [];
     private int _aliases;
 
     public string Translate(Expression expression)
@@ -22,12 +22,11 @@ internal sealed partial class Translator
     private static LambdaExpression Lambda(MethodCallExpression call, int index)
     {
         Expression argument = call.Arguments[index];
-        LambdaExpression lambda = (LambdaExpression)(
-            argument is UnaryExpression { NodeType: ExpressionType.Quote } quote
-                ? quote.Operand
-                : argument
-        );
-        return lambda.Parameters.Count == 1
+        Expression operand = argument
+            is UnaryExpression { NodeType: ExpressionType.Quote } quote
+            ? quote.Operand
+            : argument;
+        return operand is LambdaExpression { Parameters.Count: 1 } lambda
             ? lambda
             : throw Unsupported.Method(call.Method);
     }
@@ -110,11 +109,14 @@ internal sealed partial class Translator
 
     private SqlQuery Operator(MethodCallExpression call)
     {
-        if (call.Method.GetParameters().Any(IsRejected))
-        {
-            throw Unsupported.Method(call.Method);
-        }
-        SqlQuery source = Query(call.Arguments[0]);
+        SqlQuery source = Operand(call);
+        return Terminals.Contains(call.Method.Name)
+            ? Statement(Terminal(source, call))
+            : Sequence(source, call);
+    }
+
+    private SqlQuery Sequence(SqlQuery source, MethodCallExpression call)
+    {
         return call.Method.Name switch
         {
             nameof(Queryable.Where) => Where(source, Lambda(call, 1)),
@@ -269,15 +271,19 @@ internal sealed partial class Translator
         {
             outer.Orderings =
             [
-                .. query.Orderings.Select(ordering => new Ordering(
-                    new SqlColumn(
-                        alias,
-                        names[SqlWriter.Text(ordering.Key)],
-                        ordering.Key.Type,
-                        ordering.Key.Nullable
-                    ),
-                    ordering.Descending
-                )),
+                .. query
+                    .Orderings.Where(ordering =>
+                        names.ContainsKey(SqlWriter.Text(ordering.Key))
+                    )
+                    .Select(ordering => new Ordering(
+                        new SqlColumn(
+                            alias,
+                            names[SqlWriter.Text(ordering.Key)],
+                            ordering.Key.Type,
+                            ordering.Key.Nullable
+                        ),
+                        ordering.Descending
+                    )),
             ];
             if (!query.IsPaged)
             {
@@ -296,7 +302,7 @@ internal sealed partial class Translator
     {
         for (int index = 0; index < shapes.Length; index++)
         {
-            _bindings[lambda.Parameters[index]] = shapes[index];
+            _bindings[lambda.Parameters[index]] = new Binding(shapes[index], lambda);
         }
         return Shape(lambda.Body);
     }

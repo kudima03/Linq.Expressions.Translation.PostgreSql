@@ -1017,7 +1017,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsRowsInList()
     {
         int[] ids = [1, 2];
@@ -1036,7 +1036,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAnyRowInList()
     {
         int[] ids = [1, 2];

@@ -1405,7 +1405,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsOrdersOfYear()
     {
         Expression query = Orders.Executed(q => q.Count(o => o.CreatedAt.Year == 2024));
@@ -1422,7 +1422,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsLatestOrderDay()
     {
         Expression query = Orders.Executed(q => q.Max(o => o.CreatedAt.Date));
@@ -1438,7 +1438,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsHoursOfDay()
     {
         Expression query = Orders.Executed(q => q.Sum(o => o.CreatedAt.Hour));

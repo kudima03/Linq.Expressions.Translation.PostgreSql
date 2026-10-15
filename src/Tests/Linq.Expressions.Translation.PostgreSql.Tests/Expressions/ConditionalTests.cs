@@ -436,7 +436,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsConditionalValue()
     {
         Expression query = Orders.Executed(q => q.Sum(o => o.IsPaid ? o.Total : 0m));
@@ -453,7 +453,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsWithConditionalOneZeroSum()
     {
         Expression query = Orders.Executed(q => q.Sum(o => o.IsPaid ? 1 : 0));
