@@ -422,4 +422,20 @@ public sealed record SkipTakeTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void SkipsNothing()
+    {
+        Expression query = Customers.Skip(0).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", t0."Name", t0."Email", t0."Region", t0."IsActive"
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

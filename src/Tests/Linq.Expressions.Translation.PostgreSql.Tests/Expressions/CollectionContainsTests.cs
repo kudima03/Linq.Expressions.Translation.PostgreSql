@@ -1057,6 +1057,50 @@ public sealed record CollectionContainsTests
         );
     }
 
+    [Fact]
+    public void MatchesNullWhenTheListContainsOnlyNull()
+    {
+        int?[] priorities = [null];
+
+        Expression query = Orders
+            .Where(o => priorities.Contains(o.Priority))
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE FALSE OR (t0."Priority" IS NULL)
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsNullCheckWhenANonNullableValueIsInANullableList()
+    {
+        int?[] ids = [1, null];
+
+        Expression query = Orders
+            .Where(o => ids.Contains(o.Id))
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE (t0."Id" IN (1)) OR (t0."Id" IS NULL)
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
     public sealed record Filter(int[] Ids);
 
     public sealed record Holder(Filter Filter);

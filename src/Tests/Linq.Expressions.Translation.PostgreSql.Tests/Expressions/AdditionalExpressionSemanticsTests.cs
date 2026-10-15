@@ -476,4 +476,50 @@ public sealed record AdditionalExpressionSemanticsTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void WrapsNegationOfIntegerMinimum()
+    {
+        int minimum = int.MinValue;
+
+        Expression query = Orders.Select(o => -minimum).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT -2147483648
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void WrapsNegationOfLongMinimum()
+    {
+        long minimum = long.MinValue;
+
+        Expression query = Orders.Select(o => -minimum).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT -9223372036854775808
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void RejectsCheckedNegationOfIntegerMinimum()
+    {
+        int minimum = int.MinValue;
+
+        Expression query = Orders.Select(o => checked(-minimum)).Expression;
+
+        _ = Assert.Throws<OverflowException>(() => new PostgreSqlQuery(query).TextValue);
+    }
 }

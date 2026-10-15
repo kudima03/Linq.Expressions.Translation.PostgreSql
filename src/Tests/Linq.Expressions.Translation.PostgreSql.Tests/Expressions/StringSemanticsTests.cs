@@ -249,4 +249,44 @@ public sealed record StringSemanticsTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact(Skip = "StartsWith with an ordinal comparison is not translated.")]
+    public void MatchesOrdinalPrefix()
+    {
+        Expression query = Orders
+            .Where(o => o.Number.StartsWith("A-", StringComparison.Ordinal))
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE t0."Number" LIKE 'A-%'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact(Skip = "Contains with an ordinal comparison is not translated.")]
+    public void MatchesOrdinalFragment()
+    {
+        Expression query = Orders
+            .Where(o => o.Number.Contains("a_b", StringComparison.Ordinal))
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE t0."Number" LIKE '%a\_b%'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }
