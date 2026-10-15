@@ -1,4 +1,5 @@
 #pragma warning disable IDE0100 // comparisons with boolean literals are the subject
+#pragma warning disable IDE0030 // the HasValue conditional is the subject
 
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
