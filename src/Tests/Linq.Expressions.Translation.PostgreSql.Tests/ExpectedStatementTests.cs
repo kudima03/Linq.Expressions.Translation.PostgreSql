@@ -31,6 +31,7 @@ public sealed record ExpectedStatementTests
             sql =>
             {
                 Assert.Equal(sql.Trim(), sql);
+                Assert.DoesNotContain(sql, char.IsControl);
                 Assert.False(sql.EndsWith(';'), sql);
                 Result<ParseResult> result = Parser.Parse(sql);
                 Assert.True(result.IsSuccess, $"{result.Error?.Message}: {sql}");

@@ -32,6 +32,7 @@ The README's "Translation conventions" section is the contract; the expected SQL
 
 **Test project:** `Linq.Expressions.Translation.PostgreSql.Tests` targets `net10.0` and uses xunit.
 - `Infrastructure/CapturingQueryable<T>` is the test-only root: its provider builds trees and, for terminal operators (`Count`, `First`, …), records the executed expression and returns `default` — nothing is executed.
+- Expected SQL is a raw string literal with one clause per line; `SqlAssert` joins the lines with single spaces, so the compared statement is one line.
 - Every test goes through `SqlAssert`: `Translates(expectedSql, query)` (or `Translates(expectedSql, source, q => q.Count())` for terminal operators) wraps the tree in `PostgreSqlQuery` and compares `TextValue`; `NotSupported(query, construct)` expects a `NotSupportedException` whose message names the construct.
 - `Model/` holds the tables (`Customer`, `Order`, `OrderLine`, `Product`).
 - Translation tests are skipped with `Skip = Skipped.NotImplemented` until the translator exists (`xUnit1004` is suppressed in the test project for that reason). Combinations use `[Theory]` with `MemberData`/`InlineData`.

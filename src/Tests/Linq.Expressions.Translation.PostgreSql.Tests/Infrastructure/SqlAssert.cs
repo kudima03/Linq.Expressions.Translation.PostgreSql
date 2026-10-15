@@ -58,12 +58,16 @@ public static class SqlAssert
 
     private static void Verify(string expected, Expression expression)
     {
+        string statement = string.Join(
+            ' ',
+            expected.ReplaceLineEndings("\n").Split('\n')
+        );
         if (Recording.Value is ICollection<ExpectedOutcome> outcomes)
         {
-            outcomes.Add(new ExpectedOutcome(expected));
+            outcomes.Add(new ExpectedOutcome(statement));
             return;
         }
-        Assert.Equal(expected, new PostgreSqlQuery(expression).TextValue);
+        Assert.Equal(statement, new PostgreSqlQuery(expression).TextValue);
     }
 
     private static void Reject(Expression expression, string construct)
