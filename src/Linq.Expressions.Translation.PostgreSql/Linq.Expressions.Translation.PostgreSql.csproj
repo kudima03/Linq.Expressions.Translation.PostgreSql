@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnablePackageValidation>true</EnablePackageValidation>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PackageId>Linq.Expressions.Translation.PostgreSql</PackageId>
+    <RootNamespace>Linq.Expressions.Translation.PostgreSql</RootNamespace>
+    <AssemblyName>Linq.Expressions.Translation.PostgreSql</AssemblyName>
+    <Description>Translates the expression tree of an IQueryable&lt;T&gt; into a single PostgreSQL SELECT statement.</Description>
+    <PackageTags>linq;expression-tree;iqueryable;postgresql;sql;translation</PackageTags>
+    <Authors>Dmitry Kurochkin</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/kudima03/Linq.Expressions.Translation.PostgreSql</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kudima03/Linq.Expressions.Translation.PostgreSql</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+</Project>

@@ -2,8 +2,8 @@ version: 2
 updates:
 - package-ecosystem: nuget
   directories:
-    - "src/<repo-name>"
-    - "src/Tests/<repo-name>.Tests"
+    - "src/Linq.Expressions.Translation.PostgreSql"
+    - "src/Tests/Linq.Expressions.Translation.PostgreSql.Tests"
   schedule:
     interval: daily
 - package-ecosystem: "github-actions"
