@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record CastOfTypeTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void IgnoresCastToElementType()
     {
         Expression query = Customers.Cast<Customer>().Expression;
@@ -18,7 +18,7 @@ public sealed record CastOfTypeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void IgnoresOfTypeOfElementType()
     {
         Expression query = Customers.OfType<Customer>().Expression;
@@ -34,7 +34,7 @@ public sealed record CastOfTypeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsThroughInterfaceCast()
     {
         Expression query = Customers.Cast<INamed>().Select(n => n.Name).Expression;
@@ -50,7 +50,7 @@ public sealed record CastOfTypeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsThroughInterfaceOfType()
     {
         Expression query = Customers.OfType<INamed>().Select(n => n.Name).Expression;
@@ -66,7 +66,7 @@ public sealed record CastOfTypeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersThroughInterfaceCast()
     {
         Expression query = Customers
@@ -87,7 +87,7 @@ public sealed record CastOfTypeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersThroughInterfaceCastOfProduct()
     {
         Expression query = Products
@@ -108,7 +108,7 @@ public sealed record CastOfTypeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsNonNullValuesOfNullableElementOnOfType()
     {
         Expression query = Orders.Select(o => o.Priority).OfType<int>().Expression;
@@ -125,7 +125,7 @@ public sealed record CastOfTypeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void IgnoresCastOfScalarToSameType()
     {
         Expression query = Customers.Select(c => c.Id).Cast<int>().Expression;

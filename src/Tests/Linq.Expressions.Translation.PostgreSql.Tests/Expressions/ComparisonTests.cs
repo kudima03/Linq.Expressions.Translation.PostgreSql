@@ -18,7 +18,7 @@ public sealed record ComparisonTests
             { o => o.Quantity != 5, "t0.\"Quantity\" <> 5" },
         };
 
-    [Theory(Skip = Skipped.NotImplemented)]
+    [Theory]
     [MemberData(nameof(ComparesIntegerColumnWithConstantData))]
     public void ComparesIntegerColumnWithConstant(
         Expression<Func<Order, bool>> expression,
@@ -53,7 +53,7 @@ public sealed record ComparisonTests
             { o => o.Points != 5000000000L, "t0.\"Points\" <> 5000000000" },
         };
 
-    [Theory(Skip = Skipped.NotImplemented)]
+    [Theory]
     [MemberData(nameof(ComparesLongColumnWithConstantData))]
     public void ComparesLongColumnWithConstant(
         Expression<Func<Order, bool>> expression,
@@ -88,7 +88,7 @@ public sealed record ComparisonTests
             { o => o.Total != 10.5m, "t0.\"Total\" <> 10.5" },
         };
 
-    [Theory(Skip = Skipped.NotImplemented)]
+    [Theory]
     [MemberData(nameof(ComparesDecimalColumnWithConstantData))]
     public void ComparesDecimalColumnWithConstant(
         Expression<Func<Order, bool>> expression,
@@ -123,7 +123,7 @@ public sealed record ComparisonTests
             { o => o.Weight != 1.5, "t0.\"Weight\" <> 1.5" },
         };
 
-    [Theory(Skip = Skipped.NotImplemented)]
+    [Theory]
     [MemberData(nameof(ComparesDoubleColumnWithConstantData))]
     public void ComparesDoubleColumnWithConstant(
         Expression<Func<Order, bool>> expression,
@@ -155,7 +155,7 @@ public sealed record ComparisonTests
             { o => "A-1" == o.Number, "'A-1' = t0.\"Number\"" },
         };
 
-    [Theory(Skip = Skipped.NotImplemented)]
+    [Theory]
     [MemberData(nameof(ComparesStringColumnForEqualityData))]
     public void ComparesStringColumnForEquality(
         Expression<Func<Order, bool>> expression,
@@ -208,7 +208,7 @@ public sealed record ComparisonTests
             },
         };
 
-    [Theory(Skip = Skipped.NotImplemented)]
+    [Theory]
     [MemberData(nameof(ComparesDateTimeColumnWithConstantData))]
     public void ComparesDateTimeColumnWithConstant(
         Expression<Func<Order, bool>> expression,
@@ -261,7 +261,7 @@ public sealed record ComparisonTests
             },
         };
 
-    [Theory(Skip = Skipped.NotImplemented)]
+    [Theory]
     [MemberData(nameof(ComparesTimeColumnWithConstantData))]
     public void ComparesTimeColumnWithConstant(
         Expression<Func<Order, bool>> expression,
@@ -294,7 +294,7 @@ public sealed record ComparisonTests
             { o => o.Status <= OrderStatus.Shipped, "t0.\"Status\" <= 2" },
         };
 
-    [Theory(Skip = Skipped.NotImplemented)]
+    [Theory]
     [MemberData(nameof(ComparesEnumColumnWithConstantData))]
     public void ComparesEnumColumnWithConstant(
         Expression<Func<Order, bool>> expression,
@@ -326,7 +326,7 @@ public sealed record ComparisonTests
             { o => o.IsPaid != true, "t0.\"IsPaid\" <> TRUE" },
         };
 
-    [Theory(Skip = Skipped.NotImplemented)]
+    [Theory]
     [MemberData(nameof(ComparesBooleanColumnWithConstantData))]
     public void ComparesBooleanColumnWithConstant(
         Expression<Func<Order, bool>> expression,
@@ -347,7 +347,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesGuidColumnWithConstant()
     {
         Expression query = Orders
@@ -369,7 +369,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesGuidColumnWithEmptyGuid()
     {
         Expression query = Orders
@@ -389,7 +389,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesNullableDateOnlyColumnInFilter()
     {
         Expression query = Orders
@@ -409,7 +409,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesNullableDateTimeOffsetColumnInFilter()
     {
         Expression query = Orders
@@ -429,7 +429,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesTwoColumns()
     {
         Expression query = Orders
@@ -449,7 +449,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesConstantWithColumn()
     {
         Expression query = Orders.Where(o => 5 < o.Quantity).Select(o => o.Id).Expression;
@@ -466,7 +466,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesDecimalColumnWithNullableDecimalColumn()
     {
         Expression query = Orders
@@ -486,7 +486,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesComputedValues()
     {
         Expression query = Orders
@@ -506,7 +506,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesWithCapturedVariable()
     {
         int limit = 5;
@@ -528,7 +528,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesWithCapturedMemberChain()
     {
         Product product = new() { Price = 99.9m };
@@ -550,7 +550,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsComparisonAsBooleanValue()
     {
         Expression query = Orders.Select(o => o.Quantity > 5).Expression;
@@ -566,7 +566,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsEqualityAsBooleanValue()
     {
         Expression query = Orders.Select(o => o.Number == "A-1").Expression;
@@ -582,7 +582,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsComparisonNextToColumn()
     {
         Expression query = Orders
@@ -600,7 +600,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsNullableOrderingInCoalesceAsValue()
     {
         Expression query = Orders.Select(o => o.Priority > 5).Expression;
@@ -616,7 +616,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsNullableOrderingOfTwoColumnsInCoalesceAsValue()
     {
         Expression query = Orders.Select(o => o.Total >= o.Discount).Expression;
@@ -632,7 +632,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsNullSafeEqualityOfNullableColumnWithoutCoalesce()
     {
         Expression query = Orders.Select(o => o.Priority == 5).Expression;
@@ -648,7 +648,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsNullableOrderingPlainInFilter()
     {
         Expression query = Orders.Where(o => o.Priority > 5).Select(o => o.Id).Expression;
@@ -665,7 +665,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsNullableOrderingPlainInsideConjunction()
     {
         Expression query = Orders
@@ -685,7 +685,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsNullableOrderingPlainInsideDisjunction()
     {
         Expression query = Orders
@@ -705,7 +705,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsNullableOrderingInCoalesceUnderNot()
     {
         Expression query = Orders
@@ -725,7 +725,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsNullableOrderingInCoalesceUnderNotInsideConjunction()
     {
         Expression query = Orders
@@ -745,7 +745,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesStringEqualsMethod()
     {
         Expression query = Orders
@@ -765,7 +765,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesInstanceEqualsMethod()
     {
         Expression query = Orders
@@ -785,7 +785,7 @@ public sealed record ComparisonTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesIntegerEqualsMethod()
     {
         Expression query = Orders

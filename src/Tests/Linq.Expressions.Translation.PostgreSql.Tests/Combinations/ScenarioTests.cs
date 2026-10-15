@@ -402,7 +402,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ListsDistinctStatusesInOrder()
     {
         Expression query = Orders
@@ -454,7 +454,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesNullableOperatorsInOneProjection()
     {
         Expression query = Orders

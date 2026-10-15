@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record ArithmeticTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsIntegers()
     {
         Expression query = Orders.Select(o => o.Quantity + o.CustomerId).Expression;
@@ -18,7 +18,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SubtractsIntegers()
     {
         Expression query = Orders.Select(o => o.Quantity - o.CustomerId).Expression;
@@ -34,7 +34,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void MultipliesIntegers()
     {
         Expression query = Orders.Select(o => o.Quantity * o.CustomerId).Expression;
@@ -50,7 +50,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void DividesIntegersWithTruncation()
     {
         Expression query = Orders.Select(o => o.Quantity / o.CustomerId).Expression;
@@ -66,7 +66,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesIntegerRemainder()
     {
         Expression query = Orders.Select(o => o.Quantity % o.CustomerId).Expression;
@@ -82,7 +82,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsConstantToColumn()
     {
         Expression query = Orders.Select(o => o.Quantity + 10).Expression;
@@ -98,7 +98,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsColumnToConstant()
     {
         Expression query = Orders.Select(o => 10 + o.Quantity).Expression;
@@ -114,7 +114,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void DividesDecimals()
     {
         Expression query = Orders.Select(o => o.Total / o.Total).Expression;
@@ -130,7 +130,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void DividesDecimalByConstant()
     {
         Expression query = Orders.Select(o => o.Total / 3m).Expression;
@@ -146,7 +146,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void MultipliesDecimalByFractionalConstant()
     {
         Expression query = Orders.Select(o => o.Total * 1.19m).Expression;
@@ -162,7 +162,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void DividesDoubles()
     {
         Expression query = Orders.Select(o => o.Weight / 2.5).Expression;
@@ -178,7 +178,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsLongs()
     {
         Expression query = Orders.Select(o => o.Points + 1L).Expression;
@@ -194,7 +194,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesInteger()
     {
         Expression query = Orders.Select(o => -o.Quantity).Expression;
@@ -210,7 +210,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesDecimal()
     {
         Expression query = Orders.Select(o => -o.Total).Expression;
@@ -226,7 +226,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesParenthesizedSum()
     {
         Expression query = Orders.Select(o => -(o.Quantity + 1)).Expression;
@@ -242,7 +242,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void IgnoresUnaryPlus()
     {
         Expression query = Orders.Select(o => +o.Quantity).Expression;
@@ -258,7 +258,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsCheckedIntegers()
     {
         Expression query = Orders.Select(o => checked(o.Quantity + 1)).Expression;
@@ -274,7 +274,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesSumInsideProduct()
     {
         Expression query = Orders
@@ -292,7 +292,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesProductInsideSum()
     {
         Expression query = Orders
@@ -310,7 +310,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesLeftNestedOperatorOfSamePrecedence()
     {
         Expression query = Orders
@@ -328,7 +328,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesRightNestedSubtraction()
     {
         Expression query = Orders
@@ -346,7 +346,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesNestedDivision()
     {
         Expression query = Orders
@@ -364,7 +364,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NestsFourOperators()
     {
         Expression query = Orders
@@ -382,7 +382,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesConstantSubtreeInMemory()
     {
         Expression query = Orders.Select(o => o.Quantity + (2 * 3)).Expression;
@@ -398,7 +398,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesConstantSubtreeOnTheLeftInMemory()
     {
         Expression query = Orders.Select(o => (2 * 3) + o.Quantity).Expression;
@@ -414,7 +414,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesCapturedArithmeticInMemory()
     {
         int factor = 3;
@@ -432,7 +432,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesNegatedCapturedVariableInMemory()
     {
         int factor = 3;
@@ -450,7 +450,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void MultipliesByCapturedVariable()
     {
         int factor = 3;
@@ -468,7 +468,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsIntegerOperandWhenMultiplyingDecimal()
     {
         Expression query = Orders.Select(o => o.Total * o.Quantity).Expression;
@@ -484,7 +484,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsIntegerOperandWhenDividingDecimal()
     {
         Expression query = Orders.Select(o => o.Total / o.Quantity).Expression;
@@ -500,7 +500,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsIntegerOperandWhenMultiplyingDouble()
     {
         Expression query = Orders.Select(o => o.Weight * o.Quantity).Expression;
@@ -516,7 +516,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsIntegerOperandWhenAddingToLong()
     {
         Expression query = Orders.Select(o => o.Points + o.Quantity).Expression;
@@ -532,7 +532,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PropagatesNullThroughNullableOperand()
     {
         Expression query = Orders.Select(o => o.Priority + 1).Expression;
@@ -548,7 +548,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PropagatesNullThroughTwoNullableOperands()
     {
         Expression query = Orders.Select(o => o.Priority * o.Priority).Expression;
@@ -564,7 +564,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PropagatesNullThroughNullableDecimal()
     {
         Expression query = Orders.Select(o => o.Discount + o.Total).Expression;
@@ -580,7 +580,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SubtractsNullableDecimalFromDecimal()
     {
         Expression query = Orders.Select(o => o.Total - o.Discount).Expression;
@@ -596,7 +596,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void MultipliesNullableByCastInteger()
     {
         Expression query = Orders.Select(o => o.Discount * o.Quantity).Expression;
@@ -612,7 +612,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsArithmeticNextToColumn()
     {
         Expression query = Orders
@@ -630,7 +630,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByArithmeticOnColumns()
     {
         Expression query = Orders
@@ -650,7 +650,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByRemainder()
     {
         Expression query = Orders
@@ -670,7 +670,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByDecimalProduct()
     {
         Expression query = Orders
@@ -690,7 +690,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNegatedColumn()
     {
         Expression query = Orders
@@ -710,7 +710,7 @@ public sealed record ArithmeticTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByArithmeticOnBothSides()
     {
         Expression query = Orders

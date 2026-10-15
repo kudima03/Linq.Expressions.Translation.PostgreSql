@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record DistinctReverseTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsDistinctEntities()
     {
         Expression query = Customers.Distinct().Expression;
@@ -19,7 +19,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsDistinctScalar()
     {
         Expression query = Customers.Select(c => c.Region).Distinct().Expression;
@@ -35,7 +35,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsDistinctAnonymousProjection()
     {
         Expression query = Customers
@@ -54,7 +54,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsDistinctAfterFilter()
     {
         Expression query = Customers
@@ -75,7 +75,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsSingleDistinctWhenRepeated()
     {
         Expression query = Customers
@@ -95,7 +95,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PagesDistinctRows()
     {
         Expression query = Customers
@@ -117,7 +117,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsFilterAfterDistinct()
     {
         Expression query = Customers
@@ -141,7 +141,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsOrderingAfterDistinct()
     {
         Expression query = Customers
@@ -165,7 +165,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsProjectionAfterDistinct()
     {
         Expression query = Customers
@@ -188,7 +188,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ReversesAscendingOrdering()
     {
         Expression query = Customers.OrderBy(c => c.Name).Reverse().Expression;
@@ -205,7 +205,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ReversesDescendingOrdering()
     {
         Expression query = Customers.OrderByDescending(c => c.Name).Reverse().Expression;
@@ -222,7 +222,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ReversesEveryOrderingKey()
     {
         Expression query = Customers
@@ -243,7 +243,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ReversesNullableKeyWithMirroredNullPlacement()
     {
         Expression query = Customers.OrderBy(c => c.Email).Reverse().Expression;
@@ -260,7 +260,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RestoresOrderingWhenReversedTwice()
     {
         Expression query = Customers.OrderBy(c => c.Name).Reverse().Reverse().Expression;
@@ -277,7 +277,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFromReversedOrdering()
     {
         Expression query = Customers.OrderBy(c => c.Id).Reverse().Take(3).Expression;
@@ -295,7 +295,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ReversesAfterFilter()
     {
         Expression query = Customers
@@ -317,7 +317,7 @@ public sealed record DistinctReverseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ReversesPagedRows()
     {
         Expression query = Customers.OrderBy(c => c.Id).Take(3).Reverse().Expression;

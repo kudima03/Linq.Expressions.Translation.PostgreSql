@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record BitwiseTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AndsIntegers()
     {
         Expression query = Orders.Select(o => o.Quantity & 3).Expression;
@@ -18,7 +18,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrsIntegers()
     {
         Expression query = Orders.Select(o => o.Quantity | 3).Expression;
@@ -34,7 +34,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void XorsIntegers()
     {
         Expression query = Orders.Select(o => o.Quantity ^ 3).Expression;
@@ -50,7 +50,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComplementsInteger()
     {
         Expression query = Orders.Select(o => ~o.Quantity).Expression;
@@ -66,7 +66,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ShiftsIntegerLeft()
     {
         Expression query = Orders.Select(o => o.Quantity << 2).Expression;
@@ -82,7 +82,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ShiftsIntegerRight()
     {
         Expression query = Orders.Select(o => o.Quantity >> 2).Expression;
@@ -98,7 +98,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ShiftsIntegerByColumn()
     {
         Expression query = Orders.Select(o => o.Quantity << o.CustomerId).Expression;
@@ -114,7 +114,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AndsLongs()
     {
         Expression query = Orders.Select(o => o.Points & 255L).Expression;
@@ -130,7 +130,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AndsTwoColumns()
     {
         Expression query = Orders.Select(o => o.Quantity & o.CustomerId).Expression;
@@ -146,7 +146,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesNestedBitwiseOperators()
     {
         Expression query = Orders
@@ -164,7 +164,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesBitwiseInsideArithmetic()
     {
         Expression query = Orders.Select(o => (o.Quantity & 3) + 1).Expression;
@@ -180,7 +180,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComplementsParenthesizedExpression()
     {
         Expression query = Orders.Select(o => ~(o.Quantity | 1)).Expression;
@@ -196,7 +196,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByMaskedValue()
     {
         Expression query = Orders
@@ -216,7 +216,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByShiftedValue()
     {
         Expression query = Orders
@@ -236,7 +236,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByXorOfColumns()
     {
         Expression query = Orders
@@ -256,7 +256,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByFlagMask()
     {
         Expression query = Orders
@@ -276,7 +276,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByFlagMaskInequality()
     {
         Expression query = Orders
@@ -380,7 +380,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByFlagCombinationEquality()
     {
         Expression query = Orders
@@ -400,7 +400,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsFlagUnion()
     {
         Expression query = Orders
@@ -418,7 +418,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsFlagRemoval()
     {
         Expression query = Orders
@@ -436,7 +436,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsFlagToggle()
     {
         Expression query = Orders

@@ -13,7 +13,7 @@ public sealed record WhereTests
             { c => c.Id != 5, "<>" },
         };
 
-    [Theory(Skip = Skipped.NotImplemented)]
+    [Theory]
     [MemberData(nameof(Comparisons))]
     public void FiltersByComparisonOfColumnWithConstant(
         Expression<Func<Customer, bool>> predicate,
@@ -34,7 +34,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByStringEquality()
     {
         Expression query = Customers.Where(c => c.Region == "EU").Expression;
@@ -51,7 +51,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByConstantOnTheLeft()
     {
         Expression query = Customers.Where(c => 5 < c.Id).Expression;
@@ -68,7 +68,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByBooleanColumn()
     {
         Expression query = Customers.Where(c => c.IsActive).Expression;
@@ -85,7 +85,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNegatedBooleanColumn()
     {
         Expression query = Customers.Where(c => !c.IsActive).Expression;
@@ -102,7 +102,7 @@ public sealed record WhereTests
         );
     }
 
-    [Theory(Skip = Skipped.NotImplemented)]
+    [Theory]
     [InlineData(true, "TRUE")]
     [InlineData(false, "FALSE")]
     public void FiltersByBooleanColumnComparedWithLiteral(bool value, string literal)
@@ -121,7 +121,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByConstantTrue()
     {
         Expression query = Customers.Where(c => true).Expression;
@@ -138,7 +138,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByConstantFalse()
     {
         Expression query = Customers.Where(c => false).Expression;
@@ -155,7 +155,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByConjunction()
     {
         Expression query = Customers
@@ -174,7 +174,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByDisjunction()
     {
         Expression query = Customers
@@ -193,7 +193,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByRange()
     {
         Expression query = Customers.Where(c => (c.Id >= 3) && (c.Id <= 9)).Expression;
@@ -210,7 +210,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesDisjunctionInsideConjunction()
     {
         Expression query = Customers
@@ -229,7 +229,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesConjunctionInsideDisjunction()
     {
         Expression query = Customers
@@ -248,7 +248,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesParenthesizedConjunction()
     {
         Expression query = Customers.Where(c => !(c.IsActive && (c.Id > 1))).Expression;
@@ -265,7 +265,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsSeveralWhereClausesWithAnd()
     {
         Expression query = Customers
@@ -286,7 +286,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNullColumn()
     {
         Expression query = Customers.Where(c => c.Email == null).Expression;
@@ -303,7 +303,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNotNullColumn()
     {
         Expression query = Customers.Where(c => c.Email != null).Expression;
@@ -320,7 +320,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesNullableColumnWithNullSafeEquality()
     {
         Expression query = Customers.Where(c => c.Email == "a@b.c").Expression;
@@ -337,7 +337,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesNullableColumnWithNullSafeInequality()
     {
         Expression query = Customers.Where(c => c.Email != "a@b.c").Expression;
@@ -354,7 +354,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesTwoColumns()
     {
         Expression query = Orders
@@ -374,7 +374,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersAfterProjectionToScalar()
     {
         Expression query = Customers.Select(c => c.Id).Where(id => id > 3).Expression;
@@ -411,7 +411,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByCapturedVariable()
     {
         int minimum = 7;

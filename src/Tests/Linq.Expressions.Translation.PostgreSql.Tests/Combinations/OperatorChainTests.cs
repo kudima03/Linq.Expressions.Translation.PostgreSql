@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Combinations;
 
 public sealed record OperatorChainTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersOrdersPagesAndProjects()
     {
         Expression query = Customers
@@ -49,7 +49,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersFiltersAndProjects()
     {
         Expression query = Customers
@@ -71,7 +71,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersAcrossSeveralSelectsInOneLevel()
     {
         Expression query = Customers
@@ -94,7 +94,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersDistinctRowsAndTakes()
     {
         Expression query = Customers
@@ -120,7 +120,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void DistinctAfterTakeWrapsTakenRows()
     {
         Expression query = Customers.Select(c => c.Region).Take(5).Distinct().Expression;
@@ -140,7 +140,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersOrdersAndTakesAfterTake()
     {
         Expression query = Customers
@@ -170,7 +170,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsTwiceWhenFilteringAfterEachTake()
     {
         Expression query = Customers
@@ -207,7 +207,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SkipsAfterFilterThenFilters()
     {
         Expression query = Customers
@@ -236,7 +236,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PagesFilteredPagedRows()
     {
         Expression query = Customers
@@ -266,7 +266,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsAfterPagedFilter()
     {
         Expression query = Customers
@@ -381,7 +381,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsFiltersAndProjects()
     {
         Expression query = Customers
@@ -406,7 +406,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ReversesFilteredPagedRows()
     {
         Expression query = Customers

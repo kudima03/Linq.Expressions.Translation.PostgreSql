@@ -11,7 +11,7 @@ public sealed record UnsupportedOperatorTests
         return value;
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsGroupByReturningGroupings()
     {
         Expression query = Customers.GroupBy(c => c.Region).Expression;
@@ -22,7 +22,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("GroupBy", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsGroupByWithElementSelectorReturningGroupings()
     {
         Expression query = Customers.GroupBy(c => c.Region, c => c.Name).Expression;
@@ -72,7 +72,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("IGrouping", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsLastWithoutOrdering()
     {
         Expression query = Customers.Executed(q => q.Last());
@@ -83,7 +83,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Last", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsLastOrDefaultWithoutOrdering()
     {
         Expression query = Customers.Executed(q => q.LastOrDefault());
@@ -94,7 +94,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("LastOrDefault", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsLastWithPredicateWithoutOrdering()
     {
         Expression query = Customers.Executed(q => q.Last(c => c.IsActive));
@@ -105,7 +105,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Last", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsReverseWithoutOrdering()
     {
         Expression query = Customers.Reverse().Expression;
@@ -116,7 +116,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Reverse", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsReverseAfterProjectionWithoutOrdering()
     {
         Expression query = Customers.Select(c => c.Id).Reverse().Expression;
@@ -127,7 +127,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Reverse", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsZip()
     {
         Expression query = Customers
@@ -141,7 +141,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Zip", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsZipWithResultSelector()
     {
         Expression query = Customers
@@ -155,7 +155,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Zip", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsAggregate()
     {
         Expression query = Customers
@@ -168,7 +168,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Aggregate", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsAggregateWithSeed()
     {
         Expression query = Customers
@@ -181,7 +181,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Aggregate", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsSkipWhile()
     {
         Expression query = Customers.SkipWhile(c => c.IsActive).Expression;
@@ -192,7 +192,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("SkipWhile", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsTakeWhile()
     {
         Expression query = Customers.TakeWhile(c => c.IsActive).Expression;
@@ -203,7 +203,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("TakeWhile", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsPrepend()
     {
         Expression query = Customers.Select(c => c.Id).Prepend(0).Expression;
@@ -214,7 +214,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Prepend", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsAppend()
     {
         Expression query = Customers.Select(c => c.Id).Append(0).Expression;
@@ -225,7 +225,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Append", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsDistinctBy()
     {
         Expression query = Customers.DistinctBy(c => c.Region).Expression;
@@ -236,7 +236,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("DistinctBy", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsUnionBy()
     {
         Expression query = Customers.UnionBy(Customers, c => c.Region).Expression;
@@ -247,7 +247,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("UnionBy", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsIntersectBy()
     {
         Expression query = Customers
@@ -260,7 +260,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("IntersectBy", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsExceptBy()
     {
         Expression query = Customers
@@ -273,7 +273,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("ExceptBy", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsMinBy()
     {
         Expression query = Customers.Executed(q => q.MinBy(c => c.Id));
@@ -284,7 +284,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("MinBy", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsMaxBy()
     {
         Expression query = Customers.Executed(q => q.MaxBy(c => c.Id));
@@ -295,7 +295,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("MaxBy", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsWhereWithIndex()
     {
         Expression query = Customers.Where((c, i) => i > 1).Expression;
@@ -306,7 +306,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Where", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsSelectWithIndex()
     {
         Expression query = Customers.Select((c, i) => i).Expression;
@@ -317,7 +317,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Select", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsSelectManyWithIndex()
     {
         Expression query = Customers
@@ -330,7 +330,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("SelectMany", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsSkipWhileWithIndex()
     {
         Expression query = Customers.SkipWhile((c, i) => i < 2).Expression;
@@ -341,7 +341,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("SkipWhile", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsTakeWithRange()
     {
         Expression query = Customers.Take(1..3).Expression;
@@ -352,7 +352,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Take", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsDistinctWithComparer()
     {
         Expression query = Customers
@@ -366,7 +366,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Distinct", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsUnionWithComparer()
     {
         Expression query = Customers
@@ -380,7 +380,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Union", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsContainsWithComparer()
     {
         Expression query = Customers
@@ -393,7 +393,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Contains", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsJoinWithComparer()
     {
         Expression query = Customers
@@ -412,7 +412,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Join", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsGroupByWithComparer()
     {
         Expression query = Customers
@@ -426,7 +426,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("GroupBy", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsFirstOrDefaultWithDefaultValue()
     {
         Expression query = Customers.Executed(q => q.FirstOrDefault(new Customer()));
@@ -437,7 +437,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("FirstOrDefault", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsSingleOrDefaultWithDefaultValue()
     {
         Expression query = Customers.Executed(q => q.SingleOrDefault(new Customer()));
@@ -448,7 +448,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("SingleOrDefault", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsElementAtFromEnd()
     {
         Expression query = Customers.OrderBy(c => c.Id).Executed(q => q.ElementAt(^1));
@@ -459,7 +459,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("ElementAt", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsDefaultIfEmptyOnRoot()
     {
         Expression query = Customers.DefaultIfEmpty().Expression;
@@ -470,7 +470,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("DefaultIfEmpty", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsDefaultIfEmptyWithDefaultValue()
     {
         Expression query = Customers.DefaultIfEmpty(new Customer()).Expression;
@@ -481,7 +481,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("DefaultIfEmpty", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsSequenceEqual()
     {
         Expression query = Customers
@@ -494,7 +494,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("SequenceEqual", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsSelectManyOverString()
     {
         Expression query = Customers.SelectMany(c => c.Name).Expression;
@@ -505,7 +505,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("SelectMany", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsSelectManyOverArrayColumnWithoutUnnestSupport()
     {
         Expression query = Orders
@@ -518,7 +518,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("SelectMany", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsInMemoryRoot()
     {
         Expression query = new[] { 1, 2, 3 }.AsQueryable().Expression;
@@ -529,7 +529,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsFilterOverInMemoryRoot()
     {
         Expression query = new[] { 1, 2, 3 }.AsQueryable().Where(i => i > 1).Expression;
@@ -540,7 +540,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsUnionWithInMemoryCollection()
     {
         Expression query = Customers.Select(c => c.Id).Union(new[] { 1, 2 }).Expression;
@@ -551,7 +551,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Union", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsConcatWithInMemoryCollection()
     {
         Expression query = Customers
@@ -565,7 +565,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Concat", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsJoinWithInMemoryCollection()
     {
         Expression query = Customers
@@ -578,7 +578,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Join", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsIntersectWithInMemoryCollection()
     {
         Expression query = Customers
@@ -592,7 +592,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Intersect", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsExceptWithInMemoryCollection()
     {
         Expression query = Customers.Select(c => c.Id).Except(new[] { 1, 2 }).Expression;
@@ -616,7 +616,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsOrderByWithComparer()
     {
         Expression query = Customers
@@ -629,7 +629,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("OrderBy", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsThenByWithComparer()
     {
         Expression query = Customers
@@ -643,7 +643,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("ThenBy", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsUnsupportedOperatorAfterSupportedChain()
     {
         Expression query = Customers
@@ -660,7 +660,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("SkipWhile", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsUnsupportedExpressionAfterSupportedChain()
     {
         Expression query = Customers

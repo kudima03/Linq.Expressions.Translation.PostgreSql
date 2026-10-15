@@ -905,7 +905,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsArrayColumn()
     {
         Expression query = Orders.Select(o => o.Tags).Expression;

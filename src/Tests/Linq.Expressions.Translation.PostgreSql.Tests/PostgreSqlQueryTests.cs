@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests;
 
 public sealed record PostgreSqlQueryTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsEveryMappedColumnOfRoot()
     {
         Expression query = Customers.Expression;
@@ -18,7 +18,7 @@ public sealed record PostgreSqlQueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsColumnsInPropertyDeclarationOrder()
     {
         Expression query = Orders.Expression;
@@ -37,7 +37,7 @@ public sealed record PostgreSqlQueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsSingleColumnWithoutAlias()
     {
         Expression query = Customers.Select(c => c.Name).Expression;

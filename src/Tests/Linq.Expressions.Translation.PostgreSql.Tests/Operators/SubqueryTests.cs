@@ -899,7 +899,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsFromFilteredPagedSubquery()
     {
         Expression query = Customers

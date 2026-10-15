@@ -16,7 +16,7 @@ public sealed record CapturedVariableTests
         return 1.25m;
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesWithCapturedInteger()
     {
         int limit = 5;
@@ -38,7 +38,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesWithCapturedLong()
     {
         long limit = 5000000000L;
@@ -60,7 +60,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesWithCapturedDecimal()
     {
         decimal limit = 10.50m;
@@ -82,7 +82,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesWithCapturedDouble()
     {
         double limit = 1.5;
@@ -104,7 +104,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesWithCapturedString()
     {
         string number = "A-1";
@@ -126,7 +126,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesWithCapturedStringContainingQuote()
     {
         string number = "O'Brien";
@@ -148,7 +148,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesWithCapturedBoolean()
     {
         bool paid = true;
@@ -170,7 +170,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesWithCapturedDate()
     {
         DateTime date = new(2024, 3, 1, 10, 0, 0);
@@ -192,7 +192,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesWithCapturedEnum()
     {
         OrderStatus status = OrderStatus.Cancelled;
@@ -214,7 +214,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesWithCapturedGuid()
     {
         Guid id = Guid.Parse("11111111-2222-3333-4444-555555555555");
@@ -236,7 +236,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesNullableColumnWithCapturedValue()
     {
         int? limit = 3;
@@ -258,7 +258,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesNullableColumnWithCapturedNull()
     {
         int? limit = null;
@@ -280,7 +280,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesInequalityWithCapturedNull()
     {
         int? limit = null;
@@ -302,7 +302,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesNullableStringColumnWithCapturedNull()
     {
         string? note = null;
@@ -321,7 +321,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesNullableStringColumnWithCapturedValue()
     {
         string? note = "x";
@@ -340,7 +340,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesOrderingWithCapturedNullableValue()
     {
         int? limit = 3;
@@ -362,7 +362,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesColumnWithCapturedValueOnTheLeft()
     {
         int limit = 5;
@@ -384,7 +384,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesWithTwoCapturedVariables()
     {
         int low = 1;
@@ -407,7 +407,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesArithmeticOfCapturedVariables()
     {
         int low = 4;
@@ -430,7 +430,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesNegatedCapturedVariable()
     {
         int limit = 5;
@@ -452,7 +452,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesStringConcatenationOfCapturedVariables()
     {
         string prefix = "A-";
@@ -475,7 +475,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesConditionalOfCapturedVariables()
     {
         bool flag = true;
@@ -497,7 +497,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesMethodCallOnCapturedValue()
     {
         string name = "abc";
@@ -519,7 +519,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesPropertyOfCapturedValue()
     {
         string name = "abc";
@@ -541,7 +541,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesStaticMethodWithoutColumnArguments()
     {
         Expression query = Orders
@@ -561,7 +561,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesStaticMethodWithCapturedArgument()
     {
         int limit = 7;
@@ -583,7 +583,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesStaticMethodReturningDecimal()
     {
         Expression query = Orders
@@ -603,7 +603,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesCapturedStaticField()
     {
         Expression query = Orders
@@ -623,7 +623,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesCapturedInstanceProperty()
     {
         Expression query = Orders
@@ -643,7 +643,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesMemberOfCapturedObject()
     {
         Product product = new() { Price = 99.9m };
@@ -665,7 +665,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesMemberChainOfCapturedObjects()
     {
         Holder holder = new(new Customer { Name = "Ann" });
@@ -687,7 +687,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesMemberChainWithMethodCall()
     {
         Holder holder = new(new Customer { Name = "Ann" });
@@ -709,7 +709,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesCapturedRecordMember()
     {
         Range range = new(2, 8);
@@ -731,7 +731,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesCapturedDateArithmetic()
     {
         DateTime start = new(2024, 1, 1);
@@ -753,7 +753,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesCapturedTimeSpanArithmetic()
     {
         DateTime start = new(2024, 1, 1);
@@ -775,7 +775,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsColumnDependentSubtreeInSql()
     {
         int limit = -5;
@@ -797,7 +797,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesBooleanLiteralResultOfCapturedVariable()
     {
         bool flag = true;
@@ -819,7 +819,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesNegatedCapturedFlag()
     {
         bool flag = true;
@@ -841,7 +841,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConditionalOnCapturedFlag()
     {
         bool flag = true;
@@ -863,7 +863,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsCapturedInteger()
     {
         int limit = 5;
@@ -881,7 +881,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsCapturedString()
     {
         string name = "abc";
@@ -899,7 +899,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsCapturedNull()
     {
         string? note = null;
@@ -917,7 +917,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsCapturedNextToColumn()
     {
         decimal rate = 1.25m;
@@ -935,7 +935,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void MultipliesColumnByCapturedVariable()
     {
         decimal rate = 1.25m;
@@ -953,7 +953,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void MultipliesColumnByCapturedExpression()
     {
         decimal rate = 1.25m;
@@ -971,7 +971,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsCapturedMemberOfObject()
     {
         Range range = new(2, 8);
@@ -989,7 +989,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatenatesCapturedMemberChain()
     {
         Holder holder = new(new Customer { Name = "Ann" });
@@ -1007,7 +1007,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByColumnPlusCapturedVariable()
     {
         int offset = 3;
@@ -1029,7 +1029,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesCapturedCount()
     {
         int count = 12;
@@ -1048,7 +1048,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SkipsCapturedCount()
     {
         int count = 12;
@@ -1067,7 +1067,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesCapturedMemberAsCount()
     {
         Range range = new(2, 8);

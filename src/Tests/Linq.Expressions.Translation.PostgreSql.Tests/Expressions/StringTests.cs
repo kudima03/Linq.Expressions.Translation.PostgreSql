@@ -438,7 +438,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatenatesColumnAndConstant()
     {
         Expression query = Orders.Select(o => o.Number + "-x").Expression;
@@ -454,7 +454,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatenatesConstantAndColumn()
     {
         Expression query = Orders.Select(o => "x-" + o.Number).Expression;
@@ -470,7 +470,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatenatesTwoColumns()
     {
         Expression query = Orders.Select(o => o.Number + o.Number).Expression;
@@ -486,7 +486,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatenatesThreeParts()
     {
         Expression query = Orders.Select(o => o.Number + "-" + o.Number).Expression;
@@ -502,7 +502,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TreatsNullableOperandAsEmptyWhenConcatenating()
     {
         Expression query = Orders.Select(o => o.Number + o.Note).Expression;
@@ -518,7 +518,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TreatsNullableOperandOnTheLeftAsEmpty()
     {
         Expression query = Orders.Select(o => o.Note + o.Number).Expression;
@@ -534,7 +534,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TreatsNullableOperandInChainAsEmpty()
     {
         Expression query = Orders.Select(o => o.Number + "-" + o.Note).Expression;
@@ -602,7 +602,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatenatesCapturedVariable()
     {
         string suffix = "-end";
@@ -1010,7 +1010,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByConcatenationEquality()
     {
         Expression query = Orders

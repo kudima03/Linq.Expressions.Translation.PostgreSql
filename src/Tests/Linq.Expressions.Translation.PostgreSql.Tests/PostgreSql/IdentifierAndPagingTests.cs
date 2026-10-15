@@ -32,7 +32,7 @@ public sealed record IdentifierAndPagingTests
         public int Größe { get; init; }
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void QuotesSchemaAndTableName()
     {
         Expression query = new CapturingQueryable<QuotedRow>().Expression;
@@ -48,7 +48,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void DoublesQuotesInsideColumnName()
     {
         Expression query = new CapturingQueryable<QuotedRow>()
@@ -66,7 +66,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ExcludesNotMappedProperties()
     {
         Expression query = new CapturingQueryable<QuotedRow>()
@@ -84,7 +84,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void QuotesReservedWordsInEveryPosition()
     {
         Expression query = new CapturingQueryable<KeywordRow>()
@@ -106,7 +106,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void QuotesReservedWordsAsAliases()
     {
         Expression query = new CapturingQueryable<KeywordRow>()
@@ -124,7 +124,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void QuotesUnicodeNames()
     {
         Expression query = new CapturingQueryable<Ünïcödé>()
@@ -142,7 +142,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsCaseOfMixedCaseNames()
     {
         Expression query = Customers.Select(c => new { c.IsActive, c.Region }).Expression;
@@ -158,7 +158,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void QuotesAliasesOfAnonymousMembers()
     {
         Expression query = Customers
@@ -176,7 +176,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void QuotesNestedAliasesWithDot()
     {
         Expression query = Customers
@@ -308,7 +308,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void IgnoresSkipOfZero()
     {
         Expression query = Customers.OrderBy(c => c.Id).Skip(0).Take(3).Expression;
@@ -326,7 +326,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesNoRowsForNegativeTake()
     {
         int count = -1;
@@ -345,7 +345,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void IgnoresNegativeSkip()
     {
         int count = -4;
@@ -363,7 +363,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersLargestTake()
     {
         Expression query = Customers.Take(int.MaxValue).Select(c => c.Id).Expression;
@@ -380,7 +380,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersLargestSkip()
     {
         Expression query = Customers.Skip(int.MaxValue).Select(c => c.Id).Expression;
@@ -397,7 +397,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersSingleRowPage()
     {
         Expression query = Customers
@@ -420,7 +420,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PutsLimitBeforeOffset()
     {
         Expression query = Customers.Skip(2).Take(3).Select(c => c.Id).Expression;

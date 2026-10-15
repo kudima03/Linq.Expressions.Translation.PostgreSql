@@ -9,4 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `PostgreSqlQuery` — accepts the `Expression` of an `IQueryable<T>` and exposes the PostgreSQL `SELECT` statement for it as `TextValue`. The translation is not implemented yet: `TextValue` throws `NotImplementedException`.
+- `PostgreSqlQuery` — accepts the `Expression` of an `IQueryable<T>` and exposes the PostgreSQL `SELECT` statement for it as `TextValue`.
+- Translation of filtering, projection, ordering and paging: `Where`, `Select`, `OrderBy`/`ThenBy` (and their descending forms), `Skip`, `Take`, `Distinct`, `Reverse`, `Cast` and `OfType`, with derived tables when an operator cannot extend the current `SELECT`.
+- Translation of comparison, logical, arithmetic, bitwise and conditional operators, `??`, numeric and enum conversions, string concatenation and `Nullable<T>` members, preserving C# null semantics.
+- Inline literals for numbers, strings, booleans, enums, `Guid`, `DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`, `TimeSpan` and arrays; captured variables and parameter-free subtrees are evaluated in memory.
+- Table and column mapping by type and property names, overridable with `[Table]`, `[Column]` and `[NotMapped]`.
+- `NotSupportedException` naming the offending member, method or node for constructs that cannot be translated.

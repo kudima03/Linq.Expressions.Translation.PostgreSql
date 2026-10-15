@@ -4,7 +4,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.PostgreSql;
 
 public sealed record LiteralTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersInteger()
     {
         Expression query = Orders.Select(o => 5).Expression;
@@ -20,7 +20,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersNegativeInteger()
     {
         Expression query = Orders.Select(o => -5).Expression;
@@ -36,7 +36,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersIntegerMinimum()
     {
         Expression query = Orders.Select(o => int.MinValue).Expression;
@@ -52,7 +52,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersIntegerMaximum()
     {
         Expression query = Orders.Select(o => int.MaxValue).Expression;
@@ -68,7 +68,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersLong()
     {
         Expression query = Orders.Select(o => 5000000000L).Expression;
@@ -84,7 +84,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersLongMinimum()
     {
         Expression query = Orders.Select(o => long.MinValue).Expression;
@@ -100,7 +100,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersLongMaximum()
     {
         Expression query = Orders.Select(o => long.MaxValue).Expression;
@@ -116,7 +116,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersShort()
     {
         Expression query = Orders.Select(o => (short)7).Expression;
@@ -132,7 +132,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersDecimalWithScale()
     {
         Expression query = Orders.Select(o => 10.50m).Expression;
@@ -148,7 +148,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersDecimalWithoutScale()
     {
         Expression query = Orders.Select(o => 10m).Expression;
@@ -164,7 +164,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersNegativeDecimal()
     {
         Expression query = Orders.Select(o => -0.25m).Expression;
@@ -180,7 +180,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersZeroDecimalWithScale()
     {
         Expression query = Orders.Select(o => 0.0m).Expression;
@@ -196,7 +196,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersLargeDecimal()
     {
         Expression query = Orders.Select(o => 79228162514264337593543950335m).Expression;
@@ -212,7 +212,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersDouble()
     {
         Expression query = Orders.Select(o => 1.5).Expression;
@@ -228,7 +228,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersWholeDouble()
     {
         Expression query = Orders.Select(o => 100000.0).Expression;
@@ -244,7 +244,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersNegativeDouble()
     {
         Expression query = Orders.Select(o => -2.75).Expression;
@@ -260,7 +260,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersSmallDoubleInInvariantCulture()
     {
         Expression query = Orders.Select(o => 0.0000001).Expression;
@@ -276,7 +276,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersDoubleWithoutRoundingLoss()
     {
         Expression query = Orders.Select(o => 0.1 + 0.2).Expression;
@@ -292,7 +292,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersNotANumber()
     {
         Expression query = Orders.Select(o => double.NaN).Expression;
@@ -308,7 +308,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersPositiveInfinity()
     {
         Expression query = Orders.Select(o => double.PositiveInfinity).Expression;
@@ -324,7 +324,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersNegativeInfinity()
     {
         Expression query = Orders.Select(o => double.NegativeInfinity).Expression;
@@ -340,7 +340,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersTrue()
     {
         Expression query = Orders.Select(o => true).Expression;
@@ -356,7 +356,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersFalse()
     {
         Expression query = Orders.Select(o => false).Expression;
@@ -372,7 +372,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersNullString()
     {
         Expression query = Orders.Select(o => (string?)null).Expression;
@@ -388,7 +388,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersNullInteger()
     {
         Expression query = Orders.Select(o => (int?)null).Expression;
@@ -404,7 +404,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersNullableInteger()
     {
         Expression query = Orders.Select(o => (int?)5).Expression;
@@ -420,7 +420,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersString()
     {
         Expression query = Orders.Select(o => "abc").Expression;
@@ -436,7 +436,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersEmptyString()
     {
         Expression query = Orders.Select(o => "").Expression;
@@ -452,7 +452,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersCharacter()
     {
         Expression query = Orders.Select(o => 'x').Expression;
@@ -468,7 +468,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersUnicodeString()
     {
         Expression query = Orders.Select(o => "Привет, 世界").Expression;
@@ -484,7 +484,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersStringWithSpaces()
     {
         Expression query = Orders.Select(o => "  padded  ").Expression;
@@ -500,7 +500,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersGuid()
     {
         Expression query = Orders
@@ -518,7 +518,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersDateTime()
     {
         Expression query = Orders
@@ -536,7 +536,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersDateTimeAtMidnight()
     {
         Expression query = Orders.Select(o => new DateTime(2024, 1, 31)).Expression;
@@ -552,7 +552,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersDateTimeWithFraction()
     {
         Expression query = Orders
@@ -570,7 +570,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersDateTimeWithMicroseconds()
     {
         Expression query = Orders
@@ -588,7 +588,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersUtcDateTime()
     {
         Expression query = Orders
@@ -606,7 +606,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersDateTimeMinimum()
     {
         Expression query = Orders.Select(o => DateTime.MinValue).Expression;
@@ -622,7 +622,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersDateTimeOffsetAtUtc()
     {
         Expression query = Orders
@@ -640,7 +640,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersDateTimeOffsetWithPositiveOffset()
     {
         Expression query = Orders
@@ -666,7 +666,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersDateTimeOffsetWithNegativeOffset()
     {
         Expression query = Orders
@@ -692,7 +692,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersDateOnly()
     {
         Expression query = Orders.Select(o => new DateOnly(2024, 2, 29)).Expression;
@@ -708,7 +708,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersDateOnlyMinimum()
     {
         Expression query = Orders.Select(o => DateOnly.MinValue).Expression;
@@ -724,7 +724,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersTimeOnly()
     {
         Expression query = Orders.Select(o => new TimeOnly(9, 30)).Expression;
@@ -740,7 +740,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersTimeOnlyWithSeconds()
     {
         Expression query = Orders.Select(o => new TimeOnly(23, 59, 59)).Expression;
@@ -756,7 +756,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersTimeOnlyWithMicroseconds()
     {
         Expression query = Orders
@@ -774,7 +774,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersTimeSpanOfDays()
     {
         Expression query = Orders.Select(o => TimeSpan.FromDays(30)).Expression;
@@ -790,7 +790,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersTimeSpanOfHoursAndMinutes()
     {
         Expression query = Orders.Select(o => TimeSpan.FromMinutes(90)).Expression;
@@ -806,7 +806,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersTimeSpanOfDaysAndHours()
     {
         Expression query = Orders.Select(o => TimeSpan.FromHours(36)).Expression;
@@ -822,7 +822,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersTimeSpanWithSecondsFraction()
     {
         Expression query = Orders.Select(o => TimeSpan.FromMilliseconds(1500)).Expression;
@@ -838,7 +838,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersZeroTimeSpan()
     {
         Expression query = Orders.Select(o => TimeSpan.Zero).Expression;
@@ -854,7 +854,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersEnumAsUnderlyingInteger()
     {
         Expression query = Orders.Select(o => OrderStatus.Shipped).Expression;
@@ -870,7 +870,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersFlagsEnumAsUnderlyingInteger()
     {
         Expression query = Orders
@@ -888,7 +888,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersIntegerArray()
     {
         Expression query = Orders.Select(o => new[] { 1, 2, 3 }).Expression;
@@ -904,7 +904,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersStringArray()
     {
         Expression query = Orders.Select(o => new[] { "a", "b" }).Expression;
@@ -920,7 +920,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RendersLiteralsOfEveryTypeNextToColumn()
     {
         Expression query = Orders
@@ -951,7 +951,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void DoublesSingleQuote()
     {
         Expression query = Orders.Select(o => "it's").Expression;
@@ -967,7 +967,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void DoublesEverySingleQuote()
     {
         Expression query = Orders.Select(o => "''").Expression;
@@ -983,7 +983,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsBackslashLiteral()
     {
         Expression query = Orders.Select(o => "C:\\temp\\file").Expression;
@@ -999,7 +999,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsDoubleQuote()
     {
         Expression query = Orders.Select(o => "say \"hi\"").Expression;
@@ -1015,7 +1015,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsPercentAndUnderscore()
     {
         Expression query = Orders.Select(o => "50%_off").Expression;
@@ -1031,7 +1031,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsSemicolonAndComment()
     {
         Expression query = Orders.Select(o => "x; -- y /* z */").Expression;
@@ -1047,7 +1047,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsSqlInjectionAttemptInsideLiteral()
     {
         Expression query = Orders.Select(o => "'; DROP TABLE \"Order\"; --").Expression;
@@ -1063,7 +1063,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesNewline()
     {
         Expression query = Orders.Select(o => "line1\nline2").Expression;
@@ -1079,7 +1079,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesCarriageReturnAndLineFeed()
     {
         Expression query = Orders.Select(o => "a\r\nb").Expression;
@@ -1095,7 +1095,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesTab()
     {
         Expression query = Orders.Select(o => "a\tb").Expression;
@@ -1111,7 +1111,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesBackspaceAndFormFeed()
     {
         Expression query = Orders.Select(o => "a\bb\fc").Expression;
@@ -1127,7 +1127,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesBackslashTogetherWithNewline()
     {
         Expression query = Orders.Select(o => "a\\b\nc").Expression;
@@ -1143,7 +1143,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesQuoteTogetherWithNewline()
     {
         Expression query = Orders.Select(o => "it's\n").Expression;
@@ -1159,7 +1159,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesOtherControlCharacterAsHex()
     {
         Expression query = Orders.Select(o => "a\u0001b").Expression;
@@ -1175,7 +1175,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesEscapeCharacterAsHex()
     {
         Expression query = Orders.Select(o => "a\u001bb").Expression;
@@ -1191,7 +1191,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesControlCharacterInCharacterLiteral()
     {
         Expression query = Orders.Select(o => '\n').Expression;
@@ -1207,7 +1207,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesCapturedStringWithNewline()
     {
         string text = "a\nb";
@@ -1225,7 +1225,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesStringInsideComparison()
     {
         Expression query = Orders.Select(o => o.Number == "a\nb").Expression;

@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record OrderByTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersAscending()
     {
         Expression query = Customers.OrderBy(c => c.Name).Expression;
@@ -19,7 +19,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersDescending()
     {
         Expression query = Customers.OrderByDescending(c => c.Name).Expression;
@@ -36,7 +36,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsThenByKey()
     {
         Expression query = Customers
@@ -56,7 +56,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsThenByDescendingKey()
     {
         Expression query = Customers
@@ -76,7 +76,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsThenByAfterDescendingKey()
     {
         Expression query = Customers
@@ -96,7 +96,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByTwoDescendingKeys()
     {
         Expression query = Customers
@@ -116,7 +116,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByThreeKeys()
     {
         Expression query = Customers
@@ -137,7 +137,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PutsNullsFirstWhenAscendingByNullableColumn()
     {
         Expression query = Customers.OrderBy(c => c.Email).Expression;
@@ -154,7 +154,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PutsNullsLastWhenDescendingByNullableColumn()
     {
         Expression query = Customers.OrderByDescending(c => c.Email).Expression;
@@ -171,7 +171,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByNullableKeyInThenBy()
     {
         Expression query = Customers
@@ -191,7 +191,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByNullableNumber()
     {
         Expression query = Orders
@@ -228,7 +228,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByArithmeticKey()
     {
         Expression query = Orders
@@ -248,7 +248,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByCompositeKey()
     {
         Expression query = Customers.OrderBy(c => new { c.Region, c.Name }).Expression;
@@ -265,7 +265,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByBooleanColumn()
     {
         Expression query = Customers.OrderBy(c => c.IsActive).Expression;
@@ -282,7 +282,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsEarlierKeysAsTieBreakersOfLaterOrderBy()
     {
         Expression query = Customers
@@ -302,7 +302,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsEarlierKeysWhenOrderingByAgainDescending()
     {
         Expression query = Customers
@@ -323,7 +323,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsOrderingWhenFilteringAfterwards()
     {
         Expression query = Customers.OrderBy(c => c.Name).Where(c => c.Id > 1).Expression;
@@ -341,7 +341,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsOrderingWhenProjectingAfterwards()
     {
         Expression query = Customers.OrderBy(c => c.Name).Select(c => c.Id).Expression;
@@ -378,7 +378,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByDecimalAndDateColumns()
     {
         Expression query = Orders
@@ -399,7 +399,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByGuidAndEnumColumns()
     {
         Expression query = Orders
@@ -420,7 +420,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByNullableDateColumn()
     {
         Expression query = Orders.OrderBy(o => o.PaidAt).Select(o => o.Id).Expression;

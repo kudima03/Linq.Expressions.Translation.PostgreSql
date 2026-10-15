@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.PostgreSql;
 
 public sealed record BooleanAndNullSemanticsTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesNullCheck()
     {
         Expression query = Orders
@@ -22,7 +22,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesNullSafeEquality()
     {
         Expression query = Orders
@@ -42,7 +42,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesNullSafeInequality()
     {
         Expression query = Orders
@@ -62,7 +62,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChainsNullSafeComparisonsWithAnd()
     {
         Expression query = Orders
@@ -82,7 +82,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TreatsNullableBooleanAsFalseWhenComparedWithTrue()
     {
         Expression query = Orders
@@ -102,7 +102,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TreatsNullableBooleanAsTrueWhenComparedWithNotTrue()
     {
         Expression query = Orders
@@ -122,7 +122,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesNullableBooleanComparison()
     {
         Expression query = Orders
@@ -142,7 +142,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void UsesCoalescedNullableBooleanAsPredicate()
     {
         Expression query = Orders
@@ -162,7 +162,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesCoalescedBooleansWithOr()
     {
         Expression query = Orders
@@ -182,7 +182,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsNullComparisonOfConstantInMemory()
     {
         Expression query = Orders.Where(o => true).Select(o => o.Id).Expression;
@@ -199,7 +199,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesCapturedNullComparisonInMemory()
     {
         string text = "x";
@@ -218,7 +218,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesNullableColumnWithNullableColumn()
     {
         Expression query = Orders
@@ -238,7 +238,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesDistinctNullableColumns()
     {
         Expression query = Orders
@@ -258,7 +258,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNullableOrderingWithoutCoalesceInWhere()
     {
         Expression query = Orders
@@ -278,7 +278,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNegatedNullableOrderingWithCoalesce()
     {
         Expression query = Orders
@@ -298,7 +298,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNullableOrderingInsideCase()
     {
         Expression query = Orders
@@ -318,7 +318,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsNullableOrderingWithCoalesce()
     {
         Expression query = Orders.Select(o => o.Discount > 5m).Expression;
@@ -334,7 +334,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsNullableLessOrEqualWithCoalesce()
     {
         Expression query = Orders.Select(o => o.Priority <= 2).Expression;
@@ -350,7 +350,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsNegatedNullableOrderingWithCoalesce()
     {
         Expression query = Orders.Select(o => !(o.Priority <= 2)).Expression;
@@ -366,7 +366,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsNullSafeEqualityWithoutCoalesce()
     {
         Expression query = Orders.Select(o => o.Priority == 2).Expression;
@@ -382,7 +382,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsNullCheckWithoutCoalesce()
     {
         Expression query = Orders.Select(o => o.Priority == null).Expression;
@@ -398,7 +398,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PropagatesNullThroughNullableArithmetic()
     {
         Expression query = Orders.Select(o => (o.Priority * 2) + 1).Expression;
@@ -414,7 +414,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TreatsNullAsEmptyInStringConcatenation()
     {
         Expression query = Orders.Select(o => "[" + o.Note + "]").Expression;
@@ -446,7 +446,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsNullableColumnWithoutCoalesceWhenProjected()
     {
         Expression query = Orders.Select(o => o.Note).Expression;
@@ -462,7 +462,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsBooleanConstantsNextToNullableColumn()
     {
         Expression query = Orders
@@ -574,7 +574,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SortsNullsFirstForAscendingNullableKey()
     {
         Expression query = Orders.OrderBy(o => o.Discount).Select(o => o.Id).Expression;
@@ -591,7 +591,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SortsNullsLastForDescendingNullableKey()
     {
         Expression query = Orders
@@ -611,7 +611,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SortsNonNullableKeyWithoutNullPlacement()
     {
         Expression query = Orders.OrderBy(o => o.Total).Select(o => o.Id).Expression;
@@ -628,7 +628,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SortsCoalescedKeyWithoutNullPlacement()
     {
         Expression query = Orders
@@ -668,7 +668,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void DistinctTreatsNullsAsEqual()
     {
         Expression query = Orders.Select(o => o.Note).Distinct().Expression;

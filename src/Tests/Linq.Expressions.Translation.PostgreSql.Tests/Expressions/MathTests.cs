@@ -646,7 +646,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesPiInMemory()
     {
         Expression query = Orders.Select(o => o.Weight * Math.PI).Expression;
@@ -662,7 +662,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesEulerNumberInMemory()
     {
         Expression query = Orders.Select(o => o.Weight * Math.E).Expression;
@@ -678,7 +678,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesConstantMathInMemory()
     {
         Expression query = Orders.Select(o => o.Weight * Math.Sqrt(16.0)).Expression;
@@ -694,7 +694,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesCapturedMathInMemory()
     {
         int offset = -5;

@@ -26,7 +26,7 @@ public sealed record UnsupportedExpressionTests
         public Customer Customer { get; init; } = new();
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsUserDefinedMethodInFilter()
     {
         Expression query = Orders.Where(o => Helper(o.Id)).Expression;
@@ -37,7 +37,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Helper", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsUserDefinedMethodInProjection()
     {
         Expression query = Orders.Select(o => Count(o.Number)).Expression;
@@ -48,7 +48,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Count", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsUserDefinedMethodInOrdering()
     {
         Expression query = Orders.OrderBy(o => Count(o.Number)).Expression;
@@ -108,7 +108,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Count", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsStringFormat()
     {
         Expression query = Orders.Select(o => string.Format("{0}", o.Id)).Expression;
@@ -119,7 +119,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Format", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsRegexMatch()
     {
         Expression query = Orders.Where(o => Regex.IsMatch(o.Number, "^A")).Expression;
@@ -130,7 +130,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("IsMatch", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsEnumToString()
     {
         Expression query = Orders.Select(o => o.Status.ToString()).Expression;
@@ -141,7 +141,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("ToString", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsDateTimeToString()
     {
         Expression query = Orders.Select(o => o.CreatedAt.ToString()).Expression;
@@ -152,7 +152,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("ToString", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsBooleanToString()
     {
         Expression query = Orders.Select(o => o.IsPaid.ToString()).Expression;
@@ -163,7 +163,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("ToString", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsNumberToStringWithFormat()
     {
         Expression query = Orders.Select(o => o.Total.ToString("N2")).Expression;
@@ -174,7 +174,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("ToString", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsNumberToStringWithCulture()
     {
         Expression query = Orders
@@ -187,7 +187,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("ToString", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsStringCompare()
     {
         Expression query = Orders
@@ -200,7 +200,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Compare", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsCompareTo()
     {
         Expression query = Orders.Where(o => o.Number.CompareTo("a") > 0).Expression;
@@ -211,7 +211,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("CompareTo", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsRoundingOfDouble()
     {
         Expression query = Orders.Select(o => Math.Round(o.Weight)).Expression;
@@ -222,7 +222,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Round", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsRoundingOfDoubleAwayFromZero()
     {
         Expression query = Orders
@@ -235,7 +235,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Round", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsBankersRoundingOfDecimal()
     {
         Expression query = Orders.Select(o => Math.Round(o.Total)).Expression;
@@ -246,7 +246,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Round", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsBankersRoundingOfDecimalToDigits()
     {
         Expression query = Orders.Select(o => Math.Round(o.Total, 2)).Expression;
@@ -257,7 +257,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Round", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsRoundingToEven()
     {
         Expression query = Orders
@@ -270,7 +270,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Round", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsSine()
     {
         Expression query = Orders.Select(o => Math.Sin(o.Weight)).Expression;
@@ -281,7 +281,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Sin", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsCosine()
     {
         Expression query = Orders.Select(o => Math.Cos(o.Weight)).Expression;
@@ -292,7 +292,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Cos", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsLogarithmWithBase()
     {
         Expression query = Orders.Select(o => Math.Log(o.Weight, 2)).Expression;
@@ -303,7 +303,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Log", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsCultureSensitiveUpperCase()
     {
         Expression query = Orders
@@ -316,7 +316,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("ToUpper", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsCultureSensitiveLowerCase()
     {
         Expression query = Orders
@@ -329,7 +329,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("ToLower", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsStartsWithComparison()
     {
         Expression query = Orders
@@ -342,7 +342,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("StartsWith", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsEndsWithComparison()
     {
         Expression query = Orders
@@ -355,7 +355,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("EndsWith", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsContainsComparison()
     {
         Expression query = Orders
@@ -368,7 +368,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Contains", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsEqualsComparison()
     {
         Expression query = Orders
@@ -381,7 +381,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Equals", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsStaticEqualsComparison()
     {
         Expression query = Orders
@@ -394,7 +394,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Equals", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsIndexOfComparison()
     {
         Expression query = Orders
@@ -407,7 +407,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("IndexOf", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsIsNullOrWhiteSpace()
     {
         Expression query = Orders
@@ -424,7 +424,7 @@ public sealed record UnsupportedExpressionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsPadLeft()
     {
         Expression query = Orders.Select(o => o.Number.PadLeft(10, '0')).Expression;
@@ -435,7 +435,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("PadLeft", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsInsert()
     {
         Expression query = Orders.Select(o => o.Number.Insert(1, "x")).Expression;
@@ -446,7 +446,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Insert", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsSplit()
     {
         Expression query = Orders.Select(o => o.Number.Split('-')).Expression;
@@ -457,7 +457,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Split", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsStringJoin()
     {
         Expression query = Orders.Select(o => string.Join(",", o.Tags)).Expression;
@@ -468,7 +468,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Join", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsCharacterAccess()
     {
         Expression query = Orders.Select(o => o.Number[0]).Expression;
@@ -479,7 +479,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Chars", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsParsingOfColumn()
     {
         Expression query = Orders.Select(o => int.Parse(o.Number)).Expression;
@@ -490,7 +490,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Parse", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsGuidParsingOfColumn()
     {
         Expression query = Orders.Select(o => Guid.Parse(o.Number)).Expression;
@@ -501,7 +501,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Parse", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsConvertToInteger()
     {
         Expression query = Orders.Select(o => Convert.ToInt32(o.Number)).Expression;
@@ -512,7 +512,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("ToInt32", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsEnumParsing()
     {
         Expression query = Orders
@@ -525,7 +525,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Parse", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsTotalDaysOfTimeSpan()
     {
         Expression query = Orders
@@ -538,7 +538,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("TotalDays", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsToday()
     {
         Expression query = Orders.Select(o => DateTime.Today).Expression;
@@ -549,7 +549,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Today", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsDateTimeConstructionFromColumns()
     {
         Expression query = Orders.Select(o => new DateTime(o.Quantity, 1, 1)).Expression;
@@ -560,7 +560,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("DateTime", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsGetType()
     {
         Expression query = Orders.Select(o => o.GetType() == typeof(Order)).Expression;
@@ -571,7 +571,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("GetType", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsGetHashCode()
     {
         Expression query = Orders.Select(o => o.Number.GetHashCode()).Expression;
@@ -582,7 +582,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("GetHashCode", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsArrayIndexOfColumn()
     {
         Expression query = Orders.Select(o => o.Tags[0]).Expression;
@@ -593,7 +593,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("ArrayIndex", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsArrayAny()
     {
         Expression query = Orders.Select(o => o.Tags.Any()).Expression;
@@ -617,7 +617,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Select", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsArrayCreationFromColumns()
     {
         Expression query = Orders.Select(o => new[] { o.Id, o.Quantity }).Expression;
@@ -628,7 +628,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("NewArrayInit", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsListInitializationFromColumns()
     {
         Expression query = Orders.Select(o => new List<int> { o.Id }).Expression;
@@ -639,7 +639,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("ListInit", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsTupleCreation()
     {
         Expression query = Orders.Select(o => Tuple.Create(o.Id, o.Number)).Expression;
@@ -650,7 +650,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Create", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsDelegateInvocation()
     {
         Func<Order, bool> predicate = x => x.IsPaid;
@@ -663,7 +663,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Invoke", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsDelegateInvocationInFilter()
     {
         Func<Order, bool> predicate = x => x.IsPaid;
@@ -676,7 +676,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Invoke", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsEntityEquality()
     {
         Order other = new();
@@ -689,7 +689,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("equality", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsEntityEqualityInCustomerFilter()
     {
         Customer other = new();
@@ -702,7 +702,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("equality", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsEntityInequality()
     {
         Customer other = new();
@@ -715,7 +715,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("equality", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsNavigationProperty()
     {
         Expression query = new CapturingQueryable<OrderWithCustomer>()
@@ -728,7 +728,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Customer", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsProjectionOfNavigationProperty()
     {
         Expression query = new CapturingQueryable<OrderWithCustomer>()
@@ -741,7 +741,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Customer", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsSelectingNavigationEntity()
     {
         Expression query = new CapturingQueryable<OrderWithCustomer>()
@@ -754,7 +754,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Customer", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsEntityWithNavigationAsRoot()
     {
         Expression query = new CapturingQueryable<OrderWithCustomer>().Expression;
@@ -765,7 +765,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Customer", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsLocalDateTimeConstant()
     {
         Expression query = Orders
@@ -778,7 +778,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Local", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsDateTimeWithSubMicrosecondPrecision()
     {
         Expression query = Orders
@@ -791,7 +791,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("microsecond", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsStringWithNulCharacter()
     {
         Expression query = Orders.Select(o => "a\0b").Expression;
@@ -802,7 +802,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("NUL", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsConstantOfUnmappedType()
     {
         Expression query = Orders.Select(o => new Uri("http://example.com")).Expression;
@@ -813,7 +813,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Uri", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsByteArrayConstant()
     {
         Expression query = Orders.Select(o => new byte[] { 1, 2 }).Expression;

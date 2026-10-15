@@ -9,7 +9,13 @@ Translates the expression tree of an `IQueryable<T>` into a single PostgreSQL `S
 
 ## Status
 
-The translation is not implemented yet.
+Translated so far:
+
+- `Where`, `Select`, `OrderBy`/`OrderByDescending`/`ThenBy`/`ThenByDescending`, `Skip`, `Take`, `Distinct`, `Reverse`, `Cast` and `OfType`; an operator that cannot extend the current `SELECT` (for example `Where` after `Take`) wraps it into a derived table.
+- Comparison, logical, arithmetic, bitwise and conditional operators, `??`, conversions, string concatenation and `Nullable<T>` members.
+- Captured variables and parameter-free subtrees, which are evaluated in memory and rendered as literals.
+
+Joins, grouping, aggregates, set operations, subqueries and string, `Math` and date/time members are not translated yet; they throw `NotSupportedException`.
 
 ## Overview
 
@@ -26,6 +32,12 @@ string sql = new PostgreSqlQuery(
 ```
 
 The package does not execute queries, open connections or materialize results; it only produces SQL text.
+
+## Mapping
+
+A table is named after the element type and its columns after its public properties, in declaration order. `[Table]` (including its `Schema`), `[Column]` and `[NotMapped]` from `System.ComponentModel.DataAnnotations.Schema` override the defaults. Identifiers are always double-quoted, so their case is kept. A property whose type is not a scalar (or an array of scalars) is rejected, so navigation properties are not supported.
+
+Nullability follows the CLR: `Nullable<T>` and nullable reference types are nullable columns. C# semantics are preserved where SQL differs — equality with a nullable operand uses `IS [NOT] DISTINCT FROM`, a nullable comparison used as a value becomes `COALESCE(..., FALSE)`, nullable keys sort as `NULLS FIRST` ascending, and a nullable string is concatenated as `COALESCE(..., '')`.
 
 ## Constants are inline literals
 
