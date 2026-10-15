@@ -1,6 +1,6 @@
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Model;
 
-public sealed record Product
+public sealed record Product : INamed
 {
     public int Id { get; init; }
 
