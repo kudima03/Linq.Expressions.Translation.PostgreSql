@@ -1,0 +1,6 @@
+<Solution>
+    <Folder Name="/Tests/">
+        <Project Path="Tests/Linq.Expressions.Translation.PostgreSql.Tests/Linq.Expressions.Translation.PostgreSql.Tests.csproj" />
+    </Folder>
+    <Project Path="Linq.Expressions.Translation.PostgreSql/Linq.Expressions.Translation.PostgreSql.csproj" />
+</Solution>
