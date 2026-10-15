@@ -692,7 +692,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Helper", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsUnsupportedExpressionInsideSetOperationOperand()
     {
         Expression query = Customers

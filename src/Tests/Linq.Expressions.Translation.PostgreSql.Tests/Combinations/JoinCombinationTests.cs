@@ -438,7 +438,7 @@ public sealed record JoinCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsUnionedSources()
     {
         Expression query = Customers
@@ -465,7 +465,7 @@ public sealed record JoinCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsThenUnionsWithOtherJoin()
     {
         Expression query = Customers

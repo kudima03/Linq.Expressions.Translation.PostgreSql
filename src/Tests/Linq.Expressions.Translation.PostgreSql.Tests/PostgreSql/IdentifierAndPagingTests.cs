@@ -246,7 +246,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NumbersTwoDigitAliases()
     {
         Expression query = Customers
@@ -437,7 +437,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PagesAfterSetOperation()
     {
         Expression query = Customers

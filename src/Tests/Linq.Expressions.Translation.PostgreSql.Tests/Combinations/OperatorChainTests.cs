@@ -294,7 +294,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersUnionThenOrdersAndTakes()
     {
         Expression query = Customers
@@ -325,7 +325,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsConcatenatedRows()
     {
         Expression query = Orders

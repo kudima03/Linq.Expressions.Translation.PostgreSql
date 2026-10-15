@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record SetOperationTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatsScalarSequences()
     {
         Expression query = Customers
@@ -24,7 +24,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void UnionsScalarSequences()
     {
         Expression query = Customers
@@ -46,7 +46,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void IntersectsScalarSequences()
     {
         Expression query = Customers
@@ -68,7 +68,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ExceptsScalarSequences()
     {
         Expression query = Customers
@@ -90,7 +90,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatsFilteredEntities()
     {
         Expression query = Customers
@@ -114,7 +114,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void UnionsFilteredEntities()
     {
         Expression query = Customers
@@ -138,7 +138,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void IntersectsFilteredEntities()
     {
         Expression query = Customers
@@ -162,7 +162,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ExceptsFilteredEntities()
     {
         Expression query = Customers
@@ -186,7 +186,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void UnionsAnonymousProjections()
     {
         Expression query = Customers
@@ -208,7 +208,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatsProjectionsWithConstantDiscriminator()
     {
         Expression query = Customers
@@ -230,7 +230,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatsEntitiesOfSameTable()
     {
         Expression query = Customers.Concat(Customers).Expression;
@@ -249,7 +249,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatsThreeSequences()
     {
         Expression query = Customers
@@ -275,7 +275,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void UnionsThreeSequences()
     {
         Expression query = Customers
@@ -301,7 +301,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesLeftOperandOfDifferentSetOperation()
     {
         Expression query = Customers
@@ -329,7 +329,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesRightOperandThatIsSetOperation()
     {
         Expression query = Customers
@@ -356,7 +356,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesOrderedAndLimitedOperand()
     {
         Expression query = Customers
@@ -384,7 +384,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesLimitedRightOperand()
     {
         Expression query = Customers
@@ -410,7 +410,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesOffsetOperandsOnBothSides()
     {
         Expression query = Customers
@@ -442,7 +442,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void UnionsGroupedOperands()
     {
         Expression query = Orders
@@ -467,7 +467,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void UnionsJoinedOperand()
     {
         Expression query = Customers
@@ -490,7 +490,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsFilterAfterUnion()
     {
         Expression query = Customers
@@ -517,7 +517,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsOrderingAfterUnion()
     {
         Expression query = Customers
@@ -544,7 +544,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsPagingAfterConcat()
     {
         Expression query = Customers
@@ -571,7 +571,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsOrderingAndPagingAfterConcat()
     {
         Expression query = Customers
@@ -601,7 +601,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsProjectionAfterUnion()
     {
         Expression query = Customers
@@ -627,7 +627,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsDistinctAfterConcat()
     {
         Expression query = Customers
@@ -653,7 +653,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void UnionsAfterWrappedOperand()
     {
         Expression query = Customers
@@ -684,7 +684,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsUnionedRows()
     {
         Expression query = Customers
@@ -709,7 +709,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAnyUnionedRow()
     {
         Expression query = Customers
@@ -736,7 +736,7 @@ public sealed record SetOperationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstOfUnion()
     {
         Expression query = Customers

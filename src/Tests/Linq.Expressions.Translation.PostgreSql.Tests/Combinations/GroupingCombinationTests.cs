@@ -202,7 +202,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void UnionsGroupedRowsWithOtherRows()
     {
         Expression query = Orders

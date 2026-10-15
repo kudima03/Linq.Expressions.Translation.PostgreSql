@@ -7,9 +7,7 @@ Translates the expression tree of an `IQueryable<T>` into a single PostgreSQL `S
 [![NuGet](https://img.shields.io/nuget/v/Linq.Expressions.Translation.PostgreSql)](https://www.nuget.org/packages/Linq.Expressions.Translation.PostgreSql)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Status
-
-Translated so far:
+## What is translated
 
 - `Where`, `Select`, `OrderBy`/`OrderByDescending`/`ThenBy`/`ThenByDescending`, `Skip`, `Take`, `Distinct`, `Reverse`, `Cast` and `OfType`; an operator that cannot extend the current `SELECT` (for example `Where` after `Take`) wraps it into a derived table.
 - Comparison, logical, arithmetic, bitwise and conditional operators, `??`, conversions, string concatenation and `Nullable<T>` members.
@@ -19,9 +17,10 @@ Translated so far:
 - The same operators inside lambdas, as correlated or uncorrelated subqueries (`EXISTS`, `IN (SELECT ...)`, scalar subqueries).
 - `Join` (`INNER JOIN`), `GroupJoin` (aggregated groups as correlated subqueries, or `LEFT JOIN` with `SelectMany`/`DefaultIfEmpty`) and `SelectMany` (`CROSS JOIN`, correlated `INNER`/`LEFT JOIN`, or `JOIN LATERAL` when the inner source is paged).
 - `GroupBy` (with element and result selectors): `GROUP BY` the flattened key, `HAVING` for filters on groups, and aggregates over the group — `Count` (also with a predicate, as `FILTER (WHERE ...)`), `Sum`, `Average`, `Min`, `Max`, `Any`/`All` (`BOOL_OR`/`BOOL_AND`), `Where(...)` before an aggregate and `Select(...).Distinct().Count()` (`COUNT(DISTINCT ...)`).
+- `Concat`, `Union`, `Intersect` and `Except` as `UNION ALL`, `UNION`, `INTERSECT` and `EXCEPT`, parenthesizing operands that are paged or a different set operation.
 - Captured variables and parameter-free subtrees, which are evaluated in memory and rendered as literals.
 
-Set operations are not translated yet; they throw `NotSupportedException`.
+Anything else — user-defined methods, culture- or comparison-specific overloads, navigation properties, in-memory sources, operators such as `Zip`, `Aggregate` or `SkipWhile` — throws `NotSupportedException` naming the offending member, method or expression node.
 
 ## Overview
 

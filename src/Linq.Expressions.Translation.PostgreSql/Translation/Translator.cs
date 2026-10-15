@@ -151,6 +151,10 @@ internal sealed partial class Translator
             nameof(Queryable.Reverse) => Reverse(source, call.Method),
             nameof(Queryable.Cast) or nameof(Queryable.OfType) => Cast(source, call),
             nameof(Queryable.GroupBy) => GroupBy(source, call),
+            nameof(Queryable.Concat)
+            or nameof(Queryable.Union)
+            or nameof(Queryable.Intersect)
+            or nameof(Queryable.Except) => Combined(source, call),
             nameof(Queryable.Join) => Join(source, call),
             nameof(Queryable.GroupJoin) => GroupJoin(source, call),
             nameof(Queryable.SelectMany) => SelectMany(source, call),
