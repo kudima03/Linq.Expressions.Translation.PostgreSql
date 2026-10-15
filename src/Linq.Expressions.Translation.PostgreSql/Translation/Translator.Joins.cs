@@ -141,7 +141,7 @@ internal sealed partial class Translator
 
     private SelectQuery Opened(SqlQuery source)
     {
-        return Open(source, Barrier.Paging | Barrier.Distinct);
+        return Open(source, Barrier.Paging | Barrier.Distinct | Barrier.Grouping);
     }
 
     private SqlQuery Joined(MethodCallExpression call)
@@ -163,7 +163,11 @@ internal sealed partial class Translator
 
     private static bool IsSimple(SqlQuery query)
     {
-        return query is SelectQuery { Joins.Count: 0, IsPaged: false, Distinct: false };
+        return query is SelectQuery select
+            && select.Joins.Count == 0
+            && !select.IsPaged
+            && !select.Distinct
+            && select.GroupBy is null;
     }
 
     private static Shape Nullified(Shape shape)

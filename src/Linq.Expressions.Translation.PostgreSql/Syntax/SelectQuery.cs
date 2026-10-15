@@ -10,6 +10,10 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
 
     public SqlExpression? Where { get; set; }
 
+    public IReadOnlyList<SqlExpression>? GroupBy { get; set; }
+
+    public SqlExpression? Having { get; set; }
+
     public List<Ordering> Orderings { get; set; } = [];
 
     public long? Limit { get; set; }
@@ -37,6 +41,16 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
         if (Where is not null)
         {
             _ = writer.Append(" WHERE ").Render(Where, SqlMode.Predicate);
+        }
+        if (GroupBy is not null)
+        {
+            _ = writer
+                .Append(" GROUP BY ")
+                .Join(GroupBy, key => writer.Render(key, SqlMode.Value));
+        }
+        if (Having is not null)
+        {
+            _ = writer.Append(" HAVING ").Render(Having, SqlMode.Predicate);
         }
         if (Orderings.Count > 0)
         {

@@ -401,7 +401,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsFromGroupIntoRecord()
     {
         Expression query = Orders

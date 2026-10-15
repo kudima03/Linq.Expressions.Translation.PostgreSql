@@ -33,7 +33,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("GroupBy", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsFirstElementOfGroup()
     {
         Expression query = Orders
@@ -47,7 +47,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("First", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsMaterializingGroup()
     {
         Expression query = Orders
@@ -61,7 +61,7 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("ToList", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsSelectingTheGroupItself()
     {
         Expression query = Orders.GroupBy(o => o.CustomerId).Select(g => g).Expression;

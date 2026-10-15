@@ -648,7 +648,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsNullKeysTogether()
     {
         Expression query = Orders

@@ -45,8 +45,6 @@ internal sealed partial class Translator
         Type owner = call.Method.DeclaringType!;
         string name = call.Method.Name;
         return owner == typeof(Queryable) ? Subquery(call)
-            : owner == typeof(Enumerable) && name != nameof(Enumerable.Contains)
-                ? Enumerated(call)
             : name == nameof(Equals) && call.Method.GetParameters().All(IsComparable)
                 ? Equated(call)
             : name == nameof(ToString) && call.Arguments.Count == 0 ? Stringified(call)
@@ -62,10 +60,12 @@ internal sealed partial class Translator
             : throw Unsupported.Method(call.Method);
     }
 
-    private SqlExpression Enumerated(MethodCallExpression call)
+    private Shape Enumerated(MethodCallExpression call)
     {
-        return Shape(call.Arguments[0]) is GroupJoinShape group
-            ? Terminal(Correlated(group), call)
+        Shape source = Shape(call.Arguments[0]);
+        return source is GroupingShape grouping ? Grouped(grouping, call)
+            : source is GroupJoinShape group
+                ? new ScalarShape(Terminal(Correlated(group), call))
             : throw Unsupported.Method(call.Method);
     }
 

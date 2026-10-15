@@ -648,7 +648,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByCastColumn()
     {
         Expression query = Orders

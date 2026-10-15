@@ -870,7 +870,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByFloor()
     {
         Expression query = Orders

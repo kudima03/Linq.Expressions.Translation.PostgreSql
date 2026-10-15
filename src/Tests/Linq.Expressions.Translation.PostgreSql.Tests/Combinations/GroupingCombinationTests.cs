@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Combinations;
 
 public sealed record GroupingCombinationTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersGroupsByCountAndRevenue()
     {
         Expression query = Orders
@@ -31,7 +31,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersOrdersAndPagesGroups()
     {
         Expression query = Orders
@@ -65,7 +65,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsFilterAfterPagedGroups()
     {
         Expression query = Orders
@@ -101,7 +101,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsGroupedRows()
     {
         Expression query = Orders
@@ -133,7 +133,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsGroupedRowsAndAggregatesGroupedColumn()
     {
         Expression query = Orders
@@ -171,7 +171,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsDistinctGroupedValues()
     {
         Expression query = Orders
@@ -232,7 +232,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsGroupedRowsWithEntity()
     {
         Expression query = Customers
@@ -266,7 +266,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsAfterFilteringJoiningAndProjecting()
     {
         Expression query = Orders
@@ -308,7 +308,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByKeyThenFiltersOnKey()
     {
         Expression query = Orders
@@ -336,7 +336,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AveragesGroupedAggregateInProjection()
     {
         Expression query = Orders
@@ -361,7 +361,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesTwoAggregatesOfSameGroup()
     {
         Expression query = Orders
@@ -383,7 +383,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsGroupsAboveThreshold()
     {
         Expression query = Orders
@@ -407,7 +407,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAnyGroupAboveThreshold()
     {
         Expression query = Orders
@@ -429,7 +429,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesTopGroup()
     {
         Expression query = Orders
@@ -458,7 +458,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesLastGroupKey()
     {
         Expression query = Orders
@@ -481,7 +481,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AveragesRevenuePerGroup()
     {
         Expression query = Orders
@@ -510,7 +510,7 @@ public sealed record GroupingCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsCountsPerGroup()
     {
         Expression query = Orders

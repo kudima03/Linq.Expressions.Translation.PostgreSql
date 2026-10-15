@@ -1335,7 +1335,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByYearAndMonth()
     {
         Expression query = Orders
@@ -1363,7 +1363,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByDate()
     {
         Expression query = Orders
@@ -1384,7 +1384,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByHourOfTime()
     {
         Expression query = Orders

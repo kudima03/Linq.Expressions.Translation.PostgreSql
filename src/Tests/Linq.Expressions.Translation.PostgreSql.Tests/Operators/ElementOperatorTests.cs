@@ -398,7 +398,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstRowOfGroups()
     {
         Expression query = Orders

@@ -59,7 +59,7 @@ public sealed record UnsupportedExpressionTests
         Assert.Contains("Count", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RejectsUserDefinedMethodInGroupKey()
     {
         Expression query = Orders

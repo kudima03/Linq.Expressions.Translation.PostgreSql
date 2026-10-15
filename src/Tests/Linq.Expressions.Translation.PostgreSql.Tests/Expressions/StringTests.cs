@@ -1565,7 +1565,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByFirstCharacters()
     {
         Expression query = Orders
@@ -1586,7 +1586,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByUpperCase()
     {
         Expression query = Orders

@@ -18,9 +18,10 @@ Translated so far:
 - Terminal operators: `Count`/`LongCount`, `Sum`, `Average`, `Min`, `Max`, `Any`, `All`, `Contains`, `First`/`Single`/`Last`/`ElementAt` (and their `OrDefault` forms).
 - The same operators inside lambdas, as correlated or uncorrelated subqueries (`EXISTS`, `IN (SELECT ...)`, scalar subqueries).
 - `Join` (`INNER JOIN`), `GroupJoin` (aggregated groups as correlated subqueries, or `LEFT JOIN` with `SelectMany`/`DefaultIfEmpty`) and `SelectMany` (`CROSS JOIN`, correlated `INNER`/`LEFT JOIN`, or `JOIN LATERAL` when the inner source is paged).
+- `GroupBy` (with element and result selectors): `GROUP BY` the flattened key, `HAVING` for filters on groups, and aggregates over the group — `Count` (also with a predicate, as `FILTER (WHERE ...)`), `Sum`, `Average`, `Min`, `Max`, `Any`/`All` (`BOOL_OR`/`BOOL_AND`), `Where(...)` before an aggregate and `Select(...).Distinct().Count()` (`COUNT(DISTINCT ...)`).
 - Captured variables and parameter-free subtrees, which are evaluated in memory and rendered as literals.
 
-Grouping and set operations are not translated yet; they throw `NotSupportedException`.
+Set operations are not translated yet; they throw `NotSupportedException`.
 
 ## Overview
 

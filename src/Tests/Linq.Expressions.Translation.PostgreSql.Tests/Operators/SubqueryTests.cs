@@ -493,7 +493,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByMembershipInGroupedSubquery()
     {
         Expression query = Customers
@@ -763,7 +763,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsBySubqueryFreeKeyAfterCorrelatedFilter()
     {
         Expression query = Customers
@@ -789,7 +789,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsAggregatedSubquery()
     {
         Expression query = Customers
@@ -823,7 +823,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LeftJoinsAggregatedSubquery()
     {
         Expression query = Customers
@@ -861,7 +861,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersJoinedSubqueryResult()
     {
         Expression query = Customers

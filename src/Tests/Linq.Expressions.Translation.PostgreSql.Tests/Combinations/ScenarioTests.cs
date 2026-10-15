@@ -4,7 +4,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Combinations;
 
 public sealed record ScenarioTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsTopCustomersInPeriod()
     {
         DateTime from = new(2024, 1, 1);
@@ -108,7 +108,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsOrdersWithinAWeekOfFirstOrder()
     {
         Expression query = Orders
@@ -150,7 +150,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void BucketsOrdersBySize()
     {
         Expression query = Orders
@@ -318,7 +318,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void MeasuresGiftEffectiveness()
     {
         Expression query = Orders
@@ -349,7 +349,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersGroupsWithBooleanLogic()
     {
         int minOrders = 3;
@@ -379,7 +379,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByComputedBucket()
     {
         Expression query = Orders
@@ -426,7 +426,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ShiftsDatesEverywhere()
     {
         DateTime cutoff = new(2024, 6, 1);

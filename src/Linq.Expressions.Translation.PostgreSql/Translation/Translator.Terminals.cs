@@ -54,8 +54,10 @@ internal sealed partial class Translator
         bool filtered = call.Arguments.Count > 1;
         return call.Method.Name switch
         {
-            nameof(Queryable.Count) => Counted(source, call, "integer"),
-            nameof(Queryable.LongCount) => Counted(source, call, null),
+            nameof(Queryable.Count) or nameof(Queryable.LongCount) => Counted(
+                source,
+                call
+            ),
             nameof(Queryable.Sum)
             or nameof(Queryable.Average)
             or nameof(Queryable.Min)
@@ -94,48 +96,67 @@ internal sealed partial class Translator
         };
     }
 
-    private SqlScalarSubquery Counted(
-        SqlQuery source,
-        MethodCallExpression call,
-        string? cast
-    )
+    private SqlScalarSubquery Counted(SqlQuery source, MethodCallExpression call)
     {
         SelectQuery query = Unordered(
             Open(
                 call.Arguments.Count > 1 ? Where(source, Lambda(call, 1)) : source,
-                Barrier.Paging | Barrier.Distinct
+                Barrier.Paging | Barrier.Distinct | Barrier.Grouping
             )
         );
-        SqlExpression count = new SqlFunction(
-            "COUNT",
-            [new SqlFragment("*", typeof(long))],
-            typeof(long)
-        );
-        query.Shape = new ScalarShape(
-            cast is null ? count : new SqlCast(count, cast, typeof(int))
-        );
+        query.Shape = new ScalarShape(Counting(call.Method.Name, null, null));
         return new SqlScalarSubquery(query, call.Type);
     }
 
     private SqlScalarSubquery Aggregated(SqlQuery source, MethodCallExpression call)
     {
-        SelectQuery query = Unordered(Open(source, Barrier.Paging | Barrier.Distinct));
+        SelectQuery query = Unordered(
+            Open(source, Barrier.Paging | Barrier.Distinct | Barrier.Grouping)
+        );
         SqlExpression value =
             call.Arguments.Count > 1
                 ? Scalar(Bind(Lambda(call, 1), query.Shape))
                 : Scalar(query.Shape);
-        query.Shape = new ScalarShape(Aggregate(call.Method.Name, value, call.Type));
+        query.Shape = new ScalarShape(
+            Aggregate(call.Method.Name, value, call.Type, null)
+        );
         return new SqlScalarSubquery(query, call.Type);
     }
 
-    private static SqlExpression Aggregate(string name, SqlExpression value, Type type)
+    private static SqlExpression Counting(
+        string name,
+        SqlExpression? distinct,
+        SqlExpression? filter
+    )
+    {
+        SqlExpression count = new SqlAggregate(
+            "COUNT",
+            distinct,
+            distinct is not null,
+            filter,
+            typeof(long)
+        );
+        return name == nameof(Queryable.Count)
+            ? new SqlCast(count, "integer", typeof(int))
+            : count;
+    }
+
+    private static SqlExpression Aggregate(
+        string name,
+        SqlExpression value,
+        Type type,
+        SqlExpression? filter
+    )
     {
         Type result = ScalarTypes.Underlying(type);
         if (name == nameof(Queryable.Sum))
         {
             SqlExpression sum = new SqlFunction(
                 "COALESCE",
-                [new SqlFunction("SUM", [value], type), new SqlConstant(0, typeof(int))],
+                [
+                    new SqlAggregate("SUM", value, false, filter, type),
+                    new SqlConstant(0, typeof(int)),
+                ],
                 result
             );
             return Integral.Contains(result)
@@ -147,9 +168,11 @@ internal sealed partial class Translator
             && Integral.Contains(ScalarTypes.Underlying(value.Type))
                 ? new SqlCast(value, "double precision", typeof(double))
                 : value;
-        return new SqlFunction(
+        return new SqlAggregate(
             name == nameof(Queryable.Average) ? "AVG" : name.ToUpperInvariant(),
-            [argument],
+            argument,
+            false,
+            filter,
             type
         );
     }

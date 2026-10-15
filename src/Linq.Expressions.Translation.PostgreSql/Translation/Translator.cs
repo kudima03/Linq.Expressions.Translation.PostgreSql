@@ -14,6 +14,12 @@ internal sealed partial class Translator
     public string Translate(Expression expression)
     {
         SqlQuery query = Query(Evaluator.Evaluate(expression));
+        if (query.Shape is GroupingShape)
+        {
+            throw new NotSupportedException(
+                "Returning IGrouping results of GroupBy is not supported; project the groups with Select."
+            );
+        }
         SqlWriter writer = new();
         query.Render(writer);
         return writer.ToString();
@@ -144,6 +150,7 @@ internal sealed partial class Translator
             nameof(Queryable.Distinct) => Distinct(source),
             nameof(Queryable.Reverse) => Reverse(source, call.Method),
             nameof(Queryable.Cast) or nameof(Queryable.OfType) => Cast(source, call),
+            nameof(Queryable.GroupBy) => GroupBy(source, call),
             nameof(Queryable.Join) => Join(source, call),
             nameof(Queryable.GroupJoin) => GroupJoin(source, call),
             nameof(Queryable.SelectMany) => SelectMany(source, call),
@@ -154,7 +161,15 @@ internal sealed partial class Translator
     private SelectQuery Where(SqlQuery source, LambdaExpression predicate)
     {
         SelectQuery query = Restricted(source);
-        query.Where = And(query.Where, Scalar(Bind(predicate, query.Shape)));
+        SqlExpression condition = Scalar(Bind(predicate, query.Shape));
+        if (query.GroupBy is null)
+        {
+            query.Where = And(query.Where, condition);
+        }
+        else
+        {
+            query.Having = And(query.Having, condition);
+        }
         return query;
     }
 
@@ -165,7 +180,7 @@ internal sealed partial class Translator
 
     private SelectQuery Select(SqlQuery source, LambdaExpression selector)
     {
-        SelectQuery query = Open(source, Barrier.Distinct);
+        SelectQuery query = Open(source, Barrier.Distinct | Barrier.Projection);
         query.Shape = Bind(selector, query.Shape);
         return query;
     }
@@ -256,7 +271,13 @@ internal sealed partial class Translator
     private static bool IsBlocked(SelectQuery query, Barrier barriers)
     {
         return ((barriers & Barrier.Paging) != 0 && query.IsPaged)
-            || ((barriers & Barrier.Distinct) != 0 && query.Distinct);
+            || ((barriers & Barrier.Distinct) != 0 && query.Distinct)
+            || ((barriers & Barrier.Grouping) != 0 && query.GroupBy is not null)
+            || (
+                (barriers & Barrier.Projection) != 0
+                && query.GroupBy is not null
+                && query.Shape is not GroupingShape
+            );
     }
 
     private SelectQuery Wrap(SqlQuery inner)

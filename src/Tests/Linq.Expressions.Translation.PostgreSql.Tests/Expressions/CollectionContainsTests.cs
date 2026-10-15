@@ -973,7 +973,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsTaggedOrdersPerCustomer()
     {
         Expression query = Orders

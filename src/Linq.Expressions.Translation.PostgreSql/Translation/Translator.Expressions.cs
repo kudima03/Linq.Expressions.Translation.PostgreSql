@@ -73,6 +73,11 @@ internal sealed partial class Translator
             MemberExpression member => Member(member),
             NewExpression creation => New(creation),
             MemberInitExpression initialization => Initialization(initialization),
+            MethodCallExpression call
+                when call.Method.DeclaringType == typeof(Enumerable)
+                    && call.Method.Name != nameof(Enumerable.Contains) => Enumerated(
+                call
+            ),
             UnaryExpression
             {
                 NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked
@@ -113,6 +118,7 @@ internal sealed partial class Translator
         return owner is ScalarShape scalar
                 ? new ScalarShape(ScalarMember(scalar.Value, member.Member))
             : owner is EntityShape entity ? entity.Member(member.Member)
+            : owner is GroupingShape grouping ? grouping.Key
             : ((ObjectShape)owner).Member(member.Member);
     }
 

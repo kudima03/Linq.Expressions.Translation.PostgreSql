@@ -416,7 +416,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByConditional()
     {
         Expression query = Orders

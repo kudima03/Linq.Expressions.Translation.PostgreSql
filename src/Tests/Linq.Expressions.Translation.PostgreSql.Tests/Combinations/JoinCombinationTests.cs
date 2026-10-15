@@ -366,7 +366,7 @@ public sealed record JoinCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsThenGroupsAndOrders()
     {
         Expression query = Customers
@@ -403,7 +403,7 @@ public sealed record JoinCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsThenFiltersGroupsWithHaving()
     {
         Expression query = Customers

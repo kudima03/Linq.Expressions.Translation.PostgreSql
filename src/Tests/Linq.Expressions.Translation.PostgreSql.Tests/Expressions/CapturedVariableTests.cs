@@ -1112,7 +1112,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsAfterFilterByCapturedVariable()
     {
         decimal limit = 100m;

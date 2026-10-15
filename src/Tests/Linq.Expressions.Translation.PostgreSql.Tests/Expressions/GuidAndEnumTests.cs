@@ -245,7 +245,7 @@ public sealed record GuidAndEnumTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByGuid()
     {
         Expression query = Orders
@@ -604,7 +604,7 @@ public sealed record GuidAndEnumTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByEnum()
     {
         Expression query = Orders
