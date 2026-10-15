@@ -47,11 +47,3 @@ Nullability follows the CLR: `Nullable<T>` and nullable reference types are null
 ## Constants are inline literals
 
 The result is a single string, not a command with a parameter collection. Every constant in the tree — literals, captured variables and in-memory collections — is rendered as a safely escaped inline PostgreSQL literal (for example, `'O''Brien'` for the string `O'Brien`). No bind parameters (`$1`, `@p0`) are produced.
-
-## Dependencies
-
-None beyond the .NET base class library.
-
-## Target frameworks
-
-`net8.0`, `net9.0`, `net10.0`.
