@@ -1086,7 +1086,7 @@ public sealed record CapturedVariableTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsOnCapturedKeyOffset()
     {
         int offset = 1;

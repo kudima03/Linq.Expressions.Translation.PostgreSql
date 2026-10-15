@@ -6,6 +6,8 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
 {
     public SqlSource? From { get; } = from;
 
+    public List<SqlJoin> Joins { get; } = [];
+
     public SqlExpression? Where { get; set; }
 
     public List<Ordering> Orderings { get; set; } = [];
@@ -27,6 +29,10 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
         {
             _ = writer.Append(" FROM ");
             From.Render(writer);
+        }
+        foreach (SqlJoin join in Joins)
+        {
+            join.Render(writer);
         }
         if (Where is not null)
         {

@@ -421,7 +421,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstRowOfJoin()
     {
         Expression query = Customers

@@ -75,7 +75,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsCustomersWithoutOrdersWithLeftJoin()
     {
         Expression query = Customers
@@ -179,7 +179,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComputesLineTotalsWithDiscount()
     {
         decimal discount = 0.1m;
@@ -480,7 +480,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void BuildsReferralChainWithManagerNames()
     {
         Expression query = Employees

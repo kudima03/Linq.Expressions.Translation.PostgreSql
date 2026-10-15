@@ -19,14 +19,18 @@ internal sealed partial class Translator
         return writer.ToString();
     }
 
-    private static LambdaExpression Lambda(MethodCallExpression call, int index)
+    private static LambdaExpression Lambda(
+        MethodCallExpression call,
+        int index,
+        int parameters = 1
+    )
     {
         Expression argument = call.Arguments[index];
         Expression operand = argument
             is UnaryExpression { NodeType: ExpressionType.Quote } quote
             ? quote.Operand
             : argument;
-        return operand is LambdaExpression { Parameters.Count: 1 } lambda
+        return operand is LambdaExpression lambda && lambda.Parameters.Count == parameters
             ? lambda
             : throw Unsupported.Method(call.Method);
     }
@@ -140,6 +144,9 @@ internal sealed partial class Translator
             nameof(Queryable.Distinct) => Distinct(source),
             nameof(Queryable.Reverse) => Reverse(source, call.Method),
             nameof(Queryable.Cast) or nameof(Queryable.OfType) => Cast(source, call),
+            nameof(Queryable.Join) => Join(source, call),
+            nameof(Queryable.GroupJoin) => GroupJoin(source, call),
+            nameof(Queryable.SelectMany) => SelectMany(source, call),
             _ => throw Unsupported.Method(call.Method),
         };
     }

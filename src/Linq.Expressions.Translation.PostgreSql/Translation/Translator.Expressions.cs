@@ -69,7 +69,7 @@ internal sealed partial class Translator
     {
         return expression switch
         {
-            ParameterExpression parameter => _bindings[parameter].Shape,
+            ParameterExpression parameter => Resolved(parameter),
             MemberExpression member => Member(member),
             NewExpression creation => New(creation),
             MemberInitExpression initialization => Initialization(initialization),
@@ -79,6 +79,13 @@ internal sealed partial class Translator
             } conversion => Conversion(conversion),
             _ => new ScalarShape(Node(expression)),
         };
+    }
+
+    private Shape Resolved(ParameterExpression parameter)
+    {
+        Binding binding = _bindings[parameter];
+        binding.Uses++;
+        return binding.Shape;
     }
 
     private SqlExpression Node(Expression expression)

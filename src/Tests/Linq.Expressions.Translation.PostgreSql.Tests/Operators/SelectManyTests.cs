@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record SelectManyTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CrossJoinsUncorrelatedSource()
     {
         Expression query = Customers
@@ -21,7 +21,7 @@ public sealed record SelectManyTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CrossJoinsWithQuerySyntax()
     {
         Expression query = (
@@ -42,7 +42,7 @@ public sealed record SelectManyTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersCrossJoinWithQuerySyntax()
     {
         Expression query = (
@@ -65,7 +65,7 @@ public sealed record SelectManyTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void InnerJoinsSourceCorrelatedByWhere()
     {
         Expression query = Customers
@@ -87,7 +87,7 @@ public sealed record SelectManyTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void InnerJoinsCorrelatedSourceWithExtraPredicate()
     {
         Expression query = Customers
@@ -109,7 +109,7 @@ public sealed record SelectManyTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void InnerJoinsCorrelatedSourceWithSeparateWhereClauses()
     {
         Expression query = Customers
@@ -131,7 +131,7 @@ public sealed record SelectManyTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FlattensCorrelatedSourceWithoutResultSelector()
     {
         Expression query = Customers
@@ -151,7 +151,7 @@ public sealed record SelectManyTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LeftJoinsCorrelatedSourceWithDefaultIfEmpty()
     {
         Expression query = Customers
@@ -173,7 +173,7 @@ public sealed record SelectManyTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LeftJoinsCorrelatedSourceWithQuerySyntax()
     {
         Expression query = (
@@ -194,7 +194,7 @@ public sealed record SelectManyTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LateralJoinsCorrelatedSourceWithTake()
     {
         Expression query = Customers
@@ -227,7 +227,7 @@ public sealed record SelectManyTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LeftJoinsLateralCorrelatedSourceWithTake()
     {
         Expression query = Customers
@@ -261,7 +261,7 @@ public sealed record SelectManyTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CrossJoinsThreeSources()
     {
         Expression query = (
@@ -289,7 +289,7 @@ public sealed record SelectManyTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CrossJoinsFilteredSources()
     {
         Expression query = Customers
@@ -313,7 +313,7 @@ public sealed record SelectManyTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersAndPagesAfterSelectMany()
     {
         Expression query = Customers
@@ -340,7 +340,7 @@ public sealed record SelectManyTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsEveryColumnOfFlattenedEntity()
     {
         Expression query = Customers

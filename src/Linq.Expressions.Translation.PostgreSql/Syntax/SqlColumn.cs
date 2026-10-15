@@ -7,6 +7,11 @@ internal sealed class SqlColumn(string alias, string name, Type type, bool nulla
 
     public string Name { get; } = name;
 
+    public override SqlExpression AsNullable()
+    {
+        return new SqlColumn(alias, Name, Type, true);
+    }
+
     public override void Render(SqlWriter writer, SqlMode mode)
     {
         _ = writer.Append(alias + ".").Identifier(Name);

@@ -194,7 +194,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void QualifiesJoinedColumnsWithSchemaTableAliases()
     {
         Expression query = new CapturingQueryable<QuotedRow>()
@@ -213,7 +213,7 @@ public sealed record IdentifierAndPagingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NumbersAliasesInOrderSourcesAreIntroduced()
     {
         Expression query = Customers

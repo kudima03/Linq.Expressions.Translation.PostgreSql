@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record LeftJoinTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LeftJoinsWithGroupJoinAndDefaultIfEmpty()
     {
         Expression query = Customers
@@ -25,7 +25,7 @@ public sealed record LeftJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LeftJoinsProjectingSeveralNullableColumns()
     {
         Expression query = Customers
@@ -56,7 +56,7 @@ public sealed record LeftJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LeftJoinsProjectingNullableReferenceColumn()
     {
         Expression query = Customers
@@ -76,7 +76,7 @@ public sealed record LeftJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LeftJoinsWithQuerySyntax()
     {
         Expression query = (
@@ -98,7 +98,7 @@ public sealed record LeftJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersCustomersWithoutOrders()
     {
         Expression query = Customers
@@ -123,7 +123,7 @@ public sealed record LeftJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersCustomersWithOrders()
     {
         Expression query = Customers
@@ -148,7 +148,7 @@ public sealed record LeftJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersLeftJoinedColumnWithNullableComparison()
     {
         Expression query = Customers
@@ -173,7 +173,7 @@ public sealed record LeftJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsInnerSourceFilterInJoinCondition()
     {
         Expression query = Customers
@@ -201,7 +201,7 @@ public sealed record LeftJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersOuterSourceBeforeLeftJoin()
     {
         Expression query = Customers
@@ -226,7 +226,7 @@ public sealed record LeftJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LeftJoinsOnCompositeKey()
     {
         Expression query = OrderLines
@@ -254,7 +254,7 @@ public sealed record LeftJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LeftJoinsTableWithItself()
     {
         Expression query = Employees
@@ -277,7 +277,7 @@ public sealed record LeftJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChainsTwoLeftJoins()
     {
         Expression query = Customers
@@ -309,7 +309,7 @@ public sealed record LeftJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void MixesInnerJoinAndLeftJoin()
     {
         Expression query = Customers
@@ -340,7 +340,7 @@ public sealed record LeftJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersAndPagesAfterLeftJoin()
     {
         Expression query = Customers
@@ -367,7 +367,7 @@ public sealed record LeftJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsPagedInnerSourceAsDerivedTableOnTheLeft()
     {
         Expression query = Customers
@@ -403,7 +403,7 @@ public sealed record LeftJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsLeftJoinedRows()
     {
         Expression query = Customers

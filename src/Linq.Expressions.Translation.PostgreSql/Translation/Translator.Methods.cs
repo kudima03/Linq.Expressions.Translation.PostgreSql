@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Linq.Expressions;
+using Linq.Expressions.Translation.PostgreSql.Shapes;
 using Linq.Expressions.Translation.PostgreSql.Syntax;
 
 namespace Linq.Expressions.Translation.PostgreSql.Translation;
@@ -63,8 +64,9 @@ internal sealed partial class Translator
 
     private SqlExpression Enumerated(MethodCallExpression call)
     {
-        _ = call.Arguments[0] is MethodCallExpression source ? Sql(source) : null;
-        throw Unsupported.Method(call.Method);
+        return Shape(call.Arguments[0]) is GroupJoinShape group
+            ? Terminal(Correlated(group), call)
+            : throw Unsupported.Method(call.Method);
     }
 
     private SqlExpression Stringified(MethodCallExpression call)

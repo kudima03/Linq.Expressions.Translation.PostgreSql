@@ -376,7 +376,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsFromJoinIntoNestedRecord()
     {
         Expression query = Customers

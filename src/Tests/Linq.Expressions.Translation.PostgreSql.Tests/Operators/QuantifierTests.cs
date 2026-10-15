@@ -126,7 +126,7 @@ public sealed record QuantifierTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAnyJoinedRowExists()
     {
         Expression query = Customers

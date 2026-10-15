@@ -1606,7 +1606,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsOnUpperCasedKeys()
     {
         Expression query = Customers

@@ -431,7 +431,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersProjectsAndOrdersAcrossJoin()
     {
         Expression query = Customers

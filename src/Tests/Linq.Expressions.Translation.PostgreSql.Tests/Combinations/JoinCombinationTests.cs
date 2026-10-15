@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Combinations;
 
 public sealed record JoinCombinationTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsFiveTables()
     {
         Expression query = Customers
@@ -59,7 +59,7 @@ public sealed record JoinCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsFourTablesWithFiltersOnEachSource()
     {
         Expression query = Customers
@@ -111,7 +111,7 @@ public sealed record JoinCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void MixesInnerAndLeftJoinsWithFilters()
     {
         Expression query = Customers
@@ -144,7 +144,7 @@ public sealed record JoinCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsManagerChainOfThreeLevels()
     {
         Expression query = Employees
@@ -187,7 +187,7 @@ public sealed record JoinCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LeftJoinsManagerChainOfTwoLevels()
     {
         Expression query = Employees
@@ -233,7 +233,7 @@ public sealed record JoinCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsOnCompositeKeyWithNullableMember()
     {
         Expression query = Products
@@ -257,7 +257,7 @@ public sealed record JoinCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsOnCompositeKeyOfThreeMembers()
     {
         Expression query = OrderLines
@@ -291,7 +291,7 @@ public sealed record JoinCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsOnConditionalKey()
     {
         Expression query = Customers
@@ -315,7 +315,7 @@ public sealed record JoinCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsOnStringFunctionKey()
     {
         Expression query = Customers
@@ -339,7 +339,7 @@ public sealed record JoinCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupJoinsOnCompositeKeyWithAggregate()
     {
         Expression query = OrderLines
@@ -496,7 +496,7 @@ public sealed record JoinCombinationTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsThenChecksExistence()
     {
         Expression query = Customers
