@@ -7,9 +7,20 @@ Translates the expression tree of an `IQueryable<T>` into a single PostgreSQL `S
 [![NuGet](https://img.shields.io/nuget/v/Linq.Expressions.Translation.PostgreSql)](https://www.nuget.org/packages/Linq.Expressions.Translation.PostgreSql)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Status
+## What is translated
 
-The translation is not implemented yet.
+- `Where`, `Select`, `OrderBy`/`OrderByDescending`/`ThenBy`/`ThenByDescending`, `Skip`, `Take`, `Distinct`, `Reverse`, `Cast` and `OfType`; an operator that cannot extend the current `SELECT` (for example `Where` after `Take`) wraps it into a derived table.
+- Comparison, logical, arithmetic, bitwise and conditional operators, `??`, conversions, string concatenation and `Nullable<T>` members.
+- `string` members (`Length`, case conversion, trimming, `Substring`, `IndexOf`, `Replace`, `Contains`/`StartsWith`/`EndsWith` as `LIKE` with escaped wildcards, `IsNullOrEmpty`, `Concat`), `Math` functions, date and time parts and arithmetic (`DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`), `DateTime.Now`/`UtcNow`, `Guid.NewGuid`, `Enum.HasFlag` and `ToString` of numbers and `Guid`.
+- `Contains` on in-memory collections (`IN (...)`) and on array columns (`= ANY (...)`), plus array `Length`.
+- Terminal operators: `Count`/`LongCount`, `Sum`, `Average`, `Min`, `Max`, `Any`, `All`, `Contains`, `First`/`Single`/`Last`/`ElementAt` (and their `OrDefault` forms).
+- The same operators inside lambdas, as correlated or uncorrelated subqueries (`EXISTS`, `IN (SELECT ...)`, scalar subqueries).
+- `Join` (`INNER JOIN`), `GroupJoin` (aggregated groups as correlated subqueries, or `LEFT JOIN` with `SelectMany`/`DefaultIfEmpty`) and `SelectMany` (`CROSS JOIN`, correlated `INNER`/`LEFT JOIN`, or `JOIN LATERAL` when the inner source is paged).
+- `GroupBy` (with element and result selectors): `GROUP BY` the flattened key, `HAVING` for filters on groups, and aggregates over the group — `Count` (also with a predicate, as `FILTER (WHERE ...)`), `Sum`, `Average`, `Min`, `Max`, `Any`/`All` (`BOOL_OR`/`BOOL_AND`), `Where(...)` before an aggregate and `Select(...).Distinct().Count()` (`COUNT(DISTINCT ...)`).
+- `Concat`, `Union`, `Intersect` and `Except` as `UNION ALL`, `UNION`, `INTERSECT` and `EXCEPT`, parenthesizing operands that are paged or a different set operation.
+- Captured variables and parameter-free subtrees, which are evaluated in memory and rendered as literals.
+
+Anything else — user-defined methods, culture- or comparison-specific overloads, navigation properties, in-memory sources, operators such as `Zip`, `Aggregate` or `SkipWhile` — throws `NotSupportedException` naming the offending member, method or expression node.
 
 ## Overview
 
@@ -26,6 +37,12 @@ string sql = new PostgreSqlQuery(
 ```
 
 The package does not execute queries, open connections or materialize results; it only produces SQL text.
+
+## Mapping
+
+A table is named after the element type and its columns after its public properties, in declaration order. `[Table]` (including its `Schema`), `[Column]` and `[NotMapped]` from `System.ComponentModel.DataAnnotations.Schema` override the defaults. Identifiers are always double-quoted, so their case is kept. A property whose type is not a scalar (or an array of scalars) is rejected, so navigation properties are not supported.
+
+Nullability follows the CLR: `Nullable<T>` and nullable reference types are nullable columns. C# semantics are preserved where SQL differs — equality with a nullable operand uses `IS [NOT] DISTINCT FROM`, a nullable comparison used as a value becomes `COALESCE(..., FALSE)`, nullable keys sort as `NULLS FIRST` ascending, and a nullable string is concatenated as `COALESCE(..., '')`.
 
 ## Constants are inline literals
 

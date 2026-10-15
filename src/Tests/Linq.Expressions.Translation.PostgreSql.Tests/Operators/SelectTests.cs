@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record SelectTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsAnonymousTypeOfColumns()
     {
         Expression query = Customers.Select(c => new { c.Id, c.Name }).Expression;
@@ -18,7 +18,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AliasesRenamedAnonymousMember()
     {
         Expression query = Customers.Select(c => new { Key = c.Id, c.Name }).Expression;
@@ -34,7 +34,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AliasesComputedAnonymousMember()
     {
         Expression query = Customers
@@ -52,7 +52,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsRecordThroughConstructor()
     {
         Expression query = Customers
@@ -70,7 +70,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AliasesRecordConstructorArgumentsByParameterName()
     {
         Expression query = Customers
@@ -88,7 +88,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsMemberInitializer()
     {
         Expression query = Customers
@@ -106,7 +106,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FlattensNestedAnonymousType()
     {
         Expression query = Customers
@@ -124,7 +124,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsEntityIdentity()
     {
         Expression query = Customers.Select(c => c).Expression;
@@ -140,7 +140,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsNullableColumn()
     {
         Expression query = Customers.Select(c => c.Email).Expression;
@@ -156,7 +156,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsConstant()
     {
         Expression query = Customers.Select(c => 1).Expression;
@@ -172,7 +172,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsStringConstantNextToColumn()
     {
         Expression query = Customers
@@ -190,7 +190,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsCapturedVariable()
     {
         string tag = "vip";
@@ -208,7 +208,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsArithmeticWithoutOuterParentheses()
     {
         Expression query = Orders.Select(o => o.Total * o.Quantity).Expression;
@@ -224,7 +224,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesNestedArithmetic()
     {
         Expression query = Orders
@@ -242,7 +242,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsPredicateAsBooleanValue()
     {
         Expression query = Customers.Select(c => c.Id > 3).Expression;
@@ -258,7 +258,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsPredicateAlongsideColumn()
     {
         Expression query = Customers
@@ -276,7 +276,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComposesConsecutiveSelectsIntoOne()
     {
         Expression query = Customers
@@ -295,7 +295,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void InlinesComputedMemberOfEarlierSelect()
     {
         Expression query = Customers.Select(c => c.Id * 2).Select(x => x + 1).Expression;
@@ -311,7 +311,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComposesWhereBeforeSelect()
     {
         Expression query = Customers
@@ -331,7 +331,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsColumnsOfEveryMappedType()
     {
         Expression query = Orders

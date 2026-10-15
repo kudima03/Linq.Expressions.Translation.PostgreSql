@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record ConditionalTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConditionalOnBooleanColumn()
     {
         Expression query = Orders.Select(o => o.IsPaid ? 1 : 0).Expression;
@@ -18,7 +18,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConditionalOnComparison()
     {
         Expression query = Orders
@@ -36,7 +36,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConditionalBetweenColumns()
     {
         Expression query = Orders
@@ -54,7 +54,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConditionalOnNegation()
     {
         Expression query = Orders.Select(o => !o.IsPaid ? "open" : "closed").Expression;
@@ -70,7 +70,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConditionalOnConjunction()
     {
         Expression query = Orders
@@ -88,7 +88,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConditionalWithNullBranch()
     {
         Expression query = Orders.Select(o => o.IsPaid ? o.Discount : null).Expression;
@@ -104,7 +104,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConditionalWithNullFirstBranch()
     {
         Expression query = Orders.Select(o => o.IsPaid ? null : o.Discount).Expression;
@@ -120,7 +120,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConditionalWithNullableCondition()
     {
         Expression query = Orders.Select(o => o.Priority > 3 ? "high" : "low").Expression;
@@ -136,7 +136,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConditionalWithNullSafeCondition()
     {
         Expression query = Orders
@@ -154,7 +154,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FlattensConditionalInElseBranch()
     {
         Expression query = Orders
@@ -172,7 +172,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FlattensThreeLevelsOfConditionalsInElseBranch()
     {
         Expression query = Orders
@@ -192,7 +192,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NestsConditionalInThenBranch()
     {
         Expression query = Orders
@@ -210,7 +210,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NestsConditionalInCondition()
     {
         Expression query = Orders
@@ -228,7 +228,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void UsesConditionalInsideArithmetic()
     {
         Expression query = Orders.Select(o => (o.IsPaid ? o.Total : 0m) * 2).Expression;
@@ -244,7 +244,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void UsesArithmeticInsideConditionalBranches()
     {
         Expression query = Orders
@@ -262,7 +262,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConditionalNextToColumn()
     {
         Expression query = Orders
@@ -281,7 +281,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConditionalOnCapturedVariable()
     {
         int limit = 5;
@@ -299,7 +299,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsBooleanConditional()
     {
         Expression query = Orders
@@ -317,7 +317,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConditionalOfEnum()
     {
         Expression query = Orders
@@ -335,7 +335,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByConditionalValue()
     {
         Expression query = Orders
@@ -355,7 +355,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByBooleanConditional()
     {
         Expression query = Orders
@@ -375,7 +375,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByConditionalEquality()
     {
         Expression query = Orders
@@ -395,7 +395,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByConditional()
     {
         Expression query = Orders
@@ -416,7 +416,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByConditional()
     {
         Expression query = Orders
@@ -436,7 +436,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsConditionalValue()
     {
         Expression query = Orders.Executed(q => q.Sum(o => o.IsPaid ? o.Total : 0m));
@@ -453,7 +453,7 @@ public sealed record ConditionalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsWithConditionalOneZeroSum()
     {
         Expression query = Orders.Executed(q => q.Sum(o => o.IsPaid ? 1 : 0));

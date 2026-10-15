@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Linq.Expressions.Translation.PostgreSql.Translation;
 
 namespace Linq.Expressions.Translation.PostgreSql;
 
@@ -11,8 +12,5 @@ public sealed record PostgreSqlQuery
         _expression = expression;
     }
 
-    public string TextValue =>
-        throw new NotImplementedException(
-            $"Translation of {_expression.NodeType} expressions is not implemented."
-        );
+    public string TextValue => new Translator().Translate(_expression);
 }

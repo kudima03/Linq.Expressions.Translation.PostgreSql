@@ -28,13 +28,21 @@ Constants (literals, captured variables, in-memory collections) are rendered as 
 
 The repository is not part of the Pure ecosystem: do not reference `Pure.*` packages.
 
+**Library layout** (all `internal`):
+- `Translation/Evaluator` folds captured variables and parameter-free subtrees into constants (never `Queryable` calls, `DateTime.Now`/`UtcNow`/`Today` or `Guid.NewGuid`).
+- `Translation/Translator` (partial, one file per feature) walks the operator chain into a `SelectQuery`/`SetOperationQuery`; an operator that cannot extend the current `SELECT` wraps it into a derived table (`Open`/`Wrap`, see `Barrier`).
+- `Shapes/` map a LINQ element onto SQL values (`ScalarShape`, `EntityShape`, `ObjectShape`, `GroupingShape`, `GroupJoinShape`); lambda parameters are bound to shapes.
+- `Syntax/` is the SQL tree and renderer; `SqlMode` distinguishes predicate from value positions (a nullable comparison used as a value renders as `COALESCE(..., FALSE)`), and operands are parenthesized when compound.
+- `Mapping/` derives table and column names (`[Table]`, `[Column]`, `[NotMapped]`) and nullability.
+- CI also enforces 98% line coverage and a 98% Stryker mutation score: avoid code paths no test exercises.
+
 **Test project:** `Linq.Expressions.Translation.PostgreSql.Tests` targets `net10.0` and uses xunit.
 - Every test is the same three steps: build a LINQ query, translate it with `new PostgreSqlQuery(expression).TextValue`, `Assert.Equal` it with the expected SQL. The expected SQL is the specification of the translation.
 - `Infrastructure/CapturingQueryable<T>` is the test-only root (`Tables.Customers`, …): its provider only builds trees. For terminal operators (`Count`, `First`, …) `query.Executed(q => q.Count())` returns the expression the provider was asked to execute; nothing is executed.
 - Expected SQL is a raw string literal with one clause per line, wrapped in `Sql.Valid(...)`, which joins the lines with single spaces (a subquery may be indented between a line ending in `(` and a line starting with `)`) and asserts the statement parses as one PostgreSQL `SELECT` (`pgsqlparser`, libpg_query).
 - `Model/` holds the tables (`Customer`, `Order`, `OrderLine`, `Product`, `Employee`); a table is named after its type, columns after properties, aliases are `t0`, `t1`, … in the order sources are introduced.
 - Unsupported constructs are asserted with `Assert.Throws<NotSupportedException>`.
-- Translation tests are skipped with `Skip = Skipped.NotImplemented` until the translator exists (`xUnit1004` is suppressed in the test project for that reason, as are `xUnit1044` for expression-valued theory data and the culture/`StringComparison` analyzers `CA1304`, `CA1307`, `CA1309`, `CA1310`, `CA1311`, `CA1847`, `CA1862`, `CA1866` and `CA2249`, as the tests exercise exactly those overloads). Combinations use `[Theory]` with `InlineData`/`MemberData`.
+- `xUnit1044` is suppressed in the test project for expression-valued theory data, as are the culture/`StringComparison` analyzers `CA1304`, `CA1307`, `CA1309`, `CA1310`, `CA1311`, `CA1847`, `CA1862`, `CA1865`, `CA1866` and `CA2249`, as the tests exercise exactly those overloads. Combinations use `[Theory]` with `InlineData`/`MemberData`.
 
 **Multi-targeting:** net8.0, net9.0, net10.0.
 

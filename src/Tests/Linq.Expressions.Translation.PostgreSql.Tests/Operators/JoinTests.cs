@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record JoinTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsTwoTablesIntoAnonymousType()
     {
         Expression query = Customers
@@ -21,7 +21,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsIntoRecord()
     {
         Expression query = Customers
@@ -45,7 +45,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AliasesJoinedColumnsWithSameName()
     {
         Expression query = Customers
@@ -69,7 +69,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsIntoScalar()
     {
         Expression query = Customers
@@ -88,7 +88,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsIntoWholeEntities()
     {
         Expression query = Customers
@@ -124,7 +124,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsOnStringKeys()
     {
         Expression query = Customers
@@ -148,7 +148,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsOnCompositeKey()
     {
         Expression query = OrderLines
@@ -172,7 +172,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsOnComputedKey()
     {
         Expression query = Customers
@@ -196,7 +196,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsOnNullableKeyWithPlainEquality()
     {
         Expression query = Products
@@ -220,7 +220,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsOnTwoNullableKeysWithPlainEquality()
     {
         Expression query = Employees
@@ -244,7 +244,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsTableWithItself()
     {
         Expression query = Employees
@@ -268,7 +268,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersBeforeJoin()
     {
         Expression query = Customers
@@ -289,7 +289,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersInnerSourceBeforeJoin()
     {
         Expression query = Customers
@@ -314,7 +314,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersAfterJoinOnBothSides()
     {
         Expression query = Customers
@@ -336,7 +336,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersAfterJoin()
     {
         Expression query = Customers
@@ -358,7 +358,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PagesAfterJoin()
     {
         Expression query = Customers
@@ -382,7 +382,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsThreeTables()
     {
         Expression query = Customers
@@ -413,7 +413,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsFourTables()
     {
         Expression query = Customers
@@ -457,7 +457,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsWithQuerySyntax()
     {
         Expression query = (
@@ -478,7 +478,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsWithQuerySyntaxAndCompositeKey()
     {
         Expression query = (
@@ -500,7 +500,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsWithQuerySyntaxFilterAndOrder()
     {
         Expression query = (
@@ -525,7 +525,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsOnPagedOuterSourceAsDerivedTable()
     {
         Expression query = Customers
@@ -552,7 +552,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsPagedInnerSourceAsDerivedTable()
     {
         Expression query = Customers
@@ -585,7 +585,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsProjectedInnerSource()
     {
         Expression query = Customers
@@ -609,7 +609,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsJoinedRows()
     {
         Expression query = Customers
@@ -628,7 +628,7 @@ public sealed record JoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsJoinedColumn()
     {
         Expression query = Customers

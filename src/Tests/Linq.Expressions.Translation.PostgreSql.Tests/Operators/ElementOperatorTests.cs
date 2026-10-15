@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record ElementOperatorTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstRow()
     {
         Expression query = Customers.Executed(q => q.First());
@@ -19,7 +19,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstRowMatchingPredicate()
     {
         Expression query = Customers.Executed(q => q.First(c => c.Id == 5));
@@ -37,7 +37,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstRowAfterFilterAndOrdering()
     {
         Expression query = Customers
@@ -59,7 +59,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstRowOfProjection()
     {
         Expression query = Customers.Select(c => c.Name).Executed(q => q.First());
@@ -76,7 +76,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstOrDefaultRow()
     {
         Expression query = Customers.Executed(q => q.FirstOrDefault());
@@ -93,7 +93,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstOrDefaultRowMatchingPredicate()
     {
         Expression query = Customers.Executed(q => q.FirstOrDefault(c => c.Id == 5));
@@ -111,7 +111,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstOrDefaultRowAfterFilterAndOrdering()
     {
         Expression query = Customers
@@ -133,7 +133,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstOrDefaultRowOfProjection()
     {
         Expression query = Customers
@@ -152,7 +152,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesSingleRow()
     {
         Expression query = Customers.Executed(q => q.Single());
@@ -169,7 +169,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesSingleRowMatchingPredicate()
     {
         Expression query = Customers.Executed(q => q.Single(c => c.Id == 5));
@@ -187,7 +187,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesSingleRowAfterFilterAndOrdering()
     {
         Expression query = Customers
@@ -209,7 +209,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesSingleRowOfProjection()
     {
         Expression query = Customers.Select(c => c.Name).Executed(q => q.Single());
@@ -226,7 +226,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesSingleOrDefaultRow()
     {
         Expression query = Customers.Executed(q => q.SingleOrDefault());
@@ -243,7 +243,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesSingleOrDefaultRowMatchingPredicate()
     {
         Expression query = Customers.Executed(q => q.SingleOrDefault(c => c.Id == 5));
@@ -261,7 +261,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesSingleOrDefaultRowAfterFilterAndOrdering()
     {
         Expression query = Customers
@@ -283,7 +283,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesSingleOrDefaultRowOfProjection()
     {
         Expression query = Customers
@@ -302,7 +302,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstRowCombinedWithFilterAndPredicate()
     {
         Expression query = Customers
@@ -322,7 +322,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstRowOfCapturedPredicate()
     {
         int wanted = 7;
@@ -342,7 +342,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstRowSkippingRows()
     {
         Expression query = Customers.OrderBy(c => c.Id).Skip(3).Executed(q => q.First());
@@ -360,7 +360,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstRowOfTake()
     {
         Expression query = Customers.OrderBy(c => c.Id).Take(5).Executed(q => q.First());
@@ -378,7 +378,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstRowOfDistinct()
     {
         Expression query = Customers
@@ -398,7 +398,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstRowOfGroups()
     {
         Expression query = Orders
@@ -421,7 +421,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstRowOfJoin()
     {
         Expression query = Customers
@@ -443,7 +443,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstRowAfterWrappedOperator()
     {
         Expression query = Customers
@@ -468,7 +468,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesLastRowOfOrderedRows()
     {
         Expression query = Customers.OrderBy(c => c.Id).Executed(q => q.Last());
@@ -486,7 +486,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesLastOrDefaultRowOfOrderedRows()
     {
         Expression query = Customers.OrderBy(c => c.Id).Executed(q => q.LastOrDefault());
@@ -504,7 +504,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesLastRowMatchingPredicate()
     {
         Expression query = Customers
@@ -525,7 +525,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void InvertsEveryKeyForLast()
     {
         Expression query = Customers
@@ -546,7 +546,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void InvertsNullablePlacementForLast()
     {
         Expression query = Customers.OrderBy(c => c.Email).Executed(q => q.Last());
@@ -564,7 +564,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesLastRowOfDescendingRows()
     {
         Expression query = Customers.OrderByDescending(c => c.Id).Executed(q => q.Last());
@@ -582,7 +582,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesLastRowOfProjection()
     {
         Expression query = Customers
@@ -603,7 +603,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesLastRowOfReversedRows()
     {
         Expression query = Customers.OrderBy(c => c.Id).Reverse().Executed(q => q.Last());
@@ -621,7 +621,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesLastRowOfTake()
     {
         Expression query = Customers.OrderBy(c => c.Id).Take(5).Executed(q => q.Last());
@@ -644,7 +644,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesElementAtPosition()
     {
         Expression query = Customers.OrderBy(c => c.Id).Executed(q => q.ElementAt(4));
@@ -662,7 +662,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesElementAtOrDefaultPosition()
     {
         Expression query = Customers
@@ -682,7 +682,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesElementAtPositionWithoutOrdering()
     {
         Expression query = Customers.Executed(q => q.ElementAt(0));
@@ -699,7 +699,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesElementAtCapturedPosition()
     {
         int index = 9;
@@ -719,7 +719,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesElementAtPositionAfterSkip()
     {
         Expression query = Customers
@@ -740,7 +740,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesElementAtPositionOfProjection()
     {
         Expression query = Customers
@@ -761,7 +761,7 @@ public sealed record ElementOperatorTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesElementAtPositionOfFilteredRows()
     {
         Expression query = Customers

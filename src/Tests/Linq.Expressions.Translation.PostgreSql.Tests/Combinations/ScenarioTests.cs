@@ -4,7 +4,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Combinations;
 
 public sealed record ScenarioTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsTopCustomersInPeriod()
     {
         DateTime from = new(2024, 1, 1);
@@ -49,7 +49,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsCustomersWithoutOrders()
     {
         Expression query = Customers
@@ -75,7 +75,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsCustomersWithoutOrdersWithLeftJoin()
     {
         Expression query = Customers
@@ -108,7 +108,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsOrdersWithinAWeekOfFirstOrder()
     {
         Expression query = Orders
@@ -150,7 +150,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void BucketsOrdersBySize()
     {
         Expression query = Orders
@@ -179,7 +179,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComputesLineTotalsWithDiscount()
     {
         decimal discount = 0.1m;
@@ -216,7 +216,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsOrdersAboveCustomerAverage()
     {
         Expression query = Orders
@@ -243,7 +243,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsLatestOrderOfEachCustomer()
     {
         Expression query = Orders
@@ -270,7 +270,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComputesShareOfTotalRevenue()
     {
         Expression query = Orders
@@ -291,7 +291,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsDeliveriesInBusinessHours()
     {
         Expression query = Orders
@@ -318,7 +318,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void MeasuresGiftEffectiveness()
     {
         Expression query = Orders
@@ -349,7 +349,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersGroupsWithBooleanLogic()
     {
         int minOrders = 3;
@@ -379,7 +379,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByComputedBucket()
     {
         Expression query = Orders
@@ -402,7 +402,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ListsDistinctStatusesInOrder()
     {
         Expression query = Orders
@@ -426,7 +426,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ShiftsDatesEverywhere()
     {
         DateTime cutoff = new(2024, 6, 1);
@@ -454,7 +454,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesNullableOperatorsInOneProjection()
     {
         Expression query = Orders
@@ -480,7 +480,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void BuildsReferralChainWithManagerNames()
     {
         Expression query = Employees
@@ -512,7 +512,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PagesCustomersWithOrderCountsAndFilter()
     {
         string region = "EU";

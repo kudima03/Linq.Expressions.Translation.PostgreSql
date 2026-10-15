@@ -1,15 +1,16 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using PgSqlParser;
 
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Infrastructure;
 
-public static class Sql
+public static partial class Sql
 {
     public static string Valid(string statement)
     {
         string single = Joined(statement);
         Assert.Equal(single.Trim(), single);
-        Assert.DoesNotContain("  ", single, StringComparison.Ordinal);
+        Assert.DoesNotContain("  ", WithoutLiterals(single), StringComparison.Ordinal);
         Assert.False(single.EndsWith(';'), single);
         Result<ParseResult> result = Parser.Parse(single);
         Assert.True(result.IsSuccess, $"{result.Error?.Message}: {single}");
@@ -17,6 +18,14 @@ public static class Sql
         _ = Assert.IsType<SelectStmt>(parsed.Stmt.Unwrap());
         return single;
     }
+
+    private static string WithoutLiterals(string statement)
+    {
+        return Literal().Replace(statement, "''");
+    }
+
+    [GeneratedRegex("'(?:[^']|'')*'")]
+    private static partial Regex Literal();
 
     private static string Joined(string statement)
     {

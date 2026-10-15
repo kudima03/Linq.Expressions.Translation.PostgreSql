@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record SkipTakeTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFirstRows()
     {
         Expression query = Customers.Take(5).Expression;
@@ -19,7 +19,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SkipsFirstRows()
     {
         Expression query = Customers.Skip(5).Expression;
@@ -36,7 +36,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SkipsThenTakes()
     {
         Expression query = Customers.Skip(5).Take(10).Expression;
@@ -53,7 +53,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesThenSkipsWithinTakenRows()
     {
         Expression query = Customers.Take(10).Skip(4).Expression;
@@ -70,7 +70,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsConsecutiveSkips()
     {
         Expression query = Customers.Skip(2).Skip(3).Expression;
@@ -87,7 +87,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsSmallerOfConsecutiveTakes()
     {
         Expression query = Customers.Take(10).Take(3).Expression;
@@ -104,7 +104,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsSmallerTakeWhenSecondIsLarger()
     {
         Expression query = Customers.Take(3).Take(10).Expression;
@@ -121,7 +121,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesSkipTakeSkip()
     {
         Expression query = Customers.Skip(5).Take(10).Skip(2).Expression;
@@ -138,7 +138,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesZeroRows()
     {
         Expression query = Customers.Take(0).Expression;
@@ -155,7 +155,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EvaluatesPagingArithmeticOfCapturedVariables()
     {
         int page = 3;
@@ -180,7 +180,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PagesAfterFilteringAndOrdering()
     {
         Expression query = Customers
@@ -204,7 +204,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsAfterPaging()
     {
         Expression query = Customers
@@ -226,7 +226,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsAfterSkip()
     {
         Expression query = Customers
@@ -248,7 +248,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PagesAfterProjection()
     {
         Expression query = Customers.Select(c => c.Name).Skip(1).Take(2).Expression;
@@ -265,7 +265,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsFilterAfterTake()
     {
         Expression query = Customers.Take(5).Where(c => c.IsActive).Expression;
@@ -286,7 +286,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsFilterAfterSkip()
     {
         Expression query = Customers.Skip(5).Where(c => c.IsActive).Expression;
@@ -307,7 +307,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsOrderingWhenFilteringAfterTake()
     {
         Expression query = Customers
@@ -334,7 +334,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsOrderingAfterTake()
     {
         Expression query = Customers.Take(5).OrderBy(c => c.Name).Expression;
@@ -355,7 +355,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsFilterAfterTakeOnProjection()
     {
         Expression query = Customers
@@ -380,7 +380,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void PagesTwiceAcrossFilter()
     {
         Expression query = Customers.Take(5).Where(c => c.IsActive).Take(2).Expression;
@@ -402,7 +402,7 @@ public sealed record SkipTakeTests
         );
     }
 
-    [Theory(Skip = Skipped.NotImplemented)]
+    [Theory]
     [InlineData(5, 10)]
     [InlineData(20, 20)]
     [InlineData(100, 1)]

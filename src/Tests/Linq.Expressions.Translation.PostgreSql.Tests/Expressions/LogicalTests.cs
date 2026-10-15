@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record LogicalTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesWithConditionalAnd()
     {
         Expression query = Orders
@@ -22,7 +22,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesWithConditionalOr()
     {
         Expression query = Orders
@@ -42,7 +42,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesWithNonShortCircuitAnd()
     {
         Expression query = Orders
@@ -62,7 +62,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesWithNonShortCircuitOr()
     {
         Expression query = Orders
@@ -82,7 +82,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesWithExclusiveOr()
     {
         Expression query = Orders
@@ -102,7 +102,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesBooleanColumn()
     {
         Expression query = Orders.Where(o => !o.IsPaid).Select(o => o.Id).Expression;
@@ -119,7 +119,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesComparison()
     {
         Expression query = Orders
@@ -139,7 +139,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesEquality()
     {
         Expression query = Orders
@@ -159,7 +159,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesDisjunction()
     {
         Expression query = Orders
@@ -179,7 +179,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesNegation()
     {
         Expression query = Orders.Where(o => !!o.IsPaid).Select(o => o.Id).Expression;
@@ -196,7 +196,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesBothOperandsOfConjunction()
     {
         Expression query = Orders
@@ -216,7 +216,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FlattensChainOfConjunctions()
     {
         Expression query = Orders
@@ -236,7 +236,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FlattensChainOfDisjunctions()
     {
         Expression query = Orders
@@ -256,7 +256,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesDisjunctionInsideConjunction()
     {
         Expression query = Orders
@@ -276,7 +276,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesConjunctionInsideDisjunction()
     {
         Expression query = Orders
@@ -296,7 +296,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ParenthesizesBothSidesOfMixedOperators()
     {
         Expression query = Orders
@@ -316,7 +316,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NestsThreeLevelsOfLogic()
     {
         Expression query = Orders
@@ -339,7 +339,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesBooleanColumns()
     {
         Expression query = Orders
@@ -359,7 +359,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConjunctionAsValue()
     {
         Expression query = Orders.Select(o => o.IsPaid && (o.Quantity > 1)).Expression;
@@ -375,7 +375,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsNegationAsValue()
     {
         Expression query = Orders.Select(o => !o.IsPaid).Expression;
@@ -391,7 +391,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsBooleanColumnAsValue()
     {
         Expression query = Orders.Select(o => o.IsPaid).Expression;
@@ -407,7 +407,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsLogicNextToColumn()
     {
         Expression query = Orders
@@ -425,7 +425,7 @@ public sealed record LogicalTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersWithLogicInSeparateWhereCalls()
     {
         Expression query = Orders

@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record StringTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsLength()
     {
         Expression query = Orders.Select(o => o.Number.Length).Expression;
@@ -18,7 +18,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsLengthOfNullableColumn()
     {
         Expression query = Orders.Select(o => o.Note!.Length).Expression;
@@ -34,7 +34,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsUpperCase()
     {
         Expression query = Orders.Select(o => o.Number.ToUpper()).Expression;
@@ -50,7 +50,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsLowerCase()
     {
         Expression query = Orders.Select(o => o.Number.ToLower()).Expression;
@@ -66,7 +66,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsInvariantUpperCase()
     {
         Expression query = Orders.Select(o => o.Number.ToUpperInvariant()).Expression;
@@ -82,7 +82,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsInvariantLowerCase()
     {
         Expression query = Orders.Select(o => o.Number.ToLowerInvariant()).Expression;
@@ -98,7 +98,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsTrimmed()
     {
         Expression query = Orders.Select(o => o.Number.Trim()).Expression;
@@ -114,7 +114,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsTrimmedStart()
     {
         Expression query = Orders.Select(o => o.Number.TrimStart()).Expression;
@@ -130,7 +130,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsTrimmedEnd()
     {
         Expression query = Orders.Select(o => o.Number.TrimEnd()).Expression;
@@ -146,7 +146,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsTrimmedOfCharacter()
     {
         Expression query = Orders.Select(o => o.Number.Trim('-')).Expression;
@@ -162,7 +162,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsTrimmedStartOfCharacter()
     {
         Expression query = Orders.Select(o => o.Number.TrimStart('-')).Expression;
@@ -178,7 +178,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsTrimmedEndOfCharacter()
     {
         Expression query = Orders.Select(o => o.Number.TrimEnd('-')).Expression;
@@ -194,7 +194,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsSubstringFromConstantStart()
     {
         Expression query = Orders.Select(o => o.Number.Substring(2)).Expression;
@@ -210,7 +210,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsSubstringFromConstantStartWithLength()
     {
         Expression query = Orders.Select(o => o.Number.Substring(2, 4)).Expression;
@@ -226,7 +226,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsSubstringFromColumnStart()
     {
         Expression query = Orders.Select(o => o.Number.Substring(o.Quantity)).Expression;
@@ -242,7 +242,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsSubstringFromColumnStartWithColumnLength()
     {
         Expression query = Orders
@@ -260,7 +260,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsSubstringFromStart()
     {
         Expression query = Orders.Select(o => o.Number.Substring(0, 3)).Expression;
@@ -276,7 +276,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsIndexOfString()
     {
         Expression query = Orders.Select(o => o.Number.IndexOf("-")).Expression;
@@ -292,7 +292,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsIndexOfCharacter()
     {
         Expression query = Orders.Select(o => o.Number.IndexOf('-')).Expression;
@@ -308,7 +308,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsIndexOfColumn()
     {
         Expression query = Orders.Select(o => o.Number.IndexOf(o.Note!)).Expression;
@@ -324,7 +324,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsReplacedString()
     {
         Expression query = Orders.Select(o => o.Number.Replace("-", "_")).Expression;
@@ -340,7 +340,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsReplacedCharacter()
     {
         Expression query = Orders.Select(o => o.Number.Replace('-', '_')).Expression;
@@ -356,10 +356,10 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsReplacedByColumn()
     {
-        Expression query = Orders.Select(o => o.Number.Replace("-", o.Note!)).Expression;
+        Expression query = Orders.Select(o => o.Number.Replace("-", o.Note)).Expression;
 
         Assert.Equal(
             Sql.Valid(
@@ -372,7 +372,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChainsStringFunctions()
     {
         Expression query = Orders.Select(o => o.Number.Trim().ToUpper()).Expression;
@@ -388,7 +388,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChainsSubstringAndUpperCase()
     {
         Expression query = Orders
@@ -406,7 +406,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChainsLengthOfTrimmed()
     {
         Expression query = Orders.Select(o => o.Number.Trim().Length).Expression;
@@ -422,7 +422,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsToLength()
     {
         Expression query = Orders.Select(o => o.Number.Length + 1).Expression;
@@ -438,7 +438,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatenatesColumnAndConstant()
     {
         Expression query = Orders.Select(o => o.Number + "-x").Expression;
@@ -454,7 +454,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatenatesConstantAndColumn()
     {
         Expression query = Orders.Select(o => "x-" + o.Number).Expression;
@@ -470,7 +470,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatenatesTwoColumns()
     {
         Expression query = Orders.Select(o => o.Number + o.Number).Expression;
@@ -486,7 +486,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatenatesThreeParts()
     {
         Expression query = Orders.Select(o => o.Number + "-" + o.Number).Expression;
@@ -502,7 +502,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TreatsNullableOperandAsEmptyWhenConcatenating()
     {
         Expression query = Orders.Select(o => o.Number + o.Note).Expression;
@@ -518,7 +518,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TreatsNullableOperandOnTheLeftAsEmpty()
     {
         Expression query = Orders.Select(o => o.Note + o.Number).Expression;
@@ -534,7 +534,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TreatsNullableOperandInChainAsEmpty()
     {
         Expression query = Orders.Select(o => o.Number + "-" + o.Note).Expression;
@@ -550,7 +550,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatenatesWithStringConcat()
     {
         Expression query = Orders.Select(o => string.Concat(o.Number, "-x")).Expression;
@@ -566,7 +566,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatenatesThreeWithStringConcat()
     {
         Expression query = Orders
@@ -584,7 +584,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatenatesNumberAfterToString()
     {
         Expression query = Orders
@@ -602,7 +602,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatenatesCapturedVariable()
     {
         string suffix = "-end";
@@ -620,7 +620,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConcatenatesParenthesizedUpperCase()
     {
         Expression query = Orders.Select(o => "[" + o.Number.ToUpper() + "]").Expression;
@@ -636,7 +636,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConvertsIntegerToText()
     {
         Expression query = Orders.Select(o => o.Quantity.ToString()).Expression;
@@ -652,7 +652,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConvertsLongToText()
     {
         Expression query = Orders.Select(o => o.Points.ToString()).Expression;
@@ -668,7 +668,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConvertsDecimalToText()
     {
         Expression query = Orders.Select(o => o.Total.ToString()).Expression;
@@ -684,7 +684,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConvertsDoubleToText()
     {
         Expression query = Orders.Select(o => o.Weight.ToString()).Expression;
@@ -700,7 +700,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConvertsGuidToText()
     {
         Expression query = Orders.Select(o => o.TrackingId.ToString()).Expression;
@@ -716,7 +716,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConvertsStringToItself()
     {
         Expression query = Orders.Select(o => o.Number.ToString()).Expression;
@@ -732,7 +732,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksNullOrEmptyAsValue()
     {
         Expression query = Orders.Select(o => string.IsNullOrEmpty(o.Note)).Expression;
@@ -748,7 +748,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNullOrEmpty()
     {
         Expression query = Orders
@@ -768,7 +768,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNotNullOrEmpty()
     {
         Expression query = Orders
@@ -788,7 +788,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNullOrEmptyOfNonNullableColumn()
     {
         Expression query = Orders
@@ -808,7 +808,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesNullOrEmptyWithOtherPredicate()
     {
         Expression query = Orders
@@ -828,7 +828,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByLength()
     {
         Expression query = Orders
@@ -848,7 +848,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByLengthOfNullableColumnNotNull()
     {
         Expression query = Orders
@@ -868,7 +868,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByUpperCaseEquality()
     {
         Expression query = Orders
@@ -888,7 +888,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByLowerCaseEqualityWithCapturedVariable()
     {
         string term = "abc";
@@ -910,7 +910,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByTrimmedEquality()
     {
         Expression query = Orders
@@ -930,7 +930,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersBySubstringEquality()
     {
         Expression query = Orders
@@ -950,7 +950,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByIndexOf()
     {
         Expression query = Orders
@@ -970,7 +970,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByIndexOfFound()
     {
         Expression query = Orders
@@ -990,7 +990,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByReplacedEquality()
     {
         Expression query = Orders
@@ -1010,7 +1010,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByConcatenationEquality()
     {
         Expression query = Orders
@@ -1030,7 +1030,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByContains()
     {
         Expression query = Orders
@@ -1050,7 +1050,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByContainsOfCharacter()
     {
         Expression query = Orders
@@ -1070,7 +1070,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByStartsWith()
     {
         Expression query = Orders
@@ -1090,7 +1090,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByEndsWith()
     {
         Expression query = Orders
@@ -1110,7 +1110,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNegatedContains()
     {
         Expression query = Orders
@@ -1130,7 +1130,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByStartsWithOfNullableColumn()
     {
         Expression query = Orders
@@ -1150,7 +1150,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByContainsOfCapturedVariable()
     {
         string term = "abc";
@@ -1172,7 +1172,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByStartsWithOfCharacter()
     {
         Expression query = Orders
@@ -1192,7 +1192,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByEndsWithOfCharacter()
     {
         Expression query = Orders
@@ -1212,7 +1212,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesPercentInContains()
     {
         Expression query = Orders
@@ -1232,7 +1232,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesUnderscoreInStartsWith()
     {
         Expression query = Orders
@@ -1252,7 +1252,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesBackslashInEndsWith()
     {
         Expression query = Orders
@@ -1272,7 +1272,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesAllWildcardsTogether()
     {
         Expression query = Orders
@@ -1292,7 +1292,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void DoublesQuoteInContains()
     {
         Expression query = Orders
@@ -1312,7 +1312,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void MatchesEverythingForEmptyContains()
     {
         Expression query = Orders
@@ -1332,7 +1332,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsColumnInsideColumnWithStrpos()
     {
         Expression query = Orders
@@ -1352,7 +1352,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsColumnPrefixWithStartsWith()
     {
         Expression query = Orders
@@ -1372,7 +1372,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsColumnSuffixWithRight()
     {
         Expression query = Orders
@@ -1392,7 +1392,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsComputedValueInsideColumn()
     {
         Expression query = Orders
@@ -1412,7 +1412,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LikesComputedColumnWithConstant()
     {
         Expression query = Orders
@@ -1432,7 +1432,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesLikeWithOtherPredicate()
     {
         Expression query = Orders
@@ -1452,7 +1452,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesTwoLikes()
     {
         Expression query = Orders
@@ -1472,7 +1472,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsLikeAsBooleanValue()
     {
         Expression query = Orders.Select(o => o.Number.Contains("ab")).Expression;
@@ -1488,7 +1488,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsLikeNextToColumn()
     {
         Expression query = Orders
@@ -1506,7 +1506,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConditionalOnLike()
     {
         Expression query = Orders
@@ -1524,7 +1524,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByLength()
     {
         Expression query = Orders
@@ -1545,7 +1545,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByLowerCase()
     {
         Expression query = Orders
@@ -1565,7 +1565,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByFirstCharacters()
     {
         Expression query = Orders
@@ -1586,7 +1586,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByUpperCase()
     {
         Expression query = Orders
@@ -1606,7 +1606,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsOnUpperCasedKeys()
     {
         Expression query = Customers
@@ -1630,7 +1630,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsLongestNumber()
     {
         Expression query = Orders.Executed(q => q.Max(o => o.Number.Length));
@@ -1646,7 +1646,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMinimumUpperCaseNumber()
     {
         Expression query = Orders.Executed(q => q.Min(o => o.Number.ToUpper()));
@@ -1662,7 +1662,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsMatchingStrings()
     {
         Expression query = Orders.Executed(q => q.Count(o => o.Number.StartsWith("A")));
@@ -1679,7 +1679,7 @@ public sealed record StringTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAnyMatchingString()
     {
         Expression query = Orders.Executed(q => q.Any(o => o.Number.Contains("ab")));

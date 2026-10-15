@@ -13,7 +13,7 @@ public sealed record ProjectionShapeTests
         public decimal Total { get; init; }
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsRecordThroughConstructor()
     {
         Expression query = Orders.Select(o => new Summary(o.Id, o.Number)).Expression;
@@ -29,7 +29,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AliasesComputedRecordArguments()
     {
         Expression query = Orders
@@ -47,7 +47,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FlattensNestedRecord()
     {
         Expression query = Orders
@@ -66,7 +66,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FlattensNestedMemberInitializer()
     {
         Expression query = Orders
@@ -89,7 +89,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FlattensDeeplyNestedAnonymousTypes()
     {
         Expression query = Orders
@@ -107,7 +107,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsEntityInsideAnonymousType()
     {
         Expression query = Orders
@@ -136,7 +136,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsMemberOfAnonymousMember()
     {
         Expression query = Orders
@@ -154,7 +154,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersOnMemberOfEntityInsideAnonymousType()
     {
         Expression query = Orders
@@ -177,7 +177,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersOnNestedAnonymousMember()
     {
         Expression query = Orders
@@ -198,7 +198,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByNestedRecordMember()
     {
         Expression query = Orders
@@ -219,7 +219,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ReusesProjectedMemberInSecondSelect()
     {
         Expression query = Orders
@@ -238,7 +238,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ReusesProjectedMemberInSecondSelectAndFilter()
     {
         Expression query = Orders
@@ -259,7 +259,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChainsThreeProjections()
     {
         Expression query = Orders
@@ -279,7 +279,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChainsMembersOfDateParts()
     {
         Expression query = Orders.Select(o => o.CreatedAt.Date.Year).Expression;
@@ -296,7 +296,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChainsMembersOfStringFunctions()
     {
         Expression query = Orders
@@ -314,7 +314,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChainsMembersOfNullableValue()
     {
         Expression query = Orders.Select(o => o.PaidAt!.Value.Year).Expression;
@@ -330,7 +330,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChainsMembersOfDateOnlyConversion()
     {
         Expression query = Orders
@@ -348,7 +348,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsLiteralsOfEveryKind()
     {
         Expression query = Orders
@@ -376,7 +376,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsFromJoinIntoNestedRecord()
     {
         Expression query = Customers
@@ -401,7 +401,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsFromGroupIntoRecord()
     {
         Expression query = Orders

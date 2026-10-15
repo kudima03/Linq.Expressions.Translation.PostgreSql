@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record GroupJoinTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsGroupedRowsInScalarSubquery()
     {
         Expression query = Customers
@@ -29,7 +29,7 @@ public sealed record GroupJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsGroupedRowsWithPredicate()
     {
         Expression query = Customers
@@ -56,7 +56,7 @@ public sealed record GroupJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LongCountsGroupedRows()
     {
         Expression query = Customers
@@ -83,7 +83,7 @@ public sealed record GroupJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsGroupedColumn()
     {
         Expression query = Customers
@@ -110,7 +110,7 @@ public sealed record GroupJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AveragesGroupedColumn()
     {
         Expression query = Customers
@@ -137,7 +137,7 @@ public sealed record GroupJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void MaximizesGroupedColumn()
     {
         Expression query = Customers
@@ -164,7 +164,7 @@ public sealed record GroupJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void MinimizesGroupedColumn()
     {
         Expression query = Customers
@@ -191,7 +191,7 @@ public sealed record GroupJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksExistenceOfGroupedRows()
     {
         Expression query = Customers
@@ -218,7 +218,7 @@ public sealed record GroupJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksExistenceOfGroupedRowsWithPredicate()
     {
         Expression query = Customers
@@ -245,7 +245,7 @@ public sealed record GroupJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAllGroupedRows()
     {
         Expression query = Customers
@@ -272,7 +272,7 @@ public sealed record GroupJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByAggregateOfGroupedRows()
     {
         Expression query = Customers
@@ -305,7 +305,7 @@ public sealed record GroupJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByAggregateOfGroupedRows()
     {
         Expression query = Customers
@@ -338,7 +338,7 @@ public sealed record GroupJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComputesSeveralAggregatesOfSameGroup()
     {
         Expression query = Customers
@@ -375,7 +375,7 @@ public sealed record GroupJoinTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AggregatesProjectedGroupedColumn()
     {
         Expression query = Customers

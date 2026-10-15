@@ -4,7 +4,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record ConversionTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsIntegerToLong()
     {
         Expression query = Orders.Select(o => (long)o.Quantity).Expression;
@@ -20,7 +20,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsIntegerToDecimal()
     {
         Expression query = Orders.Select(o => (decimal)o.Quantity).Expression;
@@ -36,7 +36,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsIntegerToDouble()
     {
         Expression query = Orders.Select(o => (double)o.Quantity).Expression;
@@ -52,7 +52,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsIntegerToFloat()
     {
         Expression query = Orders.Select(o => (float)o.Quantity).Expression;
@@ -68,7 +68,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsIntegerToShort()
     {
         Expression query = Orders.Select(o => (short)o.Quantity).Expression;
@@ -84,7 +84,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsLongToInteger()
     {
         Expression query = Orders.Select(o => (int)o.Points).Expression;
@@ -100,7 +100,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsLongToDouble()
     {
         Expression query = Orders.Select(o => (double)o.Points).Expression;
@@ -116,7 +116,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsLongToDecimal()
     {
         Expression query = Orders.Select(o => (decimal)o.Points).Expression;
@@ -132,7 +132,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsDecimalToDouble()
     {
         Expression query = Orders.Select(o => (double)o.Total).Expression;
@@ -148,7 +148,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsDoubleToDecimal()
     {
         Expression query = Orders.Select(o => (decimal)o.Weight).Expression;
@@ -164,7 +164,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsDoubleToFloat()
     {
         Expression query = Orders.Select(o => (float)o.Weight).Expression;
@@ -180,7 +180,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TruncatesDoubleWhenCastingToInteger()
     {
         Expression query = Orders.Select(o => (int)o.Weight).Expression;
@@ -196,7 +196,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TruncatesDoubleWhenCastingToLong()
     {
         Expression query = Orders.Select(o => (long)o.Weight).Expression;
@@ -212,7 +212,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TruncatesDecimalWhenCastingToInteger()
     {
         Expression query = Orders.Select(o => (int)o.Total).Expression;
@@ -228,7 +228,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TruncatesDecimalWhenCastingToLong()
     {
         Expression query = Orders.Select(o => (long)o.Total).Expression;
@@ -244,7 +244,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TruncatesNullableDecimalWhenCastingToNullableInteger()
     {
         Expression query = Orders.Select(o => (int?)o.Discount).Expression;
@@ -260,7 +260,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsNullableIntegerToNullableLong()
     {
         Expression query = Orders.Select(o => (long?)o.Priority).Expression;
@@ -276,7 +276,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsNullableIntegerToNullableDouble()
     {
         Expression query = Orders.Select(o => (double?)o.Priority).Expression;
@@ -292,7 +292,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void IgnoresEnumToUnderlyingConversion()
     {
         Expression query = Orders.Select(o => (int)o.Status).Expression;
@@ -308,7 +308,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void IgnoresUnderlyingToEnumConversion()
     {
         Expression query = Orders.Select(o => (OrderStatus)o.Quantity).Expression;
@@ -324,7 +324,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void IgnoresFlagsEnumToIntegerConversion()
     {
         Expression query = Orders.Select(o => (int)o.Options).Expression;
@@ -340,7 +340,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsEnumToLong()
     {
         Expression query = Orders.Select(o => (long)o.Status).Expression;
@@ -356,7 +356,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsEnumToDecimal()
     {
         Expression query = Orders.Select(o => (decimal)o.Status).Expression;
@@ -372,7 +372,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void IgnoresIdentityConversion()
     {
         Expression query = Orders.Select(o => (int)o.Quantity).Expression;
@@ -388,7 +388,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsInsideArithmetic()
     {
         Expression query = Orders.Select(o => (long)o.Quantity * o.Points).Expression;
@@ -404,7 +404,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsBeforeDivisionToKeepFraction()
     {
         Expression query = Orders
@@ -422,7 +422,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsOperandWhenAddingToDecimal()
     {
         Expression query = Orders.Select(o => (decimal)o.Quantity + o.Total).Expression;
@@ -438,7 +438,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsComputedExpression()
     {
         Expression query = Orders.Select(o => (long)(o.Quantity + 1)).Expression;
@@ -454,7 +454,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsCoalescedValue()
     {
         Expression query = Orders.Select(o => (long)(o.Priority ?? 0)).Expression;
@@ -470,7 +470,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsConditionalValue()
     {
         Expression query = Orders
@@ -488,7 +488,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CastsNextToColumn()
     {
         Expression query = Orders
@@ -506,7 +506,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByCastColumn()
     {
         Expression query = Orders
@@ -526,7 +526,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByCastColumnToDecimal()
     {
         Expression query = Orders
@@ -546,7 +546,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByTruncatedColumn()
     {
         Expression query = Orders
@@ -566,7 +566,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByEnumCastToInteger()
     {
         Expression query = Orders
@@ -586,7 +586,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByIntegerCastToEnum()
     {
         Expression query = Orders
@@ -606,7 +606,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByEnumCastFromCapturedInteger()
     {
         int code = 3;
@@ -628,7 +628,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByCastColumn()
     {
         Expression query = Orders
@@ -648,7 +648,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsByCastColumn()
     {
         Expression query = Orders
@@ -669,7 +669,7 @@ public sealed record ConversionTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsCastColumn()
     {
         Expression query = Orders.Executed(q => q.Sum(o => (decimal)o.Quantity));

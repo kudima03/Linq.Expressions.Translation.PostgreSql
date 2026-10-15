@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record SubqueryTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByExistingRelatedRows()
     {
         Expression query = Customers
@@ -26,7 +26,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByMissingRelatedRows()
     {
         Expression query = Customers
@@ -50,7 +50,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByRelatedRowsWithoutPredicate()
     {
         Expression query = Customers
@@ -74,7 +74,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByRelatedRowsMatchingExtraPredicate()
     {
         Expression query = Customers
@@ -98,7 +98,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByAllRelatedRowsMatching()
     {
         Expression query = Customers
@@ -122,7 +122,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesExistsWithOtherPredicate()
     {
         Expression query = Customers
@@ -146,7 +146,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesTwoExistsWithDisjunction()
     {
         Expression query = Customers
@@ -177,7 +177,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNestedExists()
     {
         Expression query = Customers
@@ -209,7 +209,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByCorrelatedCount()
     {
         Expression query = Customers
@@ -233,7 +233,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByCorrelatedSum()
     {
         Expression query = Customers
@@ -257,7 +257,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByCorrelatedMaximumEqualToColumn()
     {
         Expression query = Orders
@@ -284,7 +284,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByUncorrelatedAverage()
     {
         Expression query = Orders
@@ -307,7 +307,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByUncorrelatedMaximumOfFilteredRows()
     {
         Expression query = Orders
@@ -331,7 +331,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByDistinctCountOfRelatedRows()
     {
         Expression query = Customers
@@ -364,7 +364,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByMembershipInSubquery()
     {
         Expression query = Customers
@@ -387,7 +387,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNonMembershipInSubquery()
     {
         Expression query = Customers
@@ -410,7 +410,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByMembershipInFilteredSubquery()
     {
         Expression query = Orders
@@ -436,7 +436,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByMembershipInCapturedQuery()
     {
         IQueryable<int> active = Customers.Where(c => c.IsActive).Select(c => c.Id);
@@ -462,7 +462,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByMembershipInPagedSubquery()
     {
         Expression query = Orders
@@ -493,7 +493,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByMembershipInGroupedSubquery()
     {
         Expression query = Customers
@@ -524,7 +524,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersOrderLinesByMembershipInOrders()
     {
         Expression query = OrderLines
@@ -548,7 +548,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersEmployeesByManagerCondition()
     {
         Expression query = Employees
@@ -574,7 +574,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsCorrelatedCount()
     {
         Expression query = Customers
@@ -596,7 +596,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsCorrelatedSum()
     {
         Expression query = Customers
@@ -622,7 +622,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsCorrelatedMaximum()
     {
         Expression query = Customers
@@ -650,7 +650,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsCorrelatedExistence()
     {
         Expression query = Customers
@@ -676,7 +676,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsFirstValueOfCorrelatedRows()
     {
         Expression query = Customers
@@ -708,7 +708,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsSeveralCorrelatedValues()
     {
         Expression query = Customers
@@ -739,7 +739,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByCorrelatedCount()
     {
         Expression query = Customers
@@ -763,7 +763,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void GroupsBySubqueryFreeKeyAfterCorrelatedFilter()
     {
         Expression query = Customers
@@ -789,7 +789,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void JoinsAggregatedSubquery()
     {
         Expression query = Customers
@@ -823,7 +823,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LeftJoinsAggregatedSubquery()
     {
         Expression query = Customers
@@ -861,7 +861,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersJoinedSubqueryResult()
     {
         Expression query = Customers
@@ -899,7 +899,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsFromFilteredPagedSubquery()
     {
         Expression query = Customers
@@ -929,7 +929,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AveragesCorrelatedCounts()
     {
         Expression query = Customers
@@ -951,7 +951,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsRowsWithRelatedRows()
     {
         Expression query = Customers.Executed(q =>
@@ -974,7 +974,7 @@ public sealed record SubqueryTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksAnyRowWithRelatedRows()
     {
         Expression query = Customers.Executed(q =>

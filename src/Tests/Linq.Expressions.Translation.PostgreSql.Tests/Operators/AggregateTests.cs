@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record AggregateTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsRows()
     {
         Expression query = Customers.Executed(q => q.Count());
@@ -18,7 +18,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsRowsMatchingPredicate()
     {
         Expression query = Customers.Executed(q => q.Count(c => c.IsActive));
@@ -35,7 +35,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsRowsAfterFilter()
     {
         Expression query = Customers
@@ -54,7 +54,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsFilteredRowsMatchingPredicate()
     {
         Expression query = Customers
@@ -73,7 +73,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsProjectedRows()
     {
         Expression query = Customers.Select(c => c.Region).Executed(q => q.Count());
@@ -89,7 +89,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LongCountsRows()
     {
         Expression query = Customers.Executed(q => q.LongCount());
@@ -105,7 +105,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void LongCountsRowsMatchingPredicate()
     {
         Expression query = Customers.Executed(q => q.LongCount(c => c.IsActive));
@@ -122,7 +122,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CountsRowsMatchingCapturedPredicate()
     {
         int minimum = 3;
@@ -141,7 +141,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsCountAfterTake()
     {
         Expression query = Customers.Take(5).Executed(q => q.Count());
@@ -161,7 +161,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsCountPredicateAfterSkip()
     {
         Expression query = Customers
@@ -186,7 +186,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsCountAfterDistinct()
     {
         Expression query = Customers
@@ -208,7 +208,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsInteger()
     {
         Expression query = Orders.Executed(q => q.Sum(o => o.Quantity));
@@ -224,7 +224,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsLong()
     {
         Expression query = Orders.Executed(q => q.Sum(o => o.Points));
@@ -240,7 +240,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsDecimal()
     {
         Expression query = Orders.Executed(q => q.Sum(o => o.Total));
@@ -256,7 +256,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsDouble()
     {
         Expression query = Orders.Executed(q => q.Sum(o => o.Weight));
@@ -272,7 +272,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsNullableInteger()
     {
         Expression query = Orders.Executed(q => q.Sum(o => o.Priority));
@@ -288,7 +288,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsNullableDecimal()
     {
         Expression query = Orders.Executed(q => q.Sum(o => o.Discount));
@@ -304,7 +304,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsComputedValue()
     {
         Expression query = Orders.Executed(q => q.Sum(o => o.Total * o.Quantity));
@@ -320,7 +320,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsProjectedColumn()
     {
         Expression query = Orders.Select(o => o.Total).Executed(q => q.Sum());
@@ -336,7 +336,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SumsFilteredRows()
     {
         Expression query = Orders.Where(o => o.IsPaid).Executed(q => q.Sum(o => o.Total));
@@ -353,7 +353,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void WrapsSumAfterTake()
     {
         Expression query = Orders
@@ -381,7 +381,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AveragesInteger()
     {
         Expression query = Orders.Executed(q => q.Average(o => o.Quantity));
@@ -397,7 +397,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AveragesLong()
     {
         Expression query = Orders.Executed(q => q.Average(o => o.Points));
@@ -413,7 +413,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AveragesNullableInteger()
     {
         Expression query = Orders.Executed(q => q.Average(o => o.Priority));
@@ -429,7 +429,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AveragesDecimal()
     {
         Expression query = Orders.Executed(q => q.Average(o => o.Total));
@@ -445,7 +445,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AveragesDouble()
     {
         Expression query = Orders.Executed(q => q.Average(o => o.Weight));
@@ -461,7 +461,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AveragesNullableDecimal()
     {
         Expression query = Orders.Executed(q => q.Average(o => o.Discount));
@@ -477,7 +477,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AveragesFilteredProjection()
     {
         Expression query = Orders
@@ -497,7 +497,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMinimumInteger()
     {
         Expression query = Orders.Executed(q => q.Min(o => o.Quantity));
@@ -513,7 +513,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMaximumInteger()
     {
         Expression query = Orders.Executed(q => q.Max(o => o.Quantity));
@@ -529,7 +529,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMinimumDecimal()
     {
         Expression query = Orders.Executed(q => q.Min(o => o.Total));
@@ -545,7 +545,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMaximumDecimal()
     {
         Expression query = Orders.Executed(q => q.Max(o => o.Total));
@@ -561,7 +561,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMinimumString()
     {
         Expression query = Customers.Executed(q => q.Min(c => c.Name));
@@ -577,7 +577,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMaximumString()
     {
         Expression query = Customers.Executed(q => q.Max(c => c.Name));
@@ -593,7 +593,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMinimumDateTime()
     {
         Expression query = Orders.Executed(q => q.Min(o => o.CreatedAt));
@@ -609,7 +609,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMaximumNullableDateTimeOffset()
     {
         Expression query = Orders.Executed(q => q.Max(o => o.PaidAt));
@@ -625,7 +625,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMaximumNullableDateOnly()
     {
         Expression query = Orders.Executed(q => q.Max(o => o.ShippedOn));
@@ -641,7 +641,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMinimumTimeOnly()
     {
         Expression query = Orders.Executed(q => q.Min(o => o.DeliveryTime));
@@ -657,7 +657,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMaximumEnum()
     {
         Expression query = Orders.Executed(q => q.Max(o => o.Status));
@@ -673,7 +673,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMaximumOfProjectedColumn()
     {
         Expression query = Orders.Select(o => o.Total).Executed(q => q.Max());
@@ -689,7 +689,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMaximumOfFilteredRows()
     {
         Expression query = Orders.Where(o => o.IsPaid).Executed(q => q.Max(o => o.Total));
@@ -706,7 +706,7 @@ public sealed record AggregateTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsMaximumOfComputedValue()
     {
         Expression query = Orders.Executed(q => q.Max(o => o.Total - o.Discount));
