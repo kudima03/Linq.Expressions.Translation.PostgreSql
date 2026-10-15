@@ -179,7 +179,7 @@ public sealed record SelectManyTests
         Expression query = (
             from c in Customers
             from o in Orders.Where(o => o.CustomerId == c.Id).DefaultIfEmpty()
-            select new { c.Name, Total = (decimal?)o!.Total }
+            select new { c.Name, Total = (decimal?)o.Total }
         ).Expression;
 
         Assert.Equal(

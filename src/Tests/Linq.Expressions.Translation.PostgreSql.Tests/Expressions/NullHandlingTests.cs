@@ -1028,7 +1028,7 @@ public sealed record NullHandlingTests
     public void SelectsConditionalOnHasValue()
     {
         Expression query = Orders
-            .Select(o => o.Discount.HasValue ? o.Discount!.Value : 0m)
+            .Select(o => o.Discount.HasValue ? o.Discount.Value : 0m)
             .Expression;
 
         Assert.Equal(

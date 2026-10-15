@@ -83,7 +83,7 @@ public sealed record LeftJoinTests
             from c in Customers
             join o in Orders on c.Id equals o.CustomerId into g
             from o in g.DefaultIfEmpty()
-            select new { c.Name, OrderId = (int?)o!.Id }
+            select new { c.Name, OrderId = (int?)o.Id }
         ).Expression;
 
         Assert.Equal(

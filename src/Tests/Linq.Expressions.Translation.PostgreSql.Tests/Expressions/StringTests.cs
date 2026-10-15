@@ -359,7 +359,7 @@ public sealed record StringTests
     [Fact(Skip = Skipped.NotImplemented)]
     public void SelectsReplacedByColumn()
     {
-        Expression query = Orders.Select(o => o.Number.Replace("-", o.Note!)).Expression;
+        Expression query = Orders.Select(o => o.Number.Replace("-", o.Note)).Expression;
 
         Assert.Equal(
             Sql.Valid(
