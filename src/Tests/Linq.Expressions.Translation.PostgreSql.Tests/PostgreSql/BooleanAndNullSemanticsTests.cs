@@ -430,7 +430,7 @@ public sealed record BooleanAndNullSemanticsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsNullInStringFunctions()
     {
         Expression query = Orders.Select(o => o.Note!.ToUpper()).Expression;

@@ -1241,7 +1241,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesStringInsideInList()
     {
         string[] values = ["a", "b\n", "it's"];
@@ -1263,7 +1263,7 @@ public sealed record LiteralTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesStringInsideLikePattern()
     {
         Expression query = Orders

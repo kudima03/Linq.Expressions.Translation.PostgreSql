@@ -87,6 +87,8 @@ internal sealed partial class Translator
         {
             ConstantExpression constant => new SqlConstant(constant.Value, constant.Type),
             BinaryExpression binary => Binary(binary),
+            UnaryExpression { NodeType: ExpressionType.ArrayLength } length =>
+                new SqlFunction("CARDINALITY", [Sql(length.Operand)], typeof(int)),
             UnaryExpression unary => Unary(unary),
             ConditionalExpression conditional => Conditional(conditional),
             MethodCallExpression call => Method(call),
@@ -96,31 +98,15 @@ internal sealed partial class Translator
 
     private Shape Member(MemberExpression member)
     {
-        Shape owner = member.Expression is null
-            ? throw Unsupported.Member(member.Member)
-            : Shape(member.Expression);
+        if (member.Expression is null)
+        {
+            return new ScalarShape(StaticMember(member.Member));
+        }
+        Shape owner = Shape(member.Expression);
         return owner is ScalarShape scalar
                 ? new ScalarShape(ScalarMember(scalar.Value, member.Member))
             : owner is EntityShape entity ? entity.Member(member.Member)
             : ((ObjectShape)owner).Member(member.Member);
-    }
-
-    private static SqlExpression ScalarMember(SqlExpression owner, MemberInfo member)
-    {
-        return member.Name switch
-        {
-            nameof(Nullable<>.Value) when IsNullable(member) => owner,
-            nameof(Nullable<>.HasValue) when IsNullable(member) => new SqlIsNull(
-                owner,
-                true
-            ),
-            _ => throw Unsupported.Member(member),
-        };
-    }
-
-    private static bool IsNullable(MemberInfo member)
-    {
-        return Nullable.GetUnderlyingType(member.DeclaringType!) is not null;
     }
 
     private ObjectShape New(NewExpression creation)
@@ -300,6 +286,16 @@ internal sealed partial class Translator
         {
             Concatenated(addition.Left, parts);
             Concatenated(addition.Right, parts);
+            return;
+        }
+        if (
+            expression is MethodCallExpression { Method.Name: nameof(string.Concat) } call
+        )
+        {
+            foreach (Expression argument in call.Arguments)
+            {
+                Concatenated(argument, parts);
+            }
             return;
         }
         SqlExpression part = Sql(expression);

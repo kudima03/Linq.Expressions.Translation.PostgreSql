@@ -27,7 +27,7 @@ public sealed record OperatorChainTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ProjectsFiltersAndOrdersByComputedMember()
     {
         Expression query = Customers

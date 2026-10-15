@@ -70,7 +70,7 @@ public sealed record SelectTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AliasesRecordConstructorArgumentsByParameterName()
     {
         Expression query = Customers

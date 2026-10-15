@@ -291,7 +291,7 @@ public sealed record ScenarioTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FindsDeliveriesInBusinessHours()
     {
         Expression query = Orders

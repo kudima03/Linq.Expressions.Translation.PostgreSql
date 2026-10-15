@@ -29,7 +29,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AliasesComputedRecordArguments()
     {
         Expression query = Orders
@@ -279,7 +279,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChainsMembersOfDateParts()
     {
         Expression query = Orders.Select(o => o.CreatedAt.Date.Year).Expression;
@@ -296,7 +296,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChainsMembersOfStringFunctions()
     {
         Expression query = Orders
@@ -314,7 +314,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChainsMembersOfNullableValue()
     {
         Expression query = Orders.Select(o => o.PaidAt!.Value.Year).Expression;
@@ -330,7 +330,7 @@ public sealed record ProjectionShapeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChainsMembersOfDateOnlyConversion()
     {
         Expression query = Orders

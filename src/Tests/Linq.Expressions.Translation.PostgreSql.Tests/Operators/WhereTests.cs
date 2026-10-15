@@ -391,7 +391,7 @@ public sealed record WhereTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersAfterProjectionToComputedMember()
     {
         Expression query = Customers

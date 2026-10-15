@@ -60,16 +60,23 @@ internal sealed partial class Translator
 
     private static SqlExpression And(SqlExpression? left, SqlExpression right)
     {
-        return left is null
-            ? right
-            : new SqlBinary(
-                "AND",
-                SqlBinaryKind.Logical,
-                left,
-                right,
-                typeof(bool),
-                false
-            );
+        return left is null ? right : Logical("AND", left, right);
+    }
+
+    private static SqlBinary Logical(
+        string symbol,
+        SqlExpression left,
+        SqlExpression right
+    )
+    {
+        return new SqlBinary(
+            symbol,
+            SqlBinaryKind.Logical,
+            left,
+            right,
+            typeof(bool),
+            left.Nullable || right.Nullable
+        );
     }
 
     private SqlQuery Query(Expression expression)

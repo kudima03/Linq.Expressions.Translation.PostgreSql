@@ -13,9 +13,11 @@ Translated so far:
 
 - `Where`, `Select`, `OrderBy`/`OrderByDescending`/`ThenBy`/`ThenByDescending`, `Skip`, `Take`, `Distinct`, `Reverse`, `Cast` and `OfType`; an operator that cannot extend the current `SELECT` (for example `Where` after `Take`) wraps it into a derived table.
 - Comparison, logical, arithmetic, bitwise and conditional operators, `??`, conversions, string concatenation and `Nullable<T>` members.
+- `string` members (`Length`, case conversion, trimming, `Substring`, `IndexOf`, `Replace`, `Contains`/`StartsWith`/`EndsWith` as `LIKE` with escaped wildcards, `IsNullOrEmpty`, `Concat`), `Math` functions, date and time parts and arithmetic (`DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`), `DateTime.Now`/`UtcNow`, `Guid.NewGuid`, `Enum.HasFlag` and `ToString` of numbers and `Guid`.
+- `Contains` on in-memory collections (`IN (...)`) and on array columns (`= ANY (...)`), plus array `Length`.
 - Captured variables and parameter-free subtrees, which are evaluated in memory and rendered as literals.
 
-Joins, grouping, aggregates, set operations, subqueries and string, `Math` and date/time members are not translated yet; they throw `NotSupportedException`.
+Joins, grouping, aggregates, set operations and subqueries are not translated yet; they throw `NotSupportedException`.
 
 ## Overview
 

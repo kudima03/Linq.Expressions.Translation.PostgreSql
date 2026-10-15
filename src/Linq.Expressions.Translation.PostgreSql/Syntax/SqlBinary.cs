@@ -7,8 +7,10 @@ internal sealed class SqlBinary(
     SqlExpression right,
     Type type,
     bool nullable
-) : SqlExpression(type, nullable)
+) : SqlExpression(type)
 {
+    public override bool Nullable => nullable;
+
     public string Symbol { get; } = symbol;
 
     public SqlBinaryKind Kind { get; } = kind;

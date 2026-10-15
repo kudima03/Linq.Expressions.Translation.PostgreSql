@@ -296,7 +296,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByHasFlag()
     {
         Expression query = Orders
@@ -316,7 +316,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByHasCombinedFlags()
     {
         Expression query = Orders
@@ -338,7 +338,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNegatedHasFlag()
     {
         Expression query = Orders
@@ -358,7 +358,7 @@ public sealed record BitwiseTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByHasFlagFromCapturedVariable()
     {
         ShippingOptions wanted = ShippingOptions.Insured | ShippingOptions.Fragile;

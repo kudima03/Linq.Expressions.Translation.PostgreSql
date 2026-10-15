@@ -211,7 +211,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByComputedKey()
     {
         Expression query = Customers.OrderBy(c => c.Name.Length).Expression;
@@ -358,7 +358,7 @@ public sealed record OrderByTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByProjectedMember()
     {
         Expression query = Customers

@@ -4,8 +4,10 @@ internal sealed class SqlCase(
     IReadOnlyList<SqlWhen> whens,
     SqlExpression otherwise,
     Type type
-) : SqlExpression(type, System.Nullable.GetUnderlyingType(type) is not null)
+) : SqlExpression(type)
 {
+    public override bool Nullable => System.Nullable.GetUnderlyingType(Type) is not null;
+
     public IReadOnlyList<SqlWhen> Whens { get; } = whens;
 
     public SqlExpression Otherwise { get; } = otherwise;

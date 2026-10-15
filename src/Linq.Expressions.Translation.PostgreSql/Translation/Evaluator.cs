@@ -4,6 +4,13 @@ namespace Linq.Expressions.Translation.PostgreSql.Translation;
 
 internal sealed class Evaluator(HashSet<Expression> candidates) : ExpressionVisitor
 {
+    private static readonly HashSet<string> Clocks =
+    [
+        nameof(DateTime.Now),
+        nameof(DateTime.UtcNow),
+        nameof(DateTime.Today),
+    ];
+
     public static Expression Evaluate(Expression expression)
     {
         Nominator nominator = new();
@@ -62,9 +69,16 @@ internal sealed class Evaluator(HashSet<Expression> candidates) : ExpressionVisi
 
     private static bool IsClock(Expression node)
     {
-        return node is MemberExpression { Expression: null } member
-            && member.Member.DeclaringType == typeof(DateTime)
-            && member.Member.Name == nameof(DateTime.Today);
+        return node switch
+        {
+            MemberExpression { Expression: null } member => (
+                member.Member.DeclaringType == typeof(DateTime)
+                || member.Member.DeclaringType == typeof(DateTimeOffset)
+            ) && Clocks.Contains(member.Member.Name),
+            MethodCallExpression call => call.Method.DeclaringType == typeof(Guid)
+                && call.Method.Name == nameof(Guid.NewGuid),
+            _ => false,
+        };
     }
 
     private static bool IsQueryOperator(Expression node)

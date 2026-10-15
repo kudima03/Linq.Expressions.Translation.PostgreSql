@@ -1,10 +1,10 @@
 namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 
-internal abstract class SqlExpression(Type type, bool nullable)
+internal abstract class SqlExpression(Type type)
 {
     public Type Type { get; } = type;
 
-    public bool Nullable { get; } = nullable;
+    public virtual bool Nullable => false;
 
     public virtual bool IsCompound(SqlMode mode)
     {

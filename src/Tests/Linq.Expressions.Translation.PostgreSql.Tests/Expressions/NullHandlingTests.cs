@@ -1277,7 +1277,7 @@ public sealed record NullHandlingTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChecksStringMemberOfColumnForNull()
     {
         Expression query = Orders

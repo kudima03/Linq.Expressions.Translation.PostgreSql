@@ -18,7 +18,7 @@ public sealed record GuidAndEnumTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsNewGuid()
     {
         Expression query = Orders.Select(o => Guid.NewGuid()).Expression;
@@ -34,7 +34,7 @@ public sealed record GuidAndEnumTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsNewGuidNextToColumn()
     {
         Expression query = Orders
@@ -188,7 +188,7 @@ public sealed record GuidAndEnumTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNewGuidComparison()
     {
         Expression query = Orders
@@ -208,7 +208,7 @@ public sealed record GuidAndEnumTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByGuidText()
     {
         Expression query = Orders
@@ -539,7 +539,7 @@ public sealed record GuidAndEnumTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByEnumInArray()
     {
         Expression query = Orders
@@ -561,7 +561,7 @@ public sealed record GuidAndEnumTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByEnumNotInCapturedList()
     {
         OrderStatus[] statuses = [OrderStatus.Created, OrderStatus.Cancelled];

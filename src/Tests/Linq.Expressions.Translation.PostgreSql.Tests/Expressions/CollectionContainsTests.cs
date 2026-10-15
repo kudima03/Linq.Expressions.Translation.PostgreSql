@@ -4,7 +4,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record CollectionContainsTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByIntegerArray()
     {
         int[] ids = [1, 2, 3];
@@ -26,7 +26,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByIntegerList()
     {
         List<int> ids = [1, 2, 3];
@@ -48,7 +48,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByIntegerHashSet()
     {
         HashSet<int> ids = [1, 2, 3];
@@ -70,7 +70,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByEnumerableInterface()
     {
         IEnumerable<int> ids = [4, 5];
@@ -92,7 +92,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByReadOnlyList()
     {
         IReadOnlyList<int> ids = [4, 5];
@@ -114,7 +114,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByInlineArray()
     {
         Expression query = Orders
@@ -134,7 +134,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersBySingleElement()
     {
         Expression query = Orders
@@ -154,7 +154,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByStaticEnumerableContains()
     {
         int[] ids = [1, 2, 3];
@@ -176,7 +176,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void KeepsDuplicatesAndOrderOfElements()
     {
         int[] ids = [3, 1, 3];
@@ -198,7 +198,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByStringArray()
     {
         string[] names = ["A-1", "B-2"];
@@ -220,7 +220,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void EscapesQuotesInStringElements()
     {
         string[] names = ["O'Brien", "x"];
@@ -242,7 +242,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByLongArray()
     {
         long[] points = [1L, 5000000000L];
@@ -264,7 +264,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByDecimalList()
     {
         List<decimal> totals = [1.5m, 10m];
@@ -286,7 +286,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByGuidArray()
     {
         Guid[] ids = [Guid.Parse("11111111-2222-3333-4444-555555555555"), Guid.Empty];
@@ -309,7 +309,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByDateTimeArray()
     {
         DateTime[] dates = [new DateTime(2024, 1, 1), new DateTime(2024, 6, 1, 12, 0, 0)];
@@ -332,7 +332,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByBooleanArray()
     {
         bool[] flags = [true];
@@ -354,7 +354,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByNullableIntegerListWithColumn()
     {
         int?[] ids = [1, 2];
@@ -376,7 +376,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByValueOfNullableColumn()
     {
         int[] ids = [1, 2];
@@ -398,7 +398,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsNullCheckForNullElement()
     {
         string?[] names = ["a", null];
@@ -420,7 +420,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsNullCheckForNullElementInTheMiddle()
     {
         int?[] ids = [1, null, 3];
@@ -442,7 +442,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ReturnsFalseForEmptyArray()
     {
         int[] ids = [];
@@ -464,7 +464,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ReturnsFalseForEmptyList()
     {
         List<int> ids = [];
@@ -486,7 +486,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesContainsOfEmptyArray()
     {
         int[] ids = [];
@@ -508,7 +508,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NegatesContains()
     {
         int[] ids = [1, 2, 3];
@@ -530,7 +530,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesContainsWithComparison()
     {
         int[] ids = [1, 2];
@@ -552,7 +552,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesTwoContains()
     {
         int[] ids = [1, 2];
@@ -575,7 +575,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByContainsOfComputedValue()
     {
         int[] ids = [2, 3];
@@ -597,7 +597,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByContainsOfStringFunction()
     {
         string[] names = ["A", "B"];
@@ -619,7 +619,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByContainsOfDatePart()
     {
         int[] years = [2023, 2024];
@@ -641,7 +641,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByContainsOfCastColumn()
     {
         long[] ids = [1L, 2L];
@@ -663,7 +663,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByContainsInRecordMember()
     {
         Filter filter = new([8, 9]);
@@ -685,7 +685,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByContainsInCapturedMemberChain()
     {
         Holder holder = new(new Filter([8, 9]));
@@ -707,7 +707,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsContainsAsBooleanValue()
     {
         int[] ids = [1, 2];
@@ -725,7 +725,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsContainsNextToColumn()
     {
         int[] ids = [1, 2];
@@ -745,7 +745,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsConditionalOnContains()
     {
         int[] ids = [1, 2];
@@ -763,7 +763,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByArrayColumnContains()
     {
         Expression query = Orders
@@ -783,7 +783,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByArrayColumnContainsColumn()
     {
         Expression query = Orders
@@ -803,7 +803,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByArrayColumnContainsCapturedValue()
     {
         string tag = "vip";
@@ -825,7 +825,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByArrayColumnNotContains()
     {
         Expression query = Orders
@@ -845,7 +845,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByArrayColumnLength()
     {
         Expression query = Orders
@@ -865,7 +865,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByEmptyArrayColumn()
     {
         Expression query = Orders
@@ -885,7 +885,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void CombinesArrayContainsWithOtherPredicate()
     {
         Expression query = Orders
@@ -921,7 +921,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsArrayLength()
     {
         Expression query = Orders.Select(o => o.Tags.Length).Expression;
@@ -937,7 +937,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsArrayContainsAsBooleanValue()
     {
         Expression query = Orders.Select(o => o.Tags.Contains("vip")).Expression;
@@ -953,7 +953,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByArrayLength()
     {
         Expression query = Orders
@@ -995,7 +995,7 @@ public sealed record CollectionContainsTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersCustomersByIdList()
     {
         int[] ids = [1, 2, 3];

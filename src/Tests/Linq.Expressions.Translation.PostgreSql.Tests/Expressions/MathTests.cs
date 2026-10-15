@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record MathTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesAbsoluteInteger()
     {
         Expression query = Orders.Select(o => Math.Abs(o.Quantity)).Expression;
@@ -18,7 +18,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesAbsoluteLong()
     {
         Expression query = Orders.Select(o => Math.Abs(o.Points)).Expression;
@@ -34,7 +34,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesAbsoluteDecimal()
     {
         Expression query = Orders.Select(o => Math.Abs(o.Total)).Expression;
@@ -50,7 +50,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesAbsoluteDouble()
     {
         Expression query = Orders.Select(o => Math.Abs(o.Weight)).Expression;
@@ -66,7 +66,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesAbsoluteOfExpression()
     {
         Expression query = Orders
@@ -84,7 +84,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesCeilingOfDecimal()
     {
         Expression query = Orders.Select(o => Math.Ceiling(o.Total)).Expression;
@@ -100,7 +100,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesCeilingOfDouble()
     {
         Expression query = Orders.Select(o => Math.Ceiling(o.Weight)).Expression;
@@ -116,7 +116,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFloorOfDecimal()
     {
         Expression query = Orders.Select(o => Math.Floor(o.Total)).Expression;
@@ -132,7 +132,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesFloorOfDouble()
     {
         Expression query = Orders.Select(o => Math.Floor(o.Weight)).Expression;
@@ -148,7 +148,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TruncatesDecimal()
     {
         Expression query = Orders.Select(o => Math.Truncate(o.Total)).Expression;
@@ -164,7 +164,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TruncatesDouble()
     {
         Expression query = Orders.Select(o => Math.Truncate(o.Weight)).Expression;
@@ -180,7 +180,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesSquareRoot()
     {
         Expression query = Orders.Select(o => Math.Sqrt(o.Weight)).Expression;
@@ -196,7 +196,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesSquareRootOfInteger()
     {
         Expression query = Orders.Select(o => Math.Sqrt(o.Quantity)).Expression;
@@ -212,7 +212,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RaisesToPower()
     {
         Expression query = Orders.Select(o => Math.Pow(o.Weight, 2)).Expression;
@@ -228,7 +228,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RaisesToPowerOfColumn()
     {
         Expression query = Orders.Select(o => Math.Pow(o.Weight, o.Weight)).Expression;
@@ -244,7 +244,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RaisesIntegerToPower()
     {
         Expression query = Orders.Select(o => Math.Pow(o.Quantity, 2)).Expression;
@@ -260,7 +260,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RaisesToFractionalPower()
     {
         Expression query = Orders.Select(o => Math.Pow(o.Weight, 0.5)).Expression;
@@ -276,7 +276,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesExponential()
     {
         Expression query = Orders.Select(o => Math.Exp(o.Weight)).Expression;
@@ -292,7 +292,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesNaturalLogarithm()
     {
         Expression query = Orders.Select(o => Math.Log(o.Weight)).Expression;
@@ -308,7 +308,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesDecimalLogarithm()
     {
         Expression query = Orders.Select(o => Math.Log10(o.Weight)).Expression;
@@ -324,7 +324,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesSignOfInteger()
     {
         Expression query = Orders.Select(o => Math.Sign(o.Quantity)).Expression;
@@ -340,7 +340,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesSignOfDecimal()
     {
         Expression query = Orders.Select(o => Math.Sign(o.Total)).Expression;
@@ -356,7 +356,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesSignOfDouble()
     {
         Expression query = Orders.Select(o => Math.Sign(o.Weight)).Expression;
@@ -372,7 +372,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesGreatestOfColumns()
     {
         Expression query = Orders
@@ -390,7 +390,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesGreatestOfColumnAndConstant()
     {
         Expression query = Orders.Select(o => Math.Max(o.Quantity, 10)).Expression;
@@ -406,7 +406,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesLeastOfColumns()
     {
         Expression query = Orders
@@ -424,7 +424,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesLeastOfDecimals()
     {
         Expression query = Orders.Select(o => Math.Min(o.Total, 100m)).Expression;
@@ -440,7 +440,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesGreatestOfDoubles()
     {
         Expression query = Orders.Select(o => Math.Max(o.Weight, 0.5)).Expression;
@@ -456,7 +456,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesGreatestOfLongs()
     {
         Expression query = Orders.Select(o => Math.Max(o.Points, 0L)).Expression;
@@ -472,7 +472,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ClampsWithMinAndMax()
     {
         Expression query = Orders
@@ -490,7 +490,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RoundsDecimalAwayFromZero()
     {
         Expression query = Orders
@@ -508,7 +508,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RoundsDecimalToDigitsAwayFromZero()
     {
         Expression query = Orders
@@ -526,7 +526,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RoundsDecimalToNegativeDigits()
     {
         Expression query = Orders
@@ -544,7 +544,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void RoundsComputedDecimal()
     {
         Expression query = Orders
@@ -562,7 +562,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NestsMathFunctions()
     {
         Expression query = Orders.Select(o => Math.Abs(Math.Floor(o.Weight))).Expression;
@@ -578,7 +578,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void NestsMathFunctionsWithMaximum()
     {
         Expression query = Orders
@@ -596,7 +596,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void UsesMathFunctionInsideArithmetic()
     {
         Expression query = Orders.Select(o => Math.Abs(o.Quantity) * 2).Expression;
@@ -612,7 +612,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void UsesMathFunctionOnBothSides()
     {
         Expression query = Orders
@@ -630,7 +630,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConvertsCeilingToInteger()
     {
         Expression query = Orders.Select(o => (int)Math.Ceiling(o.Weight)).Expression;
@@ -712,7 +712,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TakesMathFunctionNextToColumn()
     {
         Expression query = Orders
@@ -730,7 +730,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByAbsoluteValue()
     {
         Expression query = Orders
@@ -750,7 +750,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByRoundedValue()
     {
         Expression query = Orders
@@ -770,7 +770,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByFloor()
     {
         Expression query = Orders
@@ -790,7 +790,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByGreatest()
     {
         Expression query = Orders
@@ -810,7 +810,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByPower()
     {
         Expression query = Orders
@@ -830,7 +830,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersBySign()
     {
         Expression query = Orders
@@ -850,7 +850,7 @@ public sealed record MathTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByAbsoluteValue()
     {
         Expression query = Orders

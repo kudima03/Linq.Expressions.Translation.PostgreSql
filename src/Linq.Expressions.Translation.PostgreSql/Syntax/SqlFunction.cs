@@ -5,8 +5,10 @@ internal sealed class SqlFunction(
     IReadOnlyList<SqlExpression> arguments,
     Type type,
     bool nullable
-) : SqlExpression(type, nullable)
+) : SqlExpression(type)
 {
+    public override bool Nullable => nullable;
+
     public SqlFunction(string name, IReadOnlyList<SqlExpression> arguments, Type type)
         : this(name, arguments, type, System.Nullable.GetUnderlyingType(type) is not null)
     { }

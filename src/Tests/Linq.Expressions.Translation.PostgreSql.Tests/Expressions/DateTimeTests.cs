@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record DateTimeTests
 {
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsYearOfDateTime()
     {
         Expression query = Orders.Select(o => o.CreatedAt.Year).Expression;
@@ -18,7 +18,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsMonthOfDateTime()
     {
         Expression query = Orders.Select(o => o.CreatedAt.Month).Expression;
@@ -34,7 +34,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsDayOfDateTime()
     {
         Expression query = Orders.Select(o => o.CreatedAt.Day).Expression;
@@ -50,7 +50,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsHourOfDateTime()
     {
         Expression query = Orders.Select(o => o.CreatedAt.Hour).Expression;
@@ -66,7 +66,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsMinuteOfDateTime()
     {
         Expression query = Orders.Select(o => o.CreatedAt.Minute).Expression;
@@ -82,7 +82,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsSecondOfDateTime()
     {
         Expression query = Orders.Select(o => o.CreatedAt.Second).Expression;
@@ -98,7 +98,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsDayOfYearOfDateTime()
     {
         Expression query = Orders.Select(o => o.CreatedAt.DayOfYear).Expression;
@@ -114,7 +114,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsDayOfWeekOfDateTime()
     {
         Expression query = Orders.Select(o => o.CreatedAt.DayOfWeek).Expression;
@@ -130,7 +130,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsDateOfDateTime()
     {
         Expression query = Orders.Select(o => o.CreatedAt.Date).Expression;
@@ -146,7 +146,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsDatePartsNextToColumn()
     {
         Expression query = Orders
@@ -171,7 +171,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsDays()
     {
         Expression query = Orders.Select(o => o.CreatedAt.AddDays(7)).Expression;
@@ -187,7 +187,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SubtractsDays()
     {
         Expression query = Orders.Select(o => o.CreatedAt.AddDays(-7)).Expression;
@@ -203,7 +203,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsFractionalDays()
     {
         Expression query = Orders.Select(o => o.CreatedAt.AddDays(1.5)).Expression;
@@ -219,7 +219,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsMonths()
     {
         Expression query = Orders.Select(o => o.CreatedAt.AddMonths(3)).Expression;
@@ -235,7 +235,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsYears()
     {
         Expression query = Orders.Select(o => o.CreatedAt.AddYears(1)).Expression;
@@ -251,7 +251,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsHours()
     {
         Expression query = Orders.Select(o => o.CreatedAt.AddHours(2)).Expression;
@@ -267,7 +267,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsMinutes()
     {
         Expression query = Orders.Select(o => o.CreatedAt.AddMinutes(30)).Expression;
@@ -283,7 +283,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsSeconds()
     {
         Expression query = Orders.Select(o => o.CreatedAt.AddSeconds(45)).Expression;
@@ -299,7 +299,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsDaysFromColumn()
     {
         Expression query = Orders.Select(o => o.CreatedAt.AddDays(o.Quantity)).Expression;
@@ -315,7 +315,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsMonthsFromColumn()
     {
         Expression query = Orders
@@ -333,7 +333,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsYearsFromColumn()
     {
         Expression query = Orders
@@ -351,7 +351,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ChainsDateAdditions()
     {
         Expression query = Orders
@@ -369,7 +369,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void TruncatesAfterAddingDays()
     {
         Expression query = Orders.Select(o => o.CreatedAt.AddDays(1).Date).Expression;
@@ -385,7 +385,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ExtractsPartOfShiftedDate()
     {
         Expression query = Orders.Select(o => o.CreatedAt.AddMonths(1).Month).Expression;
@@ -437,7 +437,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByYear()
     {
         Expression query = Orders
@@ -457,7 +457,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByMonthRange()
     {
         Expression query = Orders
@@ -477,7 +477,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByDayOfWeek()
     {
         Expression query = Orders
@@ -497,7 +497,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByDayOfWeekOutsideWeekend()
     {
         Expression query = Orders
@@ -520,7 +520,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByHourOfDay()
     {
         Expression query = Orders
@@ -540,7 +540,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByDate()
     {
         Expression query = Orders
@@ -561,7 +561,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByShiftedDate()
     {
         Expression query = Orders
@@ -668,7 +668,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByCurrentLocalTime()
     {
         Expression query = Orders
@@ -688,7 +688,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByCurrentUtcTime()
     {
         Expression query = Orders
@@ -708,7 +708,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByCurrentTimeShiftedIntoPast()
     {
         Expression query = Orders
@@ -728,7 +728,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByOffsetTimeBeforeNow()
     {
         Expression query = Orders
@@ -790,7 +790,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByYearOfNullableDateTimeOffset()
     {
         Expression query = Orders
@@ -875,7 +875,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsYearOfDateOnly()
     {
         Expression query = Orders.Select(o => o.ShippedOn!.Value.Year).Expression;
@@ -891,7 +891,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsMonthOfDateOnly()
     {
         Expression query = Orders.Select(o => o.ShippedOn!.Value.Month).Expression;
@@ -907,7 +907,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsDayOfDateOnly()
     {
         Expression query = Orders.Select(o => o.ShippedOn!.Value.Day).Expression;
@@ -923,7 +923,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsDayOfWeekOfDateOnly()
     {
         Expression query = Orders.Select(o => o.ShippedOn!.Value.DayOfWeek).Expression;
@@ -939,7 +939,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsDayOfYearOfDateOnly()
     {
         Expression query = Orders.Select(o => o.ShippedOn!.Value.DayOfYear).Expression;
@@ -955,7 +955,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsDaysToDateOnly()
     {
         Expression query = Orders.Select(o => o.ShippedOn!.Value.AddDays(7)).Expression;
@@ -971,7 +971,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SubtractsDaysFromDateOnly()
     {
         Expression query = Orders.Select(o => o.ShippedOn!.Value.AddDays(-1)).Expression;
@@ -987,7 +987,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsDaysFromColumnToDateOnly()
     {
         Expression query = Orders
@@ -1005,7 +1005,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ConvertsDateTimeToDateOnly()
     {
         Expression query = Orders
@@ -1023,7 +1023,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void AddsDaysToConvertedDateOnly()
     {
         Expression query = Orders
@@ -1041,7 +1041,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void ComparesDateOnlyWithConvertedDateTime()
     {
         Expression query = Orders
@@ -1104,7 +1104,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByDateOnlyMonth()
     {
         Expression query = Orders
@@ -1146,7 +1146,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByDateOnlyAfterShift()
     {
         Expression query = Orders
@@ -1166,7 +1166,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsHourOfTime()
     {
         Expression query = Orders.Select(o => o.DeliveryTime.Hour).Expression;
@@ -1182,7 +1182,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsMinuteOfTime()
     {
         Expression query = Orders.Select(o => o.DeliveryTime.Minute).Expression;
@@ -1198,7 +1198,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void SelectsSecondOfTime()
     {
         Expression query = Orders.Select(o => o.DeliveryTime.Second).Expression;
@@ -1257,7 +1257,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void FiltersByHourOfTime()
     {
         Expression query = Orders
@@ -1297,7 +1297,7 @@ public sealed record DateTimeTests
         );
     }
 
-    [Fact(Skip = Skipped.NotImplemented)]
+    [Fact]
     public void OrdersByDate()
     {
         Expression query = Orders

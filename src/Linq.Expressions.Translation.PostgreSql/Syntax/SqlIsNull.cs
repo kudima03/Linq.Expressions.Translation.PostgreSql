@@ -1,7 +1,7 @@
 namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 
 internal sealed class SqlIsNull(SqlExpression operand, bool negated)
-    : SqlExpression(typeof(bool), false)
+    : SqlExpression(typeof(bool))
 {
     public override bool IsCompound(SqlMode mode)
     {
