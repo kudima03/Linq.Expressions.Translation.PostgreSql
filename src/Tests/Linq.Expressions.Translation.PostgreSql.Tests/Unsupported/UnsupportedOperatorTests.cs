@@ -1,0 +1,726 @@
+#pragma warning disable CA1861 // constant arrays are the subject
+#pragma warning disable IDE0300 // the collection types are the subject
+#pragma warning disable IDE0028 // the collection types are the subject
+
+namespace Linq.Expressions.Translation.PostgreSql.Tests.Unsupported;
+
+public sealed record UnsupportedOperatorTests
+{
+    private static int Helper(int value)
+    {
+        return value;
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsGroupByReturningGroupings()
+    {
+        Expression query = Customers.GroupBy(c => c.Region).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("GroupBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsGroupByWithElementSelectorReturningGroupings()
+    {
+        Expression query = Customers.GroupBy(c => c.Region, c => c.Name).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("GroupBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsFirstElementOfGroup()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.First())
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("First", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsMaterializingGroup()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.ToList())
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("ToList", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsSelectingTheGroupItself()
+    {
+        Expression query = Orders.GroupBy(o => o.CustomerId).Select(g => g).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("IGrouping", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsLastWithoutOrdering()
+    {
+        Expression query = Customers.Executed(q => q.Last());
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Last", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsLastOrDefaultWithoutOrdering()
+    {
+        Expression query = Customers.Executed(q => q.LastOrDefault());
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("LastOrDefault", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsLastWithPredicateWithoutOrdering()
+    {
+        Expression query = Customers.Executed(q => q.Last(c => c.IsActive));
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Last", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsReverseWithoutOrdering()
+    {
+        Expression query = Customers.Reverse().Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Reverse", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsReverseAfterProjectionWithoutOrdering()
+    {
+        Expression query = Customers.Select(c => c.Id).Reverse().Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Reverse", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsZip()
+    {
+        Expression query = Customers
+            .Select(c => c.Id)
+            .Zip(Products.Select(p => p.Id))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Zip", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsZipWithResultSelector()
+    {
+        Expression query = Customers
+            .Select(c => c.Id)
+            .Zip(Products.Select(p => p.Id), (a, b) => a + b)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Zip", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsAggregate()
+    {
+        Expression query = Customers
+            .Select(c => c.Id)
+            .Executed(q => q.Aggregate((a, b) => a + b));
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Aggregate", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsAggregateWithSeed()
+    {
+        Expression query = Customers
+            .Select(c => c.Id)
+            .Executed(q => q.Aggregate(0, (a, b) => a + b));
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Aggregate", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsSkipWhile()
+    {
+        Expression query = Customers.SkipWhile(c => c.IsActive).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("SkipWhile", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsTakeWhile()
+    {
+        Expression query = Customers.TakeWhile(c => c.IsActive).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("TakeWhile", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsPrepend()
+    {
+        Expression query = Customers.Select(c => c.Id).Prepend(0).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Prepend", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsAppend()
+    {
+        Expression query = Customers.Select(c => c.Id).Append(0).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Append", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsDistinctBy()
+    {
+        Expression query = Customers.DistinctBy(c => c.Region).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("DistinctBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsUnionBy()
+    {
+        Expression query = Customers.UnionBy(Customers, c => c.Region).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("UnionBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsIntersectBy()
+    {
+        Expression query = Customers
+            .IntersectBy(Customers.Select(c => c.Region), c => c.Region)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("IntersectBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsExceptBy()
+    {
+        Expression query = Customers
+            .ExceptBy(Customers.Select(c => c.Region), c => c.Region)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("ExceptBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsMinBy()
+    {
+        Expression query = Customers.Executed(q => q.MinBy(c => c.Id));
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("MinBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsMaxBy()
+    {
+        Expression query = Customers.Executed(q => q.MaxBy(c => c.Id));
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("MaxBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsWhereWithIndex()
+    {
+        Expression query = Customers.Where((c, i) => i > 1).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Where", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsSelectWithIndex()
+    {
+        Expression query = Customers.Select((c, i) => i).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Select", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsSelectManyWithIndex()
+    {
+        Expression query = Customers
+            .SelectMany((c, i) => Orders.Where(o => o.CustomerId == c.Id))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("SelectMany", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsSkipWhileWithIndex()
+    {
+        Expression query = Customers.SkipWhile((c, i) => i < 2).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("SkipWhile", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsTakeWithRange()
+    {
+        Expression query = Customers.Take(1..3).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Take", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsDistinctWithComparer()
+    {
+        Expression query = Customers
+            .Select(c => c.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Distinct", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsUnionWithComparer()
+    {
+        Expression query = Customers
+            .Select(c => c.Name)
+            .Union(Products.Select(p => p.Name), StringComparer.OrdinalIgnoreCase)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Union", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsContainsWithComparer()
+    {
+        Expression query = Customers
+            .Select(c => c.Name)
+            .Executed(q => q.Contains("a", StringComparer.OrdinalIgnoreCase));
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Contains", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsJoinWithComparer()
+    {
+        Expression query = Customers
+            .Join(
+                Products,
+                c => c.Name,
+                p => p.Name,
+                (c, p) => c.Id,
+                StringComparer.OrdinalIgnoreCase
+            )
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Join", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsGroupByWithComparer()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.Key)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("GroupBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsFirstOrDefaultWithDefaultValue()
+    {
+        Expression query = Customers.Executed(q => q.FirstOrDefault(new Customer()));
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("FirstOrDefault", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsSingleOrDefaultWithDefaultValue()
+    {
+        Expression query = Customers.Executed(q => q.SingleOrDefault(new Customer()));
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("SingleOrDefault", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsElementAtFromEnd()
+    {
+        Expression query = Customers.OrderBy(c => c.Id).Executed(q => q.ElementAt(^1));
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("ElementAt", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsDefaultIfEmptyOnRoot()
+    {
+        Expression query = Customers.DefaultIfEmpty().Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("DefaultIfEmpty", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsDefaultIfEmptyWithDefaultValue()
+    {
+        Expression query = Customers.DefaultIfEmpty(new Customer()).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("DefaultIfEmpty", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsSequenceEqual()
+    {
+        Expression query = Customers
+            .Select(c => c.Id)
+            .Executed(q => q.SequenceEqual(new[] { 1, 2 }));
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("SequenceEqual", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsSelectManyOverString()
+    {
+        Expression query = Customers.SelectMany(c => c.Name).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("SelectMany", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsSelectManyOverArrayColumnWithoutUnnestSupport()
+    {
+        Expression query = Orders
+            .SelectMany(o => o.Tags.Select(t => t.Length))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("SelectMany", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsInMemoryRoot()
+    {
+        Expression query = new[] { 1, 2, 3 }.AsQueryable().Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsFilterOverInMemoryRoot()
+    {
+        Expression query = new[] { 1, 2, 3 }.AsQueryable().Where(i => i > 1).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsUnionWithInMemoryCollection()
+    {
+        Expression query = Customers.Select(c => c.Id).Union(new[] { 1, 2 }).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Union", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsConcatWithInMemoryCollection()
+    {
+        Expression query = Customers
+            .Select(c => c.Id)
+            .Concat(new List<int> { 1, 2 })
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Concat", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsJoinWithInMemoryCollection()
+    {
+        Expression query = Customers
+            .Join(new[] { 1, 2 }, c => c.Id, i => i, (c, i) => c.Name)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Join", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsIntersectWithInMemoryCollection()
+    {
+        Expression query = Customers
+            .Select(c => c.Id)
+            .Intersect(new[] { 1, 2 })
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Intersect", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsExceptWithInMemoryCollection()
+    {
+        Expression query = Customers.Select(c => c.Id).Except(new[] { 1, 2 }).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Except", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsInMemoryCollectionAsSubquerySource()
+    {
+        Expression query = Customers
+            .Where(c => new[] { 1, 2 }.AsQueryable().Any(i => i == c.Id))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsOrderByWithComparer()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("OrderBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsThenByWithComparer()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Id)
+            .ThenBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("ThenBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsUnsupportedOperatorAfterSupportedChain()
+    {
+        Expression query = Customers
+            .Where(c => c.IsActive)
+            .OrderBy(c => c.Id)
+            .Take(5)
+            .SkipWhile(c => c.IsActive)
+            .Select(c => c.Name)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("SkipWhile", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsUnsupportedExpressionAfterSupportedChain()
+    {
+        Expression query = Customers
+            .Where(c => c.IsActive)
+            .OrderBy(c => c.Id)
+            .Select(c => Helper(c.Id))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Helper", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsUnsupportedExpressionDeepInsideNestedSubqueries()
+    {
+        Expression query = Customers
+            .Where(c =>
+                Orders.Any(o =>
+                    (o.CustomerId == c.Id) && OrderLines.Any(l => Helper(l.OrderId) > 0)
+                )
+            )
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Helper", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsUnsupportedExpressionInsideSetOperationOperand()
+    {
+        Expression query = Customers
+            .Select(c => c.Id)
+            .Union(Products.Select(p => Helper(p.Id)))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Helper", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = Skipped.NotImplemented)]
+    public void RejectsUnsupportedExpressionInsideJoinedSource()
+    {
+        Expression query = Customers
+            .Join(
+                Orders.Where(o => Helper(o.Id) > 0),
+                c => c.Id,
+                o => o.CustomerId,
+                (c, o) => o.Id
+            )
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Helper", exception.Message, StringComparison.Ordinal);
+    }
+}
