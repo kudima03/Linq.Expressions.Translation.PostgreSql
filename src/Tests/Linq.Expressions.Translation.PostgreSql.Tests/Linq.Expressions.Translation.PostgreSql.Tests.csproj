@@ -25,6 +25,10 @@
   <ItemGroup>
     <Using Include="System.Linq.Expressions" />
     <Using Include="Linq.Expressions.Translation.PostgreSql.Tests.Infrastructure" />
+    <Using
+      Include="Linq.Expressions.Translation.PostgreSql.Tests.Infrastructure.Tables"
+      Static="true"
+    />
     <Using Include="Linq.Expressions.Translation.PostgreSql.Tests.Model" />
     <Using Include="Xunit" />
   </ItemGroup>

@@ -28,15 +28,13 @@ Constants (literals, captured variables, in-memory collections) are rendered as 
 
 The repository is not part of the Pure ecosystem: do not reference `Pure.*` packages.
 
-The README's "Translation conventions" section is the contract; the expected SQL in the tests follows it rule by rule. Change both together.
-
 **Test project:** `Linq.Expressions.Translation.PostgreSql.Tests` targets `net10.0` and uses xunit.
-- `Infrastructure/CapturingQueryable<T>` is the test-only root: its provider builds trees and, for terminal operators (`Count`, `First`, …), records the executed expression and returns `default` — nothing is executed.
-- Expected SQL is a raw string literal with one clause per line; `SqlAssert` joins the lines with single spaces, so the compared statement is one line.
-- Every test goes through `SqlAssert`: `Translates(expectedSql, query)` (or `Translates(expectedSql, source, q => q.Count())` for terminal operators) wraps the tree in `PostgreSqlQuery` and compares `TextValue`; `NotSupported(query, construct)` expects a `NotSupportedException` whose message names the construct.
-- `Model/` holds the tables (`Customer`, `Order`, `OrderLine`, `Product`).
-- Translation tests are skipped with `Skip = Skipped.NotImplemented` until the translator exists (`xUnit1004` is suppressed in the test project for that reason). Combinations use `[Theory]` with `MemberData`/`InlineData`.
-- `ExpectedStatementTests` is not skipped: it invokes every test method (every data row) with `SqlAssert` in recording mode, checks that each asserts exactly one outcome, and parses every expected statement with `pgsqlparser` (libpg_query, the PostgreSQL parser) as a single `SELECT`.
+- Every test is the same three steps: build a LINQ query, translate it with `new PostgreSqlQuery(expression).TextValue`, `Assert.Equal` it with the expected SQL. The expected SQL is the specification of the translation.
+- `Infrastructure/CapturingQueryable<T>` is the test-only root (`Tables.Customers`, …): its provider only builds trees. For terminal operators (`Count`, `First`, …) `query.Executed(q => q.Count())` returns the expression the provider was asked to execute; nothing is executed.
+- Expected SQL is a raw string literal with one clause per line, wrapped in `Sql.Valid(...)`, which joins the lines with single spaces and asserts the statement parses as one PostgreSQL `SELECT` (`pgsqlparser`, libpg_query).
+- `Model/` holds the tables (`Customer`, `Order`, `OrderLine`, `Product`, `Employee`); a table is named after its type, columns after properties, aliases are `t0`, `t1`, … in the order sources are introduced.
+- Unsupported constructs are asserted with `Assert.Throws<NotSupportedException>`.
+- Translation tests are skipped with `Skip = Skipped.NotImplemented` until the translator exists (`xUnit1004` is suppressed in the test project for that reason). Combinations use `[Theory]` with `InlineData`/`MemberData`.
 
 **Multi-targeting:** net8.0, net9.0, net10.0.
 
