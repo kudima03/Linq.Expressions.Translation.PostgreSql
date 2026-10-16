@@ -1,8 +1,8 @@
 using System.Collections;
 using System.Globalization;
 using System.Linq.Expressions;
-using Linq.Expressions.Translation.PostgreSql.Mapping;
 using System.Text;
+using Linq.Expressions.Translation.PostgreSql.Mapping;
 using Linq.Expressions.Translation.PostgreSql.Shapes;
 using Linq.Expressions.Translation.PostgreSql.Syntax;
 
