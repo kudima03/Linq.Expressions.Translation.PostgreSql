@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using System.Reflection;
 using Linq.Expressions.Translation.PostgreSql.Mapping;
 using Linq.Expressions.Translation.PostgreSql.Shapes;
 using Linq.Expressions.Translation.PostgreSql.Syntax;
@@ -132,25 +131,37 @@ internal sealed partial class Translator
                 $"Constructing '{creation.Type.Name}' from SQL values is not supported."
             );
         }
-        ParameterInfo[] parameters = creation.Constructor!.GetParameters();
+        // A struct created without arguments has no constructor, so names are read
+        // only for arguments.
         return new ObjectShape([
             .. creation.Arguments.Select(
                 (argument, index) =>
-                    new ObjectMember(parameters[index].Name!, Shape(argument))
+                    new ObjectMember(
+                        creation.Constructor!.GetParameters()[index].Name!,
+                        Shape(argument)
+                    )
             ),
         ]);
     }
 
     private ObjectShape Initialization(MemberInitExpression initialization)
     {
-        return new ObjectShape([
-            .. New(initialization.NewExpression).Members,
+        List<ObjectMember> assigned =
+        [
             .. initialization
                 .Bindings.Cast<MemberAssignment>()
                 .Select(binding => new ObjectMember(
                     binding.Member.Name,
                     Shape(binding.Expression)
                 )),
+        ];
+        // An initializer runs after the constructor, so it replaces the argument.
+        return new ObjectShape([
+            .. New(initialization.NewExpression)
+                .Members.Where(argument =>
+                    !assigned.Any(member => member.Matches(argument.Name))
+                ),
+            .. assigned,
         ]);
     }
 
