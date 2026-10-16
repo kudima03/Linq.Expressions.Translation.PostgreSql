@@ -5,9 +5,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Combinations;
 
 public sealed record QueryShapeCombinationTests
 {
-    [Fact(
-        Skip = "SELECT DISTINCT keeps an ORDER BY key that is not in the select list, which PostgreSQL rejects."
-    )]
+    [Fact]
     public void DropsOrderingWhenDistinctProjectionHidesKey()
     {
         Expression query = Customers
