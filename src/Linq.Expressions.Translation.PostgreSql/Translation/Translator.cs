@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using Linq.Expressions.Translation.PostgreSql.Mapping;
@@ -6,6 +7,7 @@ using Linq.Expressions.Translation.PostgreSql.Syntax;
 
 namespace Linq.Expressions.Translation.PostgreSql.Translation;
 
+[RequiresUnreferencedCode(TableMapping.Trimming)]
 internal sealed partial class Translator
 {
     private readonly Dictionary<ParameterExpression, Binding> _bindings = [];

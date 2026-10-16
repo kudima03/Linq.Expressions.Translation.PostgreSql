@@ -1,10 +1,16 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace Linq.Expressions.Translation.PostgreSql.Mapping;
 
 internal sealed class TableMapping
 {
+    public const string Trimming =
+        "Columns are read from the public properties of the queried element types, "
+        + "which trimming removes unless they are preserved.";
+
+    [RequiresUnreferencedCode(Trimming)]
     public TableMapping(Type type)
     {
         TableAttribute? table = type.GetCustomAttribute<TableAttribute>();
