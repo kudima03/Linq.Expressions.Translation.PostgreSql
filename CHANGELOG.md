@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Chained `Where` calls on a group combine their predicates instead of keeping only the last one.
 - `Cast` to another numeric type converts the values, and `OfType` of an incompatible type returns no rows instead of every row.
 - `DateOnly.AddMonths`/`AddYears` return a `date`, and shift counts are masked to the operand width as in C#.
+- Struct initializers such as `new ValueTuple<int, string> { Item1 = ..., Item2 = ... }` are translated instead of throwing `NullReferenceException`. Members of constructor projections (`new ValueTuple<,>(...)`, `new Tuple<,>(...)`) resolve to the argument whose name matches ignoring case, an initializer replaces the constructor argument it sets, and an unmatched member throws `NotSupportedException` instead of `KeyNotFoundException`.
 - Nested prefix operators (`-(-x)`, `~~x`) are parenthesized instead of rendering `--`, which PostgreSQL reads as a comment; `~x` is parenthesized before `+`, `-`, `*`, `/` and `%`, and `NOT x` inside comparisons, `IS NULL` and `IN`.
 - `IN`, `IN (SELECT ...)` and `= ANY` of a nullable value are `FALSE` instead of `NULL` when used as a value or under `NOT`, and equality of two nullable correlated columns matches nulls as in C#.
 - `Second` and `Millisecond` truncate the fraction instead of rounding it.
