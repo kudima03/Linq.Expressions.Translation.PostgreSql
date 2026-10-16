@@ -1,4 +1,3 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
 #pragma warning disable IDE0120 // the LINQ calls are the subject
 
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Combinations;
@@ -650,7 +649,7 @@ public sealed record QueryShapeCombinationTests
         );
     }
 
-    [Fact(Skip = "A GroupJoin group cannot be filtered with Where before an aggregate.")]
+    [Fact]
     public void SumsFilteredGroupJoinRows()
     {
         Expression query = Customers
@@ -678,9 +677,7 @@ public sealed record QueryShapeCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "A GroupJoin group cannot be projected with Select before an aggregate."
-    )]
+    [Fact]
     public void TakesMaximumOfProjectedGroupJoinRows()
     {
         Expression query = Customers
