@@ -30,6 +30,12 @@ internal sealed class ObjectShape(IReadOnlyList<ObjectMember> members) : Shape
 
     public Shape Member(MemberInfo member)
     {
-        return Members.ToDictionary(item => item.Name, item => item.Shape)[member.Name];
+        ObjectMember? found =
+            Members.FirstOrDefault(item => item.Name == member.Name)
+            ?? Members.FirstOrDefault(item => item.Matches(member.Name));
+        return found?.Shape
+            ?? throw new NotSupportedException(
+                $"The member '{member.DeclaringType!.Name}.{member.Name}' is neither initialized nor a constructor argument."
+            );
     }
 }
