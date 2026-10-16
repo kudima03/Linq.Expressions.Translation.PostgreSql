@@ -1,4 +1,3 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
 #pragma warning disable CA1861 // the arrays are the arguments under test
 #pragma warning disable CA1870 // SearchValues would hide the IndexOfAny translation
 
@@ -86,9 +85,7 @@ public sealed record StringCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "Interpolated strings compile to String.Format, which is not translated."
-    )]
+    [Fact]
     public void InterpolatesStrings()
     {
         Expression query = Orders.Select(o => $"{o.Number}-{o.Note}").Expression;
@@ -104,9 +101,7 @@ public sealed record StringCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "Interpolated strings compile to String.Format, which is not translated."
-    )]
+    [Fact]
     public void InterpolatesInteger()
     {
         Expression query = Orders.Select(o => $"#{o.Quantity}").Expression;

@@ -1,5 +1,7 @@
 using System.Collections;
+using System.Globalization;
 using System.Linq.Expressions;
+using System.Text;
 using Linq.Expressions.Translation.PostgreSql.Shapes;
 using Linq.Expressions.Translation.PostgreSql.Syntax;
 
@@ -153,8 +155,68 @@ internal sealed partial class Translator
             (nameof(string.EndsWith), _) when IsOrdinal(arguments) => EndsWith(call),
             (nameof(string.IsNullOrEmpty), 1) => IsNullOrEmpty(Sql(arguments[0])),
             (nameof(string.Concat), _) => Concatenation(call),
+            (nameof(string.Format), _) => Formatted(call),
             _ => throw Unsupported.Method(call.Method),
         };
+    }
+
+    private SqlExpression Formatted(MethodCallExpression call)
+    {
+        if (call.Arguments[0] is not ConstantExpression { Value: string format })
+        {
+            throw Unsupported.Method(call.Method);
+        }
+        IReadOnlyList<Expression> arguments = call.Arguments[1]
+            is NewArrayExpression array
+            ? array.Expressions
+            : call.Arguments.Skip(1).ToList();
+        List<SqlExpression> parts = [];
+        StringBuilder literal = new();
+        for (int index = 0; index < format.Length; index++)
+        {
+            char current = format[index];
+            if (current is '{' or '}' && format.ElementAtOrDefault(index + 1) == current)
+            {
+                _ = literal.Append(current);
+                index++;
+            }
+            else if (current == '{')
+            {
+                int end = format.IndexOf('}', index);
+                Flushed(literal, parts);
+                Concatenated(arguments[FormatIndex(format[index..(end + 1)])], parts);
+                index = end;
+            }
+            else
+            {
+                _ = literal.Append(current);
+            }
+        }
+        Flushed(literal, parts);
+        return Joined(parts);
+    }
+
+    private static void Flushed(StringBuilder literal, List<SqlExpression> parts)
+    {
+        if (literal.Length > 0)
+        {
+            parts.Add(Text(literal.ToString()));
+            _ = literal.Clear();
+        }
+    }
+
+    private static int FormatIndex(string item)
+    {
+        return int.TryParse(
+            item[1..^1],
+            NumberStyles.None,
+            CultureInfo.InvariantCulture,
+            out int index
+        )
+            ? index
+            : throw new NotSupportedException(
+                $"The format item '{item}' is not supported: alignment and format strings have no PostgreSQL equivalent."
+            );
     }
 
     private SqlFunction Function(string name, MethodCallExpression call)
