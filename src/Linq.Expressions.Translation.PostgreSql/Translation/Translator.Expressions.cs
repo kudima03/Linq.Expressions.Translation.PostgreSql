@@ -13,7 +13,9 @@ internal sealed partial class Translator
         [ExpressionType.Add] = "+",
         [ExpressionType.AddChecked] = "+",
         [ExpressionType.Subtract] = "-",
+        [ExpressionType.SubtractChecked] = "-",
         [ExpressionType.Multiply] = "*",
+        [ExpressionType.MultiplyChecked] = "*",
         [ExpressionType.Divide] = "/",
         [ExpressionType.Modulo] = "%",
         [ExpressionType.And] = "&",
@@ -204,7 +206,11 @@ internal sealed partial class Translator
         }
         (string symbol, SqlBinaryKind kind) = Operator(binary);
         SqlExpression left = Sql(binary.Left);
-        SqlExpression right = Sql(binary.Right);
+        SqlExpression right = binary.NodeType
+            is ExpressionType.LeftShift
+                or ExpressionType.RightShift
+            ? Masked(binary)
+            : Sql(binary.Right);
         return new SqlBinary(
             symbol,
             kind,
@@ -228,6 +234,15 @@ internal sealed partial class Translator
             : Arithmetic.TryGetValue(binary.NodeType, out string? arithmetic)
                 ? (arithmetic, SqlBinaryKind.Arithmetic)
             : throw Unsupported.Node(binary);
+    }
+
+    private SqlExpression Masked(BinaryExpression shift)
+    {
+        int mask = ScalarTypes.Underlying(shift.Left.Type) == typeof(long) ? 63 : 31;
+        SqlExpression count = Sql(shift.Right);
+        return count is SqlConstant { Value: int value }
+            ? Integer(value & mask)
+            : Calculate("&", count, Integer(mask));
     }
 
     private SqlExpression Equality(Expression left, Expression right, bool negated)

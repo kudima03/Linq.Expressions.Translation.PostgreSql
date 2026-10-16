@@ -1,10 +1,8 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
-
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record CastAndDefaultSemanticsTests
 {
-    [Fact(Skip = "Queryable.Cast to a different scalar type is ignored.")]
+    [Fact]
     public void CastsScalarSequenceToWiderInteger()
     {
         Expression query = Customers.Select(c => c.Id).Cast<long>().Expression;
@@ -20,7 +18,7 @@ public sealed record CastAndDefaultSemanticsTests
         );
     }
 
-    [Fact(Skip = "OfType of an impossible scalar type keeps every row.")]
+    [Fact]
     public void DropsRowsWhoseRuntimeTypeIsNotTheTarget()
     {
         Expression query = Customers.Select(c => c.Id).OfType<long>().Expression;
@@ -37,7 +35,7 @@ public sealed record CastAndDefaultSemanticsTests
         );
     }
 
-    [Fact(Skip = "OfType of an unrelated entity keeps every row.")]
+    [Fact]
     public void DropsRowsOfAnUnrelatedEntity()
     {
         Expression query = Customers.OfType<Employee>().Select(e => e.Id).Expression;
@@ -54,7 +52,7 @@ public sealed record CastAndDefaultSemanticsTests
         );
     }
 
-    [Fact(Skip = "FirstOrDefault of a non-nullable int does not substitute zero.")]
+    [Fact]
     public void SubstitutesZeroForMissingFirstInteger()
     {
         Expression query = Customers
@@ -86,7 +84,7 @@ public sealed record CastAndDefaultSemanticsTests
         );
     }
 
-    [Fact(Skip = "FirstOrDefault of bool does not substitute false.")]
+    [Fact]
     public void SubstitutesFalseForMissingFirstBoolean()
     {
         Expression query = Customers
@@ -118,7 +116,7 @@ public sealed record CastAndDefaultSemanticsTests
         );
     }
 
-    [Fact(Skip = "ElementAtOrDefault of a non-nullable int does not substitute zero.")]
+    [Fact]
     public void SubstitutesZeroForMissingElement()
     {
         Expression query = Customers
@@ -150,7 +148,7 @@ public sealed record CastAndDefaultSemanticsTests
         );
     }
 
-    [Fact(Skip = "LastOrDefault of a non-nullable int does not substitute zero.")]
+    [Fact]
     public void SubstitutesZeroForMissingLastInteger()
     {
         Expression query = Customers
@@ -182,7 +180,7 @@ public sealed record CastAndDefaultSemanticsTests
         );
     }
 
-    [Fact(Skip = "SingleOrDefault of a non-nullable int does not substitute zero.")]
+    [Fact]
     public void SubstitutesZeroForMissingSingleInteger()
     {
         Expression query = Customers
@@ -206,6 +204,29 @@ public sealed record CastAndDefaultSemanticsTests
                     LIMIT 2
                 ), 0) AS "OnlyId"
                 FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void CastsDistinctValuesInDerivedTable()
+    {
+        Expression query = Orders
+            .Select(o => o.Quantity)
+            .Distinct()
+            .Cast<long>()
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(t1."Quantity" AS bigint)
+                FROM (
+                    SELECT DISTINCT t0."Quantity"
+                    FROM "Order" AS t0
+                ) AS t1
                 """
             ),
             new PostgreSqlQuery(query).TextValue

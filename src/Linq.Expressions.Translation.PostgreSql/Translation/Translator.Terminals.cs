@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using System.Reflection;
 using Linq.Expressions.Translation.PostgreSql.Mapping;
 using Linq.Expressions.Translation.PostgreSql.Shapes;
 using Linq.Expressions.Translation.PostgreSql.Syntax;
@@ -39,7 +40,61 @@ internal sealed partial class Translator
 
     private SqlExpression Subquery(MethodCallExpression call)
     {
-        return Terminal(Operand(call), call);
+        SqlExpression result = Terminal(call);
+        return call.Method.Name.EndsWith("OrDefault", StringComparison.Ordinal)
+            ? Substituted(result, call.Type)
+            : result;
+    }
+
+    private SqlExpression Terminal(MethodCallExpression call)
+    {
+        MethodCallExpression? padding = call.Arguments[0] as MethodCallExpression;
+        return
+            padding
+                is { Method.Name: nameof(Queryable.DefaultIfEmpty), Arguments.Count: 1 }
+            ? Padded(Operand(padding), call, padding.Method)
+            : Terminal(Operand(call), call);
+    }
+
+    private SqlExpression Padded(
+        SqlQuery source,
+        MethodCallExpression call,
+        MethodInfo padding
+    )
+    {
+        string name = call.Method.Name;
+        return call.Arguments.Count > 1 ? throw Unsupported.Method(padding)
+            : name == nameof(Queryable.Any) ? new SqlConstant(true, typeof(bool))
+            : name is nameof(Queryable.Count) or nameof(Queryable.LongCount)
+                ? Sized(
+                    name,
+                    new SqlFunction(
+                        "GREATEST",
+                        [
+                            Counted(source, nameof(Queryable.LongCount), typeof(long)),
+                            new SqlConstant(1, typeof(int)),
+                        ],
+                        typeof(long)
+                    )
+                )
+            : name == nameof(Queryable.Sum) ? Aggregated(source, call)
+            : name
+                is nameof(Queryable.Average)
+                    or nameof(Queryable.Min)
+                    or nameof(Queryable.Max)
+                ? Substituted(Aggregated(source, call), call.Type)
+            : throw Unsupported.Method(padding);
+    }
+
+    private static SqlExpression Substituted(SqlExpression value, Type type)
+    {
+        return type.IsValueType && Nullable.GetUnderlyingType(type) is null
+            ? new SqlFunction(
+                "COALESCE",
+                [value, new SqlConstant(Activator.CreateInstance(type), type)],
+                type
+            )
+            : value;
     }
 
     private SqlQuery Operand(MethodCallExpression call)
@@ -55,8 +110,9 @@ internal sealed partial class Translator
         return call.Method.Name switch
         {
             nameof(Queryable.Count) or nameof(Queryable.LongCount) => Counted(
-                source,
-                call
+                filtered ? Where(source, Lambda(call, 1)) : source,
+                call.Method.Name,
+                call.Type
             ),
             nameof(Queryable.Sum)
             or nameof(Queryable.Average)
@@ -96,16 +152,13 @@ internal sealed partial class Translator
         };
     }
 
-    private SqlScalarSubquery Counted(SqlQuery source, MethodCallExpression call)
+    private SqlScalarSubquery Counted(SqlQuery source, string name, Type type)
     {
         SelectQuery query = Unordered(
-            Open(
-                call.Arguments.Count > 1 ? Where(source, Lambda(call, 1)) : source,
-                Barrier.Paging | Barrier.Distinct | Barrier.Grouping
-            )
+            Open(source, Barrier.Paging | Barrier.Distinct | Barrier.Grouping)
         );
-        query.Shape = new ScalarShape(Counting(call.Method.Name, null, null));
-        return new SqlScalarSubquery(query, call.Type);
+        query.Shape = new ScalarShape(Counting(name, null, null));
+        return new SqlScalarSubquery(query, type);
     }
 
     private SqlScalarSubquery Aggregated(SqlQuery source, MethodCallExpression call)
@@ -129,13 +182,20 @@ internal sealed partial class Translator
         SqlExpression? filter
     )
     {
-        SqlExpression count = new SqlAggregate(
-            "COUNT",
-            distinct,
-            distinct is not null,
-            filter,
-            typeof(long)
+        return Sized(
+            name,
+            new SqlAggregate(
+                "COUNT",
+                distinct,
+                distinct is not null,
+                filter,
+                typeof(long)
+            )
         );
+    }
+
+    private static SqlExpression Sized(string name, SqlExpression count)
+    {
         return name == nameof(Queryable.Count)
             ? new SqlCast(count, "integer", typeof(int))
             : count;

@@ -1,10 +1,8 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
-
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record NumericMethodSemanticsTests
 {
-    [Fact(Skip = "Int32.Abs is not translated.")]
+    [Fact]
     public void TakesAbsoluteValueOfIntegerType()
     {
         Expression query = Orders.Select(o => int.Abs(o.Quantity)).Expression;
@@ -20,7 +18,7 @@ public sealed record NumericMethodSemanticsTests
         );
     }
 
-    [Fact(Skip = "Decimal.Abs is not translated.")]
+    [Fact]
     public void TakesAbsoluteValueOfDecimalType()
     {
         Expression query = Orders.Select(o => decimal.Abs(o.Total)).Expression;
@@ -36,7 +34,7 @@ public sealed record NumericMethodSemanticsTests
         );
     }
 
-    [Fact(Skip = "Math.Clamp is not translated.")]
+    [Fact]
     public void ClampsInteger()
     {
         Expression query = Orders.Select(o => Math.Clamp(o.Quantity, 1, 10)).Expression;
@@ -52,7 +50,7 @@ public sealed record NumericMethodSemanticsTests
         );
     }
 
-    [Fact(Skip = "Int32.Clamp is not translated.")]
+    [Fact]
     public void ClampsIntegerOnItsType()
     {
         Expression query = Orders.Select(o => int.Clamp(o.Quantity, 1, 10)).Expression;
@@ -68,7 +66,7 @@ public sealed record NumericMethodSemanticsTests
         );
     }
 
-    [Fact(Skip = "Math.Clamp is not translated.")]
+    [Fact]
     public void ClampsDecimal()
     {
         Expression query = Orders.Select(o => Math.Clamp(o.Total, 1m, 10m)).Expression;
@@ -84,7 +82,7 @@ public sealed record NumericMethodSemanticsTests
         );
     }
 
-    [Fact(Skip = "Double.IsNaN is not translated.")]
+    [Fact]
     public void DetectsNotANumber()
     {
         Expression query = Orders.Select(o => double.IsNaN(o.Weight)).Expression;
@@ -100,7 +98,7 @@ public sealed record NumericMethodSemanticsTests
         );
     }
 
-    [Fact(Skip = "Double.IsInfinity is not translated.")]
+    [Fact]
     public void DetectsInfinity()
     {
         Expression query = Orders.Select(o => double.IsInfinity(o.Weight)).Expression;
@@ -116,7 +114,7 @@ public sealed record NumericMethodSemanticsTests
         );
     }
 
-    [Fact(Skip = "Double.IsFinite is not translated.")]
+    [Fact]
     public void DetectsFiniteDouble()
     {
         Expression query = Orders.Select(o => double.IsFinite(o.Weight)).Expression;

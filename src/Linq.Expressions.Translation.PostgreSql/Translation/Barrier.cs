@@ -8,4 +8,5 @@ internal enum Barrier
     Distinct = 2,
     Grouping = 4,
     Projection = 8,
+    Bound = 16,
 }

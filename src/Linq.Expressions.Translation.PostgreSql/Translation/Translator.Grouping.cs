@@ -41,7 +41,7 @@ internal sealed partial class Translator
             nameof(Enumerable.Where) => new GroupingShape(
                 group.Key,
                 group.Element,
-                Scalar(Bind(Lambda(call, 1), group.Element)),
+                Conjoined(Scalar(Bind(Lambda(call, 1), group.Element)), group.Filter),
                 group.Distinct
             ),
             nameof(Enumerable.Select) => new GroupingShape(
@@ -69,13 +69,7 @@ internal sealed partial class Translator
                 )
             ),
             nameof(Enumerable.Any) or nameof(Enumerable.All) => new ScalarShape(
-                new SqlAggregate(
-                    name == nameof(Enumerable.Any) ? "BOOL_OR" : "BOOL_AND",
-                    Scalar(Bind(Lambda(call, 1), group.Element)),
-                    false,
-                    group.Filter,
-                    typeof(bool)
-                )
+                Quantified(group, call)
             ),
             nameof(Enumerable.Sum)
             or nameof(Enumerable.Average)
@@ -92,5 +86,26 @@ internal sealed partial class Translator
             ),
             _ => throw Unsupported.Method(call.Method),
         };
+    }
+
+    private SqlExpression Quantified(GroupingShape group, MethodCallExpression call)
+    {
+        bool any = call.Method.Name == nameof(Enumerable.Any);
+        SqlExpression aggregate = new SqlAggregate(
+            any ? "BOOL_OR" : "BOOL_AND",
+            call.Arguments.Count > 1
+                ? Scalar(Bind(Lambda(call, 1), group.Element))
+                : True,
+            false,
+            group.Filter,
+            typeof(bool)
+        );
+        return group.Filter is null
+            ? aggregate
+            : new SqlFunction(
+                "COALESCE",
+                [aggregate, new SqlConstant(!any, typeof(bool))],
+                typeof(bool)
+            );
     }
 }

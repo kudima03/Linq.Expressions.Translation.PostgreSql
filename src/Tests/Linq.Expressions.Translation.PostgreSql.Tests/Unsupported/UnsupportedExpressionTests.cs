@@ -346,7 +346,7 @@ public sealed record UnsupportedExpressionTests
     public void RejectsEndsWithComparison()
     {
         Expression query = Orders
-            .Where(o => o.Number.EndsWith("A", StringComparison.Ordinal))
+            .Where(o => o.Number.EndsWith("A", StringComparison.OrdinalIgnoreCase))
             .Expression;
 
         NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
@@ -822,5 +822,77 @@ public sealed record UnsupportedExpressionTests
             new PostgreSqlQuery(query).TextValue
         );
         Assert.Contains("Byte", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsIndexOfAnyOfNoCharacter()
+    {
+        Expression query = Orders
+            .Select(o => o.Number.IndexOfAny(Array.Empty<char>()))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("IndexOfAny", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsIndexOfAnyOfColumnCharacters()
+    {
+        Expression query = Orders
+            .Select(o => o.Number.IndexOfAny(o.Number.ToCharArray()))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("IndexOfAny", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsTicksFromColumn()
+    {
+        Expression query = Orders.Select(o => o.CreatedAt.AddTicks(o.Points)).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("AddTicks", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsTicksBelowMicrosecond()
+    {
+        Expression query = Orders.Select(o => o.CreatedAt.AddTicks(15)).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("AddTicks", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsBigMulOfLongs()
+    {
+        Expression query = Orders.Select(o => Math.BigMul(o.Points, o.Points)).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("BigMul", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsIndexOfFromStartWithComparison()
+    {
+        Expression query = Orders
+            .Select(o => o.Number.IndexOf("A", 1, StringComparison.Ordinal))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("IndexOf", exception.Message, StringComparison.Ordinal);
     }
 }

@@ -1,5 +1,3 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
-
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record TemporalSemanticsTests
@@ -86,7 +84,7 @@ public sealed record TemporalSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateTimeOffset.Now is not translated.")]
+    [Fact]
     public void FiltersByCurrentDateTimeOffset()
     {
         Expression query = Orders
@@ -106,7 +104,7 @@ public sealed record TemporalSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateTime.Millisecond is not translated.")]
+    [Fact]
     public void SelectsMillisecond()
     {
         Expression query = Orders.Select(o => o.CreatedAt.Millisecond).Expression;
@@ -122,7 +120,7 @@ public sealed record TemporalSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateTime.Millisecond is not translated.")]
+    [Fact]
     public void FiltersByMillisecond()
     {
         Expression query = Orders
@@ -142,7 +140,7 @@ public sealed record TemporalSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateTime.Microsecond is not translated.")]
+    [Fact]
     public void SelectsMicrosecond()
     {
         Expression query = Orders.Select(o => o.CreatedAt.Microsecond).Expression;
@@ -158,7 +156,7 @@ public sealed record TemporalSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateTimeOffset.Millisecond is not translated.")]
+    [Fact]
     public void SelectsMillisecondOfDateTimeOffset()
     {
         Expression query = Orders.Select(o => o.PaidAt!.Value.Millisecond).Expression;
@@ -174,7 +172,7 @@ public sealed record TemporalSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateTime.AddMilliseconds is not translated.")]
+    [Fact]
     public void AddsMilliseconds()
     {
         Expression query = Orders
@@ -192,7 +190,7 @@ public sealed record TemporalSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateTime.AddMilliseconds is not translated.")]
+    [Fact]
     public void SubtractsMilliseconds()
     {
         Expression query = Orders
@@ -210,7 +208,7 @@ public sealed record TemporalSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateTime.AddMilliseconds is not translated.")]
+    [Fact]
     public void AddsMillisecondsFromIntegerColumn()
     {
         Expression query = Orders
@@ -228,7 +226,7 @@ public sealed record TemporalSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateTime.AddTicks is not translated.")]
+    [Fact]
     public void AddsTenTicksAsOneMicrosecond()
     {
         Expression query = Orders.Select(o => o.CreatedAt.AddTicks(10)).Expression;
@@ -244,7 +242,7 @@ public sealed record TemporalSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateTime.Add is not translated.")]
+    [Fact]
     public void AddsTimeSpan()
     {
         Expression query = Orders
@@ -280,7 +278,7 @@ public sealed record TemporalSemanticsTests
         );
     }
 
-    [Fact(Skip = "TimeOnly.Add is not translated.")]
+    [Fact]
     public void AddsTimeSpanToTime()
     {
         Expression query = Orders
@@ -298,7 +296,7 @@ public sealed record TemporalSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateOnly.AddMonths is not cast back to date.")]
+    [Fact]
     public void AddsMonthsToDateOnly()
     {
         Expression query = Orders.Select(o => o.ShippedOn!.Value.AddMonths(1)).Expression;
@@ -314,7 +312,7 @@ public sealed record TemporalSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateOnly.AddYears is not cast back to date.")]
+    [Fact]
     public void AddsYearsToDateOnly()
     {
         Expression query = Orders.Select(o => o.ShippedOn!.Value.AddYears(1)).Expression;
@@ -330,7 +328,7 @@ public sealed record TemporalSemanticsTests
         );
     }
 
-    [Fact(Skip = "TimeOnly.FromDateTime is translated as a date cast.")]
+    [Fact]
     public void ConvertsDateTimeToTime()
     {
         Expression query = Orders

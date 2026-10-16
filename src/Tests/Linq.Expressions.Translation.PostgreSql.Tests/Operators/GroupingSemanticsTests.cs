@@ -1,4 +1,4 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
+#pragma warning disable IDE0120 // the LINQ calls are the subject
 
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
@@ -195,7 +195,7 @@ public sealed record GroupingSemanticsTests
             Sql.Valid(
                 """
                 SELECT t0."CustomerId",
-                BOOL_OR(t0."Total" > 100) FILTER (WHERE t0."IsPaid") AS "HasLarge"
+                COALESCE(BOOL_OR(t0."Total" > 100) FILTER (WHERE t0."IsPaid"), FALSE) AS "HasLarge"
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
                 """
@@ -220,7 +220,7 @@ public sealed record GroupingSemanticsTests
             Sql.Valid(
                 """
                 SELECT t0."CustomerId",
-                BOOL_AND(t0."Quantity" > 0) FILTER (WHERE t0."IsPaid") AS "AllLarge"
+                COALESCE(BOOL_AND(t0."Quantity" > 0) FILTER (WHERE t0."IsPaid"), TRUE) AS "AllLarge"
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
                 """
@@ -229,7 +229,7 @@ public sealed record GroupingSemanticsTests
         );
     }
 
-    [Fact(Skip = "A second Where on a group replaces the first predicate.")]
+    [Fact]
     public void CountsRowsMatchingChainedWheres()
     {
         Expression query = Orders
@@ -254,7 +254,7 @@ public sealed record GroupingSemanticsTests
         );
     }
 
-    [Fact(Skip = "A second Where on a group replaces the first predicate.")]
+    [Fact]
     public void SumsRowsMatchingChainedWheres()
     {
         Expression query = Orders
@@ -281,7 +281,7 @@ public sealed record GroupingSemanticsTests
         );
     }
 
-    [Fact(Skip = "A second Where on a group replaces the first predicate.")]
+    [Fact]
     public void SumsProjectedValuesMatchingChainedWheres()
     {
         Expression query = Orders
@@ -309,7 +309,7 @@ public sealed record GroupingSemanticsTests
         );
     }
 
-    [Fact(Skip = "Enumerable.Any without a predicate is not translated.")]
+    [Fact]
     public void ChecksGroupHasAnyRow()
     {
         Expression query = Orders
@@ -329,19 +329,23 @@ public sealed record GroupingSemanticsTests
         );
     }
 
-    [Fact(Skip = "Enumerable.Any without a predicate is not translated.")]
+    [Fact]
     public void ChecksGroupHasAnyRowAfterWhere()
     {
         Expression query = Orders
             .GroupBy(o => o.CustomerId)
-            .Select(g => new { CustomerId = g.Key, HasPaid = g.Any(o => o.IsPaid) })
+            .Select(g => new
+            {
+                CustomerId = g.Key,
+                HasPaid = g.Where(o => o.IsPaid).Any(),
+            })
             .Expression;
 
         Assert.Equal(
             Sql.Valid(
                 """
                 SELECT t0."CustomerId",
-                BOOL_OR(TRUE) FILTER (WHERE t0."IsPaid") AS "HasPaid"
+                COALESCE(BOOL_OR(TRUE) FILTER (WHERE t0."IsPaid"), FALSE) AS "HasPaid"
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
                 """

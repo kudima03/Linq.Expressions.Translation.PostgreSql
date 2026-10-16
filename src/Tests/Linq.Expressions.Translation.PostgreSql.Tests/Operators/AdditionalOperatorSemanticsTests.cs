@@ -1,10 +1,8 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
-
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record AdditionalOperatorSemanticsTests
 {
-    [Fact(Skip = "TakeLast is not translated.")]
+    [Fact]
     public void TakesLastRowsInOriginalOrder()
     {
         Expression query = Customers.OrderBy(c => c.Id).TakeLast(2).Expression;
@@ -26,7 +24,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(Skip = "SkipLast is not translated.")]
+    [Fact]
     public void SkipsLastRows()
     {
         Expression query = Customers.OrderBy(c => c.Id).SkipLast(2).Expression;
@@ -60,7 +58,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(Skip = "OfType of an unrelated scalar keeps every row.")]
+    [Fact]
     public void DropsCustomersFromStringOfType()
     {
         Expression query = Customers.OfType<string>().Expression;
@@ -77,7 +75,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(Skip = "DefaultIfEmpty().Max does not substitute zero for an empty sequence.")]
+    [Fact]
     public void SubstitutesZeroForMissingMaximum()
     {
         Expression query = Customers
@@ -107,7 +105,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(Skip = "DefaultIfEmpty().Min does not substitute zero for an empty sequence.")]
+    [Fact]
     public void SubstitutesZeroForMissingMinimum()
     {
         Expression query = Customers
@@ -137,9 +135,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(
-        Skip = "DefaultIfEmpty().Average does not substitute zero for an empty sequence."
-    )]
+    [Fact]
     public void SubstitutesZeroForMissingAverage()
     {
         Expression query = Customers
@@ -169,7 +165,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(Skip = "DefaultIfEmpty().Any() is true even when the source is empty.")]
+    [Fact]
     public void TreatsDefaultIfEmptyAsNonEmpty()
     {
         Expression query = Customers
@@ -195,7 +191,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(Skip = "DefaultIfEmpty().Count() counts the default row of an empty sequence.")]
+    [Fact]
     public void CountsDefaultRowOfEmptySequence()
     {
         Expression query = Customers
@@ -225,7 +221,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(Skip = "FirstOrDefault of a non-nullable long does not substitute zero.")]
+    [Fact]
     public void SubstitutesZeroForMissingFirstLong()
     {
         Expression query = Customers
@@ -257,7 +253,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(Skip = "FirstOrDefault of a non-nullable decimal does not substitute zero.")]
+    [Fact]
     public void SubstitutesZeroForMissingFirstDecimal()
     {
         Expression query = Customers
@@ -289,7 +285,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(Skip = "FirstOrDefault of a non-nullable double does not substitute zero.")]
+    [Fact]
     public void SubstitutesZeroForMissingFirstDouble()
     {
         Expression query = Customers
@@ -321,7 +317,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(Skip = "FirstOrDefault of Guid does not substitute Guid.Empty.")]
+    [Fact]
     public void SubstitutesEmptyGuidForMissingFirst()
     {
         Expression query = Customers
@@ -353,7 +349,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(Skip = "FirstOrDefault of an enum does not substitute the zero value.")]
+    [Fact]
     public void SubstitutesZeroForMissingFirstStatus()
     {
         Expression query = Customers
@@ -385,7 +381,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(Skip = "FirstOrDefault of DateTime does not substitute DateTime.MinValue.")]
+    [Fact]
     public void SubstitutesMinimumForMissingFirstDateTime()
     {
         Expression query = Customers
@@ -417,7 +413,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(Skip = "FirstOrDefault of TimeOnly does not substitute TimeOnly.MinValue.")]
+    [Fact]
     public void SubstitutesMidnightForMissingFirstTime()
     {
         Expression query = Customers
@@ -449,7 +445,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(Skip = "ElementAtOrDefault of a non-nullable double does not substitute zero.")]
+    [Fact]
     public void SubstitutesZeroForMissingElementDouble()
     {
         Expression query = Customers
@@ -481,7 +477,7 @@ public sealed record AdditionalOperatorSemanticsTests
         );
     }
 
-    [Fact(Skip = "LastOrDefault of a non-nullable decimal does not substitute zero.")]
+    [Fact]
     public void SubstitutesZeroForMissingLastDecimal()
     {
         Expression query = Customers
@@ -506,6 +502,244 @@ public sealed record AdditionalOperatorSemanticsTests
                     ORDER BY t1."Id" DESC
                     LIMIT 1
                 ), 0) AS "Total"
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void TakesAfterSkippingLastRows()
+    {
+        Expression query = Customers.OrderBy(c => c.Id).SkipLast(2).Take(3).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Id", t2."Name", t2."Email", t2."Region", t2."IsActive"
+                FROM (
+                    SELECT t0."Id", t0."Name", t0."Email", t0."Region", t0."IsActive"
+                    FROM "Customer" AS t0
+                    ORDER BY t0."Id"
+                    LIMIT (SELECT GREATEST(COUNT(*) - 2, 0) FROM "Customer" AS t1)
+                ) AS t2
+                ORDER BY t2."Id"
+                LIMIT 3
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SkipsAfterSkippingLastRows()
+    {
+        Expression query = Customers.OrderBy(c => c.Id).SkipLast(2).Skip(1).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Id", t2."Name", t2."Email", t2."Region", t2."IsActive"
+                FROM (
+                    SELECT t0."Id", t0."Name", t0."Email", t0."Region", t0."IsActive"
+                    FROM "Customer" AS t0
+                    ORDER BY t0."Id"
+                    LIMIT (SELECT GREATEST(COUNT(*) - 2, 0) FROM "Customer" AS t1)
+                ) AS t2
+                ORDER BY t2."Id"
+                OFFSET 1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SkipsLastRowsOfTakenRows()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Id)
+            .Take(10)
+            .SkipLast(2)
+            .Select(c => c.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Id"
+                FROM (
+                    SELECT t0."Id", t0."Name", t0."Email", t0."Region", t0."IsActive"
+                    FROM "Customer" AS t0
+                    ORDER BY t0."Id"
+                    LIMIT 10
+                ) AS t1
+                ORDER BY t1."Id"
+                LIMIT (
+                    SELECT GREATEST(COUNT(*) - 2, 0)
+                    FROM (
+                        SELECT t2."Id", t2."Name", t2."Email", t2."Region", t2."IsActive"
+                        FROM "Customer" AS t2
+                        ORDER BY t2."Id"
+                        LIMIT 10
+                    ) AS t3
+                )
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SubstitutesZeroForMissingMaximumOfWholeTable()
+    {
+        Expression query = Orders
+            .Select(o => o.Total)
+            .DefaultIfEmpty()
+            .Executed(q => q.Max());
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT COALESCE((SELECT MAX(t0."Total") FROM "Order" AS t0), 0)
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SumsDefaultIfEmptyLikeSource()
+    {
+        Expression query = Customers
+            .Select(c => new
+            {
+                c.Name,
+                Revenue = Orders
+                    .Where(o => o.CustomerId == c.Id)
+                    .Select(o => o.Total)
+                    .DefaultIfEmpty()
+                    .Sum(),
+            })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", (
+                    SELECT COALESCE(SUM(t1."Total"), 0)
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                ) AS "Revenue"
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void LongCountsDefaultRowOfEmptySequence()
+    {
+        Expression query = Customers
+            .Select(c => new
+            {
+                c.Name,
+                Count = Orders
+                    .Where(o => o.CustomerId == c.Id)
+                    .Select(o => o.Total)
+                    .DefaultIfEmpty()
+                    .LongCount(),
+            })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", GREATEST((
+                    SELECT COUNT(*)
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                ), 1) AS "Count"
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsNullForMissingNullableMaximum()
+    {
+        Expression query = Customers
+            .Select(c => new
+            {
+                c.Name,
+                Peak = Orders
+                    .Where(o => o.CustomerId == c.Id)
+                    .Select(o => o.Discount)
+                    .DefaultIfEmpty()
+                    .Max(),
+            })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", (
+                    SELECT MAX(t1."Discount")
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                ) AS "Peak"
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsNullForMissingFirstString()
+    {
+        Expression query = Customers
+            .Select(c => new
+            {
+                c.Name,
+                Number = Orders
+                    .Where(o => o.CustomerId == c.Id)
+                    .OrderBy(o => o.Id)
+                    .Select(o => o.Number)
+                    .FirstOrDefault(),
+            })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", (
+                    SELECT t1."Number"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                    ORDER BY t1."Id"
+                    LIMIT 1
+                ) AS "Number"
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsScalarsCastToObject()
+    {
+        Expression query = Customers.Select(c => c.Id).Cast<object>().Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
                 FROM "Customer" AS t0
                 """
             ),

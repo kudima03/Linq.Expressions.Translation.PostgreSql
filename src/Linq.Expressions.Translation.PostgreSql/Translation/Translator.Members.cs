@@ -25,6 +25,12 @@ internal sealed partial class Translator
         [nameof(DateTime.DayOfWeek)] = "DOW",
     };
 
+    private static readonly Dictionary<string, string> Fractions = new()
+    {
+        [nameof(DateTime.Millisecond)] = "MILLISECONDS",
+        [nameof(DateTime.Microsecond)] = "MICROSECONDS",
+    };
+
     private static SqlExpression ScalarMember(SqlExpression owner, MemberInfo member)
     {
         Type type = ((PropertyInfo)member).PropertyType;
@@ -35,32 +41,57 @@ internal sealed partial class Translator
                 new SqlIsNull(owner, true),
             { Name: nameof(string.Length) } when member.DeclaringType == typeof(string) =>
                 new SqlFunction("LENGTH", [owner], type),
-            { Name: nameof(DateTime.Date) }
-                when member.DeclaringType == typeof(DateTime) => new SqlFunction(
+            { Name: nameof(DateTime.Date) } => new SqlFunction(
                 "DATE_TRUNC",
                 [Text("day"), owner],
                 type
             ),
+            { Name: nameof(DateTime.TimeOfDay) } => new SqlCast(owner, "time", type),
+            { Name: nameof(DateTimeOffset.UtcDateTime) } => new SqlBinary(
+                "AT TIME ZONE",
+                SqlBinaryKind.Arithmetic,
+                owner,
+                Text("UTC"),
+                type,
+                owner.Nullable
+            ),
+            { Name: nameof(DateOnly.DayNumber) } => Calculate(
+                "-",
+                owner,
+                new SqlConstant(DateOnly.MinValue, typeof(DateOnly))
+            ),
             _ when Temporal.Contains(member.DeclaringType!)
                     && DateParts.TryGetValue(member.Name, out string? part) =>
                 new SqlCast(new SqlExtract(part, owner), "integer", type),
+            _ when Temporal.Contains(member.DeclaringType!)
+                    && Fractions.TryGetValue(member.Name, out string? fraction) =>
+                Calculate(
+                    "%",
+                    new SqlCast(new SqlExtract(fraction, owner), "integer", type),
+                    Integer(1000)
+                ),
             _ => throw Unsupported.Member(member),
         };
     }
 
     private static SqlExpression StaticMember(MemberInfo member)
     {
-        return member.Name == nameof(DateTime.UtcNow)
-                ? new SqlFunction("NOW", [], ((PropertyInfo)member).PropertyType)
-            : member.Name == nameof(DateTime.Now)
+        return member.Name == nameof(DateTime.Now)
             && member.DeclaringType == typeof(DateTime)
                 ? new SqlFragment("LOCALTIMESTAMP", typeof(DateTime))
+            : member.Name != nameof(DateTime.Today)
+                ? new SqlFunction("NOW", [], ((PropertyInfo)member).PropertyType)
             : throw Unsupported.Member(member);
     }
 
     private static SqlConstant Text(string text)
     {
         return new SqlConstant(text, typeof(string));
+    }
+
+    private static SqlConstant Integer(int value)
+    {
+        return new SqlConstant(value, typeof(int));
     }
 
     private static bool IsNullable(MemberInfo member)

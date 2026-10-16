@@ -1,4 +1,3 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
 #pragma warning disable IDE0120 // the LINQ calls are the subject
 
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
@@ -211,7 +210,7 @@ public sealed record AdditionalGroupingSemanticsTests
         );
     }
 
-    [Fact(Skip = "A Where after Distinct on a group replaces the earlier filter.")]
+    [Fact]
     public void CountsDistinctValuesMatchingBothFilters()
     {
         Expression query = Orders
@@ -240,7 +239,7 @@ public sealed record AdditionalGroupingSemanticsTests
         );
     }
 
-    [Fact(Skip = "BOOL_OR of a filter that matches nothing is null, while Any is false.")]
+    [Fact]
     public void TreatsAnyOfNoFilteredRowAsFalse()
     {
         Expression query = Orders
@@ -265,7 +264,7 @@ public sealed record AdditionalGroupingSemanticsTests
         );
     }
 
-    [Fact(Skip = "BOOL_AND of a filter that matches nothing is null, while All is true.")]
+    [Fact]
     public void TreatsAllOfNoFilteredRowAsTrue()
     {
         Expression query = Orders
