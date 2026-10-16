@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Linq.Expressions;
+using Linq.Expressions.Translation.PostgreSql.Mapping;
 using Linq.Expressions.Translation.PostgreSql.Shapes;
 using Linq.Expressions.Translation.PostgreSql.Syntax;
 
@@ -110,7 +111,7 @@ internal sealed partial class Translator
     {
         SqlExpression fallback =
             call.Arguments.Count == 0
-                ? new SqlConstant(Activator.CreateInstance(call.Type), call.Type)
+                ? new SqlConstant(ScalarTypes.Default(call.Type), call.Type)
                 : Sql(call.Arguments[0]);
         return new SqlFunction("COALESCE", [Sql(call.Object!), fallback], call.Type);
     }

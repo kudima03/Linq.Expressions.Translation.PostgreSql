@@ -48,9 +48,12 @@ internal sealed partial class Translator
             : throw Unsupported.Node(expression);
     }
 
-    private static Type ElementType(Type sequence)
+    // A source is a queryable root or a Queryable operator returning IQueryable<T>.
+    private static Type ElementType(Expression source)
     {
-        return sequence.GetInterface("IEnumerable`1")!.GetGenericArguments()[0];
+        return source is ConstantExpression { Value: IQueryable root }
+            ? root.ElementType
+            : source.Type.GetGenericArguments()[0];
     }
 
     private static bool IsRejected(ParameterInfo parameter)
@@ -283,7 +286,7 @@ internal sealed partial class Translator
     private SqlQuery Cast(SqlQuery source, MethodCallExpression call)
     {
         Type target = call.Method.GetGenericArguments()[0];
-        Type element = ElementType(call.Arguments[0].Type);
+        Type element = ElementType(call.Arguments[0]);
         if (call.Method.Name == nameof(Queryable.OfType))
         {
             return OfType(source, element, target);

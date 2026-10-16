@@ -91,7 +91,7 @@ internal sealed partial class Translator
         return type.IsValueType && Nullable.GetUnderlyingType(type) is null
             ? new SqlFunction(
                 "COALESCE",
-                [value, new SqlConstant(Activator.CreateInstance(type), type)],
+                [value, new SqlConstant(ScalarTypes.Default(type), type)],
                 type
             )
             : value;
