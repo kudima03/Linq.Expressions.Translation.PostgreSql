@@ -283,7 +283,7 @@ public sealed record AdditionalExpressionSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CAST(t0."CreatedAt" AS time)
+                SELECT t0."CreatedAt" - DATE_TRUNC('day', t0."CreatedAt")
                 FROM "Order" AS t0
                 """
             ),

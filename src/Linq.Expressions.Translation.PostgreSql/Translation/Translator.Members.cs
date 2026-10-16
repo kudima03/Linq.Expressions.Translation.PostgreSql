@@ -46,7 +46,14 @@ internal sealed partial class Translator
                 [Text("day"), owner],
                 type
             ),
-            { Name: nameof(DateTime.TimeOfDay) } => new SqlCast(owner, "time", type),
+            { Name: nameof(DateTime.TimeOfDay) } => new SqlBinary(
+                "-",
+                SqlBinaryKind.Arithmetic,
+                owner,
+                new SqlFunction("DATE_TRUNC", [Text("day"), owner], owner.Type),
+                type,
+                owner.Nullable
+            ),
             { Name: nameof(DateTimeOffset.UtcDateTime) } => new SqlBinary(
                 "AT TIME ZONE",
                 SqlBinaryKind.Arithmetic,
