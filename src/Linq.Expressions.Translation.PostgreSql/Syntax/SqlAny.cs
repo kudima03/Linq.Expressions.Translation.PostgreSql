@@ -1,14 +1,9 @@
 namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 
 internal sealed class SqlAny(SqlExpression value, SqlExpression array)
-    : SqlExpression(typeof(bool))
+    : SqlMembership(value.Nullable || array.Nullable)
 {
-    public override bool IsCompound(SqlMode mode)
-    {
-        return true;
-    }
-
-    public override void Render(SqlWriter writer, SqlMode mode)
+    protected override void RenderMembership(SqlWriter writer)
     {
         _ = writer
             .Operand(value, SqlMode.Value)

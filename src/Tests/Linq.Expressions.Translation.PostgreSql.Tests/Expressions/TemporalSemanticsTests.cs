@@ -112,7 +112,7 @@ public sealed record TemporalSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CAST(EXTRACT(MILLISECONDS FROM t0."CreatedAt") AS integer) % 1000
+                SELECT CAST(TRUNC(EXTRACT(MILLISECONDS FROM t0."CreatedAt")) AS integer) % 1000
                 FROM "Order" AS t0
                 """
             ),
@@ -133,7 +133,7 @@ public sealed record TemporalSemanticsTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE (CAST(EXTRACT(MILLISECONDS FROM t0."CreatedAt") AS integer) % 1000) = 250
+                WHERE (CAST(TRUNC(EXTRACT(MILLISECONDS FROM t0."CreatedAt")) AS integer) % 1000) = 250
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -164,7 +164,7 @@ public sealed record TemporalSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CAST(EXTRACT(MILLISECONDS FROM t0."PaidAt") AS integer) % 1000
+                SELECT CAST(TRUNC(EXTRACT(MILLISECONDS FROM t0."PaidAt")) AS integer) % 1000
                 FROM "Order" AS t0
                 """
             ),

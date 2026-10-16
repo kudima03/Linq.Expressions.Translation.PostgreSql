@@ -270,6 +270,18 @@ internal sealed partial class Translator
     private SelectQuery Distinct(SqlQuery source)
     {
         SelectQuery query = Open(source, Barrier.Paging);
+        HashSet<string> projected =
+        [
+            .. query.Shape.Columns().Select(column => SqlWriter.Text(column.Value)),
+        ];
+        // SELECT DISTINCT can only be ordered by selected values; past the first hidden
+        // key the order of the distinct rows is no longer the order of the source.
+        query.Orderings =
+        [
+            .. query.Orderings.TakeWhile(ordering =>
+                projected.Contains(SqlWriter.Text(ordering.Key))
+            ),
+        ];
         query.Distinct = true;
         return query;
     }
@@ -342,6 +354,7 @@ internal sealed partial class Translator
 
     private SelectQuery Wrap(SqlQuery inner)
     {
+        Named(inner);
         string alias = NextAlias();
         Dictionary<string, string> names = [];
         foreach (ProjectionColumn column in inner.Shape.Columns())
@@ -379,6 +392,18 @@ internal sealed partial class Translator
             }
         }
         return outer;
+    }
+
+    private static void Named(SqlQuery query)
+    {
+        if (query is SetOperationQuery operation)
+        {
+            Named(operation.Left);
+        }
+        if (query.Shape is ScalarShape scalar)
+        {
+            query.Shape = scalar.Named();
+        }
     }
 
     private string NextAlias()

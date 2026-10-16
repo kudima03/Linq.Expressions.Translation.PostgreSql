@@ -4,14 +4,9 @@ internal sealed class SqlIn(
     SqlExpression operand,
     IReadOnlyList<SqlExpression> values,
     bool negated
-) : SqlExpression(typeof(bool))
+) : SqlMembership(operand.Nullable)
 {
-    public override bool IsCompound(SqlMode mode)
-    {
-        return true;
-    }
-
-    public override void Render(SqlWriter writer, SqlMode mode)
+    protected override void RenderMembership(SqlWriter writer)
     {
         _ = writer
             .Operand(operand, SqlMode.Value)

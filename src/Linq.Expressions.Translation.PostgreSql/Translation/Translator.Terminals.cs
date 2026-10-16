@@ -130,7 +130,8 @@ internal sealed partial class Translator
             ),
             nameof(Queryable.Contains) => new SqlInQuery(
                 Sql(call.Arguments[1]),
-                Unordered(Open(source, Barrier.None))
+                Unordered(Open(source, Barrier.None)),
+                Scalar(source.Shape).Nullable
             ),
             nameof(Queryable.Last) or nameof(Queryable.LastOrDefault) => Element(
                 Reverse(filtered ? Where(source, Lambda(call, 1)) : source, call.Method),

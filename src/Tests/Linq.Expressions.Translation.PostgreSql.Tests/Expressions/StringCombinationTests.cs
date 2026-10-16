@@ -1,4 +1,3 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
 #pragma warning disable CA1861 // the arrays are the arguments under test
 #pragma warning disable CA1870 // SearchValues would hide the IndexOfAny translation
 
@@ -6,7 +5,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record StringCombinationTests
 {
-    [Fact(Skip = "A nullable integer is coalesced with '' without a cast to text.")]
+    [Fact]
     public void ConcatenatesNullableIntegerAsText()
     {
         Expression query = Orders.Select(o => o.Number + o.Priority).Expression;
@@ -38,9 +37,7 @@ public sealed record StringCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "A boolean is concatenated as 'true'/'false' instead of 'True'/'False'."
-    )]
+    [Fact]
     public void RejectsConcatenatingBoolean()
     {
         Expression query = Orders.Select(o => o.Number + o.IsPaid).Expression;
@@ -50,7 +47,7 @@ public sealed record StringCombinationTests
         );
     }
 
-    [Fact(Skip = "An enum is concatenated as its number instead of its name.")]
+    [Fact]
     public void RejectsConcatenatingEnum()
     {
         Expression query = Orders.Select(o => o.Number + o.Status).Expression;
@@ -60,9 +57,7 @@ public sealed record StringCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "A DateTime is concatenated in the PostgreSQL format, not the .NET one."
-    )]
+    [Fact]
     public void RejectsConcatenatingDateTime()
     {
         Expression query = Orders.Select(o => o.Number + o.CreatedAt).Expression;
@@ -72,7 +67,7 @@ public sealed record StringCombinationTests
         );
     }
 
-    [Fact(Skip = "String.Concat of a string array is not translated.")]
+    [Fact]
     public void ConcatenatesStringArray()
     {
         Expression query = Orders
@@ -90,9 +85,7 @@ public sealed record StringCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "Interpolated strings compile to String.Format, which is not translated."
-    )]
+    [Fact]
     public void InterpolatesStrings()
     {
         Expression query = Orders.Select(o => $"{o.Number}-{o.Note}").Expression;
@@ -108,9 +101,7 @@ public sealed record StringCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "Interpolated strings compile to String.Format, which is not translated."
-    )]
+    [Fact]
     public void InterpolatesInteger()
     {
         Expression query = Orders.Select(o => $"#{o.Quantity}").Expression;
