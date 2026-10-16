@@ -297,17 +297,25 @@ internal sealed partial class Translator
     {
         List<SqlExpression> parts = [];
         Concatenated(expression, parts);
-        return parts.Aggregate(
-            (left, right) =>
-                new SqlBinary(
-                    "||",
-                    SqlBinaryKind.Concatenation,
-                    left,
-                    right,
-                    typeof(string),
-                    false
-                )
-        );
+        return Joined(parts);
+    }
+
+    private static SqlExpression Joined(List<SqlExpression> parts)
+    {
+        return parts.Count == 0 ? Text(string.Empty)
+            : parts is [{ Type: Type type } part] && type != typeof(string)
+                ? new SqlCast(part, "text", typeof(string))
+            : parts.Aggregate(
+                (left, right) =>
+                    new SqlBinary(
+                        "||",
+                        SqlBinaryKind.Concatenation,
+                        left,
+                        right,
+                        typeof(string),
+                        false
+                    )
+            );
     }
 
     private void Concatenated(Expression expression, List<SqlExpression> parts)
@@ -324,16 +332,53 @@ internal sealed partial class Translator
         {
             foreach (Expression argument in call.Arguments)
             {
-                Concatenated(argument, parts);
+                Listed(argument, parts);
             }
             return;
         }
-        SqlExpression part = Sql(expression);
+        Appended(expression, parts);
+    }
+
+    private void Listed(Expression argument, List<SqlExpression> parts)
+    {
+        if (argument is NewArrayExpression array)
+        {
+            foreach (Expression element in array.Expressions)
+            {
+                Concatenated(element, parts);
+            }
+            return;
+        }
+        Concatenated(argument, parts);
+    }
+
+    private void Appended(Expression expression, List<SqlExpression> parts)
+    {
+        Expression value =
+            expression is UnaryExpression { NodeType: ExpressionType.Convert } boxing
+            && boxing.Type == typeof(object)
+                ? boxing.Operand
+                : expression;
+        Type type = value is ConstantExpression { Value: object constant }
+            ? constant.GetType()
+            : Nullable.GetUnderlyingType(value.Type) ?? value.Type;
+        if (type != typeof(string) && type != typeof(char) && !Printable.Contains(type))
+        {
+            throw new NotSupportedException(
+                $"Concatenating '{type.Name}' values is not supported: PostgreSQL formats them differently from .NET."
+            );
+        }
+        SqlExpression part = Sql(value);
         parts.Add(
             part.Nullable
                 ? new SqlFunction(
                     "COALESCE",
-                    [part, new SqlConstant(string.Empty, typeof(string))],
+                    [
+                        type == typeof(string)
+                            ? part
+                            : new SqlCast(part, "text", typeof(string)),
+                        Text(string.Empty),
+                    ],
                     typeof(string)
                 )
                 : part
