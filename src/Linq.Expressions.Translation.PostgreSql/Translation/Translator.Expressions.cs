@@ -265,9 +265,11 @@ internal sealed partial class Translator
         }
         SqlExpression one = Scalar(first);
         SqlExpression other = Scalar(second);
-        bool nullable = (one.Nullable || other.Nullable) && !IsCorrelation(left, right);
+        bool nullable = one.Nullable || other.Nullable;
+        bool distinct =
+            (one.Nullable && other.Nullable) || (nullable && !IsCorrelation(left, right));
         string symbol =
-            nullable ? (negated ? "IS DISTINCT FROM" : "IS NOT DISTINCT FROM")
+            distinct ? (negated ? "IS DISTINCT FROM" : "IS NOT DISTINCT FROM")
             : negated ? "<>"
             : "=";
         return new SqlBinary(
@@ -276,7 +278,7 @@ internal sealed partial class Translator
             one,
             other,
             typeof(bool),
-            false
+            nullable && !distinct
         );
     }
 

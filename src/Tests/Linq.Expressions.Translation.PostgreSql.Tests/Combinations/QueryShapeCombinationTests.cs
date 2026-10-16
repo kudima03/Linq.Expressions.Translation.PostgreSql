@@ -709,9 +709,7 @@ public sealed record QueryShapeCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "NOT IN over a subquery with nullable values drops every row once a NULL is present."
-    )]
+    [Fact]
     public void ExcludesIdsFoundInNullableSubquery()
     {
         Expression query = Customers
