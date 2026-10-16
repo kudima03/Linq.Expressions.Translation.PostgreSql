@@ -5,12 +5,14 @@ internal sealed class SetOperationQuery(string operation, SqlQuery left, SqlQuer
 {
     public string Operation { get; } = operation;
 
+    public SqlQuery Left { get; } = left;
+
     public override void Render(SqlWriter writer)
     {
         Operand(
             writer,
-            left,
-            left is SetOperationQuery nested && nested.Operation != Operation
+            Left,
+            Left is SetOperationQuery nested && nested.Operation != Operation
         );
         _ = writer.Append(" " + Operation + " ");
         Operand(writer, right, right is SetOperationQuery);

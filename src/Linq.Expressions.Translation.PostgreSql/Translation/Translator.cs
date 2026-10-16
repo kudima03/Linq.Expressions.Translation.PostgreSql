@@ -349,6 +349,7 @@ internal sealed partial class Translator
 
     private SelectQuery Wrap(SqlQuery inner)
     {
+        Named(inner);
         string alias = NextAlias();
         Dictionary<string, string> names = [];
         foreach (ProjectionColumn column in inner.Shape.Columns())
@@ -386,6 +387,18 @@ internal sealed partial class Translator
             }
         }
         return outer;
+    }
+
+    private static void Named(SqlQuery query)
+    {
+        if (query is SetOperationQuery operation)
+        {
+            Named(operation.Left);
+        }
+        if (query.Shape is ScalarShape scalar)
+        {
+            query.Shape = scalar.Named();
+        }
     }
 
     private string NextAlias()
