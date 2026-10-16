@@ -2,9 +2,14 @@ using Linq.Expressions.Translation.PostgreSql.Syntax;
 
 namespace Linq.Expressions.Translation.PostgreSql.Shapes;
 
-internal sealed class ScalarShape(SqlExpression value) : Shape
+internal sealed class ScalarShape(SqlExpression value, string? name = null) : Shape
 {
     public SqlExpression Value { get; } = value;
+
+    public ScalarShape Named()
+    {
+        return Leaf(null) is null ? new ScalarShape(Value, "Value") : this;
+    }
 
     public override void Collect(List<ProjectionColumn> columns, string? path)
     {
@@ -21,6 +26,6 @@ internal sealed class ScalarShape(SqlExpression value) : Shape
 
     private string? Leaf(string? path)
     {
-        return path ?? (Value as SqlColumn)?.Name;
+        return path ?? name ?? (Value as SqlColumn)?.Name;
     }
 }

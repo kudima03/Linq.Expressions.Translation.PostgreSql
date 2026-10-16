@@ -6,7 +6,8 @@ namespace Linq.Expressions.Translation.PostgreSql.Shapes;
 internal sealed class GroupJoinShape(
     Expression inner,
     LambdaExpression innerKey,
-    Shape outerKey
+    Shape outerKey,
+    IReadOnlyList<MethodCallExpression>? operators = null
 ) : Shape
 {
     public Expression Inner { get; } = inner;
@@ -14,6 +15,13 @@ internal sealed class GroupJoinShape(
     public LambdaExpression InnerKey { get; } = innerKey;
 
     public Shape OuterKey { get; } = outerKey;
+
+    public IReadOnlyList<MethodCallExpression> Operators { get; } = operators ?? [];
+
+    public GroupJoinShape Then(MethodCallExpression call)
+    {
+        return new GroupJoinShape(Inner, InnerKey, OuterKey, [.. Operators, call]);
+    }
 
     public override void Collect(List<ProjectionColumn> columns, string? path)
     {

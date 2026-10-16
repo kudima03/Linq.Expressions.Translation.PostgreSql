@@ -1,5 +1,3 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
-
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record TemporalCombinationTests
@@ -67,9 +65,7 @@ public sealed record TemporalCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "Casting EXTRACT(SECOND) to integer rounds 59.7 up to 60 while C# truncates; the existing Second specs pin the rounding form."
-    )]
+    [Fact]
     public void SelectsWholeSecondOfFractionalTimestamp()
     {
         Expression query = Orders.Select(o => o.CreatedAt.Second).Expression;
@@ -85,9 +81,7 @@ public sealed record TemporalCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "Casting EXTRACT(MILLISECONDS) to integer rounds a fractional millisecond up while C# truncates; the existing Millisecond specs pin the rounding form."
-    )]
+    [Fact]
     public void SelectsWholeMillisecondOfFractionalTimestamp()
     {
         Expression query = Orders.Select(o => o.CreatedAt.Millisecond).Expression;

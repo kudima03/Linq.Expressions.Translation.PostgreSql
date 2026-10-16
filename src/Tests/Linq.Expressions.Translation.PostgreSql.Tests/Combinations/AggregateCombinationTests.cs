@@ -1,5 +1,3 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
-
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Combinations;
 
 public sealed record AggregateCombinationTests
@@ -117,7 +115,7 @@ public sealed record AggregateCombinationTests
                 """
                 SELECT CAST(COUNT(*) AS integer)
                 FROM (
-                    SELECT DISTINCT t0."Quantity" * 2
+                    SELECT DISTINCT t0."Quantity" * 2 AS "Value"
                     FROM "Order" AS t0
                 ) AS t1
                 """
@@ -151,9 +149,7 @@ public sealed record AggregateCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "Wrapping an unnamed computed column throws NullReferenceException; the alias \"Value\" is a proposal."
-    )]
+    [Fact]
     public void TakesMaximumOfGroupCounts()
     {
         Expression query = Orders
@@ -176,9 +172,7 @@ public sealed record AggregateCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "Wrapping an unnamed computed column throws NullReferenceException; the alias \"Value\" is a proposal."
-    )]
+    [Fact]
     public void FiltersComputedValuesAfterTake()
     {
         Expression query = Orders

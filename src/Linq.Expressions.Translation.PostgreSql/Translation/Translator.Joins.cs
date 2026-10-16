@@ -67,7 +67,7 @@ internal sealed partial class Translator
         MethodCallExpression call
     )
     {
-        if (items is not GroupJoinShape group)
+        if (items is not GroupJoinShape { Operators.Count: 0 } group)
         {
             throw Unsupported.Method(call.Method);
         }
@@ -121,14 +121,14 @@ internal sealed partial class Translator
         return left ? Nullified(inner.Shape) : inner.Shape;
     }
 
-    private SelectQuery Correlated(GroupJoinShape group)
+    private SqlQuery Correlated(GroupJoinShape group)
     {
         SelectQuery inner = Simple(Query(group.Inner));
         inner.Where = Conjoined(
             Matching(Bind(group.InnerKey, inner.Shape), group.OuterKey),
             inner.Where
         );
-        return inner;
+        return group.Operators.Aggregate<MethodCallExpression, SqlQuery>(inner, Sequence);
     }
 
     private static void Absorb(SelectQuery outer, SelectQuery inner)

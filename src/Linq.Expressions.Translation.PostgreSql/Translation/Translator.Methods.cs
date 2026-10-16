@@ -1,5 +1,7 @@
 using System.Collections;
+using System.Globalization;
 using System.Linq.Expressions;
+using System.Text;
 using Linq.Expressions.Translation.PostgreSql.Shapes;
 using Linq.Expressions.Translation.PostgreSql.Syntax;
 
@@ -74,8 +76,54 @@ internal sealed partial class Translator
         Shape source = Shape(call.Arguments[0]);
         return source is GroupingShape grouping ? Grouped(grouping, call)
             : source is GroupJoinShape group
-                ? new ScalarShape(Terminal(Correlated(group), call))
+                ? Terminals.Contains(call.Method.Name)
+                        ? new ScalarShape(Terminal(Correlated(group), call))
+                    : group.Then(call)
+            : source is ScalarShape { Value: SqlConstant or { Type.IsArray: true } } items
+            && Matched(call) is Expression item
+                ? new ScalarShape(Membership(items.Value, Sql(item)))
+            : source is ScalarShape { Value.Type.IsArray: true } array && IsCounted(call)
+                ? new ScalarShape(
+                    new SqlFunction("CARDINALITY", [array.Value], call.Type)
+                )
             : throw Unsupported.Method(call.Method);
+    }
+
+    private static bool IsCounted(MethodCallExpression call)
+    {
+        return call.Arguments.Count == 1
+            && call.Method.Name
+                is nameof(Enumerable.Count)
+                    or nameof(Enumerable.LongCount);
+    }
+
+    // xs.Any(x => x == item) is xs.Contains(item) when item does not depend on x.
+    private static Expression? Matched(MethodCallExpression call)
+    {
+        LambdaExpression? lambda =
+            call.Method.Name == nameof(Enumerable.Any)
+                ? call.Arguments[^1] as LambdaExpression
+                : null;
+        if (lambda?.Body is not BinaryExpression { NodeType: ExpressionType.Equal } equal)
+        {
+            return null;
+        }
+        ParameterExpression element = lambda.Parameters[0];
+        Expression? item =
+            Unlifted(equal.Left) == element ? equal.Right
+            : Unlifted(equal.Right) == element ? equal.Left
+            : null;
+        Parameters parameters = new();
+        _ = parameters.Visit(item);
+        return parameters.Found.Contains(element) ? null : item;
+    }
+
+    private static Expression Unlifted(Expression expression)
+    {
+        return
+            expression is UnaryExpression { NodeType: ExpressionType.Convert } conversion
+            ? conversion.Operand
+            : expression;
     }
 
     private SqlExpression Stringified(MethodCallExpression call)
@@ -153,8 +201,68 @@ internal sealed partial class Translator
             (nameof(string.EndsWith), _) when IsOrdinal(arguments) => EndsWith(call),
             (nameof(string.IsNullOrEmpty), 1) => IsNullOrEmpty(Sql(arguments[0])),
             (nameof(string.Concat), _) => Concatenation(call),
+            (nameof(string.Format), _) => Formatted(call),
             _ => throw Unsupported.Method(call.Method),
         };
+    }
+
+    private SqlExpression Formatted(MethodCallExpression call)
+    {
+        if (call.Arguments[0] is not ConstantExpression { Value: string format })
+        {
+            throw Unsupported.Method(call.Method);
+        }
+        IReadOnlyList<Expression> arguments = call.Arguments[1]
+            is NewArrayExpression array
+            ? array.Expressions
+            : call.Arguments.Skip(1).ToList();
+        List<SqlExpression> parts = [];
+        StringBuilder literal = new();
+        for (int index = 0; index < format.Length; index++)
+        {
+            char current = format[index];
+            if (current is '{' or '}' && format.ElementAtOrDefault(index + 1) == current)
+            {
+                _ = literal.Append(current);
+                index++;
+            }
+            else if (current == '{')
+            {
+                int end = format.IndexOf('}', index);
+                Flushed(literal, parts);
+                Concatenated(arguments[FormatIndex(format[index..(end + 1)])], parts);
+                index = end;
+            }
+            else
+            {
+                _ = literal.Append(current);
+            }
+        }
+        Flushed(literal, parts);
+        return Joined(parts);
+    }
+
+    private static void Flushed(StringBuilder literal, List<SqlExpression> parts)
+    {
+        if (literal.Length > 0)
+        {
+            parts.Add(Text(literal.ToString()));
+            _ = literal.Clear();
+        }
+    }
+
+    private static int FormatIndex(string item)
+    {
+        return int.TryParse(
+            item[1..^1],
+            NumberStyles.None,
+            CultureInfo.InvariantCulture,
+            out int index
+        )
+            ? index
+            : throw new NotSupportedException(
+                $"The format item '{item}' is not supported: alignment and format strings have no PostgreSQL equivalent."
+            );
     }
 
     private SqlFunction Function(string name, MethodCallExpression call)
@@ -567,9 +675,14 @@ internal sealed partial class Translator
             ? (Unspanned(call.Arguments[0]), call.Arguments[1])
             : (call.Object, call.Arguments[0]);
         SqlExpression value = Sql(item);
-        if (source is not ConstantExpression { Value: IEnumerable values })
+        return Membership(Sql(source), value);
+    }
+
+    private static SqlExpression Membership(SqlExpression source, SqlExpression value)
+    {
+        if (source is not SqlConstant { Value: IEnumerable values })
         {
-            return new SqlAny(value, Sql(source));
+            return new SqlAny(value, source);
         }
         List<SqlExpression> present =
         [

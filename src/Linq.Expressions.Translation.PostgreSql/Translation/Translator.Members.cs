@@ -69,16 +69,25 @@ internal sealed partial class Translator
             ),
             _ when Temporal.Contains(member.DeclaringType!)
                     && DateParts.TryGetValue(member.Name, out string? part) =>
-                new SqlCast(new SqlExtract(part, owner), "integer", type),
+                new SqlCast(Extracted(part, owner), "integer", type),
             _ when Temporal.Contains(member.DeclaringType!)
                     && Fractions.TryGetValue(member.Name, out string? fraction) =>
                 Calculate(
                     "%",
-                    new SqlCast(new SqlExtract(fraction, owner), "integer", type),
+                    new SqlCast(Extracted(fraction, owner), "integer", type),
                     Integer(1000)
                 ),
             _ => throw Unsupported.Member(member),
         };
+    }
+
+    private static SqlExpression Extracted(string field, SqlExpression owner)
+    {
+        SqlExtract extract = new(field, owner);
+        // The fraction below a second or millisecond is truncated away in C#.
+        return field is "SECOND" or "MILLISECONDS"
+            ? new SqlFunction("TRUNC", [extract], typeof(decimal))
+            : extract;
     }
 
     private static SqlExpression StaticMember(MemberInfo member)
