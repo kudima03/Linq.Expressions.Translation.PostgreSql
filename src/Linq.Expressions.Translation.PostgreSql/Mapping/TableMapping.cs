@@ -1,10 +1,16 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace Linq.Expressions.Translation.PostgreSql.Mapping;
 
 internal sealed class TableMapping
 {
+    public const string Trimming =
+        "Columns are read from the public properties of the queried element types, "
+        + "which trimming removes unless they are preserved.";
+
+    [RequiresUnreferencedCode(Trimming)]
     public TableMapping(Type type)
     {
         TableAttribute? table = type.GetCustomAttribute<TableAttribute>();
@@ -16,7 +22,7 @@ internal sealed class TableMapping
                 .Where(property =>
                     property.GetCustomAttribute<NotMappedAttribute>() is null
                 )
-                .OrderBy(property => property.MetadataToken)
+                .OrderBy(property => Depth(property.DeclaringType!))
                 .Select(property => new ColumnMapping(property)),
         ];
     }
@@ -26,4 +32,11 @@ internal sealed class TableMapping
     public string? Schema { get; }
 
     public IReadOnlyList<ColumnMapping> Columns { get; }
+
+    // Properties come in declaration order, derived types first; the stable sort puts
+    // base types first. Metadata tokens would be exact but do not exist under Native AOT.
+    private static int Depth(Type type)
+    {
+        return type.BaseType is Type parent ? Depth(parent) + 1 : 0;
+    }
 }

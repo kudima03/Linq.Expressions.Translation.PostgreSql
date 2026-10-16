@@ -31,6 +31,24 @@ internal static class ScalarTypes
         [typeof(decimal)] = "numeric",
     };
 
+    private static readonly Dictionary<Type, object> Defaults = new()
+    {
+        [typeof(bool)] = false,
+        [typeof(short)] = (short)0,
+        [typeof(int)] = 0,
+        [typeof(long)] = 0L,
+        [typeof(float)] = 0F,
+        [typeof(double)] = 0D,
+        [typeof(decimal)] = 0M,
+        [typeof(char)] = '\0',
+        [typeof(Guid)] = Guid.Empty,
+        [typeof(DateTime)] = default(DateTime),
+        [typeof(DateTimeOffset)] = default(DateTimeOffset),
+        [typeof(DateOnly)] = default(DateOnly),
+        [typeof(TimeOnly)] = default(TimeOnly),
+        [typeof(TimeSpan)] = TimeSpan.Zero,
+    };
+
     public static Type Underlying(Type type)
     {
         Type value = Nullable.GetUnderlyingType(type) ?? type;
@@ -42,6 +60,12 @@ internal static class ScalarTypes
         Type value = Underlying(type);
         return Types.Contains(value)
             || (value.IsArray && IsScalar(value.GetElementType()!));
+    }
+
+    // An enum defaults to the zero of its underlying type, which renders the same.
+    public static object Default(Type type)
+    {
+        return Defaults[Underlying(type)];
     }
 
     public static bool IsNumber(Type type)

@@ -18,8 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Translation of `string.Format` and interpolated strings, `string.Concat` of an array, `Any(x => x == value)` on collections and array columns, and `Count()`/`LongCount()` of an array column.
 - `Where`, `Select`, ordering, `Distinct` and paging on a `GroupJoin` group before an aggregate.
 
+### Changed
+
+- The package is marked `IsAotCompatible`. `TextValue` is annotated `[RequiresUnreferencedCode]`, as columns are read from the public properties of the queried element types, which trimming removes unless they are preserved.
+- `ToString()` describes the expression instead of translating it.
+- Package validation compares the public API with the `0.1.0-preview.0.1.0` package.
+
 ### Fixed
 
+- Columns are ordered without `MetadataToken`, which Native AOT does not provide; inherited properties still come before declared ones.
 - `FirstOrDefault`, `SingleOrDefault`, `LastOrDefault` and `ElementAtOrDefault` of a non-nullable value inside a lambda substitute the type's default instead of `NULL` when no row matches.
 - `Any`/`All` on a filtered group are `FALSE`/`TRUE` instead of `NULL` when no row matches the filter.
 - Chained `Where` calls on a group combine their predicates instead of keeping only the last one.

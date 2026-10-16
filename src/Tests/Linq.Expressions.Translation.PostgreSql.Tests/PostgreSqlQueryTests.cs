@@ -68,4 +68,15 @@ public sealed record PostgreSqlQueryTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void DescribesExpressionWithoutTranslating()
+    {
+        Expression query = Customers.Where(c => c.Name.Normalize() == "A").Expression;
+
+        Assert.Equal(
+            "PostgreSqlQuery { Expression = " + query + " }",
+            new PostgreSqlQuery(query).ToString()
+        );
+    }
 }
