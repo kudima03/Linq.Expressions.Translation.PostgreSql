@@ -77,7 +77,51 @@ internal sealed partial class Translator
         return source is GroupingShape grouping ? Grouped(grouping, call)
             : source is GroupJoinShape group
                 ? new ScalarShape(Terminal(Correlated(group), call))
+            : source is ScalarShape { Value: SqlConstant or { Type.IsArray: true } } items
+            && Matched(call) is Expression item
+                ? new ScalarShape(Membership(items.Value, Sql(item)))
+            : source is ScalarShape { Value.Type.IsArray: true } array && IsCounted(call)
+                ? new ScalarShape(
+                    new SqlFunction("CARDINALITY", [array.Value], call.Type)
+                )
             : throw Unsupported.Method(call.Method);
+    }
+
+    private static bool IsCounted(MethodCallExpression call)
+    {
+        return call.Arguments.Count == 1
+            && call.Method.Name
+                is nameof(Enumerable.Count)
+                    or nameof(Enumerable.LongCount);
+    }
+
+    // xs.Any(x => x == item) is xs.Contains(item) when item does not depend on x.
+    private static Expression? Matched(MethodCallExpression call)
+    {
+        LambdaExpression? lambda =
+            call.Method.Name == nameof(Enumerable.Any)
+                ? call.Arguments[^1] as LambdaExpression
+                : null;
+        if (lambda?.Body is not BinaryExpression { NodeType: ExpressionType.Equal } equal)
+        {
+            return null;
+        }
+        ParameterExpression element = lambda.Parameters[0];
+        Expression? item =
+            Unlifted(equal.Left) == element ? equal.Right
+            : Unlifted(equal.Right) == element ? equal.Left
+            : null;
+        Parameters parameters = new();
+        _ = parameters.Visit(item);
+        return parameters.Found.Contains(element) ? null : item;
+    }
+
+    private static Expression Unlifted(Expression expression)
+    {
+        return
+            expression is UnaryExpression { NodeType: ExpressionType.Convert } conversion
+            ? conversion.Operand
+            : expression;
     }
 
     private SqlExpression Stringified(MethodCallExpression call)
@@ -629,9 +673,14 @@ internal sealed partial class Translator
             ? (Unspanned(call.Arguments[0]), call.Arguments[1])
             : (call.Object, call.Arguments[0]);
         SqlExpression value = Sql(item);
-        if (source is not ConstantExpression { Value: IEnumerable values })
+        return Membership(Sql(source), value);
+    }
+
+    private static SqlExpression Membership(SqlExpression source, SqlExpression value)
+    {
+        if (source is not SqlConstant { Value: IEnumerable values })
         {
-            return new SqlAny(value, Sql(source));
+            return new SqlAny(value, source);
         }
         List<SqlExpression> present =
         [

@@ -1,4 +1,3 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
 #pragma warning disable CA1829 // Enumerable.Count on the array column is the subject
 
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Combinations;
@@ -137,9 +136,7 @@ public sealed record CapturedAndShapeCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "Enumerable.Any with an equality predicate on a captured list is not translated."
-    )]
+    [Fact]
     public void FiltersByCapturedListThroughAny()
     {
         List<int> ids = [1, 2, 3];
@@ -222,7 +219,7 @@ public sealed record CapturedAndShapeCombinationTests
         );
     }
 
-    [Fact(Skip = "Enumerable.Count of an array column is not translated.")]
+    [Fact]
     public void CountsArrayColumnElements()
     {
         Expression query = Orders.Select(o => o.Tags.Count()).Expression;
