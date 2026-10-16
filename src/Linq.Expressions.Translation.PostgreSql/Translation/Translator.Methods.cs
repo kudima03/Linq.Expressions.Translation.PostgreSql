@@ -172,11 +172,15 @@ internal sealed partial class Translator
             name,
             [
                 Sql(call.Object!),
-                .. call.Arguments.Select(argument =>
-                    argument is ConstantExpression { Value: char[] characters }
-                        ? Text(new string(characters))
-                        : Sql(argument)
-                ),
+                .. call
+                    .Arguments.Where(argument =>
+                        argument is not ConstantExpression { Value: char[] { Length: 0 } }
+                    )
+                    .Select(argument =>
+                        argument is ConstantExpression { Value: char[] characters }
+                            ? Text(new string(characters))
+                            : Sql(argument)
+                    ),
             ],
             call.Type
         );
