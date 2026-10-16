@@ -34,6 +34,7 @@ The repository is not part of the Pure ecosystem: do not reference `Pure.*` pack
 - `Shapes/` map a LINQ element onto SQL values (`ScalarShape`, `EntityShape`, `ObjectShape`, `GroupingShape`, `GroupJoinShape`); lambda parameters are bound to shapes.
 - `Syntax/` is the SQL tree and renderer; `SqlMode` distinguishes predicate from value positions (a nullable comparison used as a value renders as `COALESCE(..., FALSE)`), and operands are parenthesized when compound.
 - `Mapping/` derives table and column names (`[Table]`, `[Column]`, `[NotMapped]`) and nullability.
+- The library is `IsAotCompatible` and must build without trimming/AOT warnings and without suppressions. Reflection over element types is confined to `TableMapping`, annotated `[RequiresUnreferencedCode]` and surfaced on `Translator` and `PostgreSqlQuery.TextValue`; everything else must stay analyzer-clean (no `Activator.CreateInstance`, `GetInterface`, `MetadataToken` or other reflection that needs `DynamicallyAccessedMembers` or fails under Native AOT).
 - CI also enforces 98% line coverage and a 98% Stryker mutation score: avoid code paths no test exercises.
 
 **Test project:** `Linq.Expressions.Translation.PostgreSql.Tests` targets `net10.0` and uses xunit.
@@ -46,7 +47,7 @@ The repository is not part of the Pure ecosystem: do not reference `Pure.*` pack
 
 **Multi-targeting:** net8.0, net9.0, net10.0.
 
-**Publishing:** triggered by pushing a semver tag (pattern `*.*.*`). The tag becomes the `PackageVersion`. The workflow publishes to both GitHub Packages and NuGet.org.
+**Publishing:** triggered by pushing a semver tag (pattern `*.*.*`). The tag becomes the `PackageVersion`. The workflow publishes to both GitHub Packages and NuGet.org. `dotnet pack` validates the public API against `PackageValidationBaselineVersion` (the latest released tag, from `git describe --tags --abbrev=0`); move it to the new tag after a release.
 
 ## Code Style
 

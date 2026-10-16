@@ -47,3 +47,16 @@ Nullability follows the CLR: `Nullable<T>` and nullable reference types are null
 ## Constants are inline literals
 
 The result is a single string, not a command with a parameter collection. Every constant in the tree — literals, captured variables and in-memory collections — is rendered as a safely escaped inline PostgreSQL literal (for example, `'O''Brien'` for the string `O'Brien`). No bind parameters (`$1`, `@p0`) are produced.
+
+## Native AOT and trimming
+
+The package is marked `IsAotCompatible` and builds without trimming or AOT warnings. Translation reads the public properties of the queried element types to find their columns, so `TextValue` is annotated `[RequiresUnreferencedCode]`: in a trimmed or Native AOT application a property that the code never references is removed, and its column silently disappears from `SELECT`. Keep the properties of every mapped type and then acknowledge the `IL2026` warning at the call site, for example:
+
+```csharp
+[DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(Order))]
+[UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Order properties are preserved.")]
+static string Sql(IQueryable<Order> orders)
+{
+    return new PostgreSqlQuery(orders.Expression).TextValue;
+}
+```
