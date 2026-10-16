@@ -90,7 +90,7 @@ public sealed record DateTimeTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CAST(EXTRACT(SECOND FROM t0."CreatedAt") AS integer)
+                SELECT CAST(TRUNC(EXTRACT(SECOND FROM t0."CreatedAt")) AS integer)
                 FROM "Order" AS t0
                 """
             ),
@@ -1206,7 +1206,7 @@ public sealed record DateTimeTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CAST(EXTRACT(SECOND FROM t0."DeliveryTime") AS integer)
+                SELECT CAST(TRUNC(EXTRACT(SECOND FROM t0."DeliveryTime")) AS integer)
                 FROM "Order" AS t0
                 """
             ),
