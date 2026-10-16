@@ -445,4 +445,44 @@ public sealed record LogicalTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void OrdersByLiftedConjunctionWithNullsFirst()
+    {
+        Expression query = Orders
+            .OrderBy(o => o.IsGift & o.IsPaid)
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                ORDER BY t0."IsGift" AND t0."IsPaid" NULLS FIRST
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OrdersByLiftedDisjunctionDescendingWithNullsLast()
+    {
+        Expression query = Orders
+            .OrderByDescending(o => o.IsPaid | o.IsGift)
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                ORDER BY t0."IsPaid" OR t0."IsGift" DESC NULLS LAST
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

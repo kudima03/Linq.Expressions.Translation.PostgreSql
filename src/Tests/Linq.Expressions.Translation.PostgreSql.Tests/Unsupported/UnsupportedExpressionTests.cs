@@ -109,14 +109,16 @@ public sealed record UnsupportedExpressionTests
     }
 
     [Fact]
-    public void RejectsStringFormat()
+    public void RejectsStringFormatWithFormatString()
     {
-        Expression query = Orders.Select(o => string.Format("{0}", o.Id)).Expression;
+        Expression query = Orders
+            .Select(o => string.Format("{0:N2}", o.Total))
+            .Expression;
 
         NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("Format", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("{0:N2}", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

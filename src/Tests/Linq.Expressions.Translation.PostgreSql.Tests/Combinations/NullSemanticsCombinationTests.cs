@@ -1,5 +1,3 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
-
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Combinations;
 
 public sealed record NullSemanticsCombinationTests
@@ -487,7 +485,7 @@ public sealed record NullSemanticsCombinationTests
         );
     }
 
-    [Fact(Skip = "Correlation equality uses = and never matches two nulls.")]
+    [Fact]
     public void MatchesNullCorrelationKeysLikeCSharp()
     {
         Expression query = Products
@@ -511,7 +509,7 @@ public sealed record NullSemanticsCombinationTests
         );
     }
 
-    [Fact(Skip = "IN on a nullable value is not null-safe under NOT.")]
+    [Fact]
     public void KeepsNullWhenNegatingMembershipOfNullableColumn()
     {
         int?[] priorities = [1, 2];
@@ -532,7 +530,7 @@ public sealed record NullSemanticsCombinationTests
         );
     }
 
-    [Fact(Skip = "IN on a nullable value is projected as NULL instead of FALSE.")]
+    [Fact]
     public void ProjectsMembershipOfNullableColumnAsBoolean()
     {
         string[] notes = ["a", "b"];
@@ -549,7 +547,7 @@ public sealed record NullSemanticsCombinationTests
         );
     }
 
-    [Fact(Skip = "= ANY on a nullable value is not null-safe under NOT.")]
+    [Fact]
     public void KeepsNullWhenNegatingArrayMembershipOfNullableColumn()
     {
         Expression query = Orders

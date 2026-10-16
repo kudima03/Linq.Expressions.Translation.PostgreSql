@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Translation of `string.IndexOf` with a start index and count, `LastIndexOf`, `IndexOfAny`, `Remove`, trimming of several characters, and `Contains`/`StartsWith`/`EndsWith` with `StringComparison.Ordinal`.
 - Translation of `Millisecond`/`Microsecond`, `AddMilliseconds`, `AddTicks` (whole microseconds), `Add(TimeSpan)`, `DateTime.TimeOfDay`, `DateTimeOffset.Date`/`UtcDateTime`/`Now`, `DateOnly.DayNumber` and `TimeOnly.FromDateTime`.
 - `Any()` without a predicate on a group.
+- Translation of `string.Format` and interpolated strings, `string.Concat` of an array, `Any(x => x == value)` on collections and array columns, and `Count()`/`LongCount()` of an array column.
+- `Where`, `Select`, ordering, `Distinct` and paging on a `GroupJoin` group before an aggregate.
 
 ### Fixed
 
@@ -23,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Chained `Where` calls on a group combine their predicates instead of keeping only the last one.
 - `Cast` to another numeric type converts the values, and `OfType` of an incompatible type returns no rows instead of every row.
 - `DateOnly.AddMonths`/`AddYears` return a `date`, and shift counts are masked to the operand width as in C#.
+- Nested prefix operators (`-(-x)`, `~~x`) are parenthesized instead of rendering `--`, which PostgreSQL reads as a comment; `~x` is parenthesized before `+`, `-`, `*`, `/` and `%`, and `NOT x` inside comparisons, `IS NULL` and `IN`.
+- `IN`, `IN (SELECT ...)` and `= ANY` of a nullable value are `FALSE` instead of `NULL` when used as a value or under `NOT`, and equality of two nullable correlated columns matches nulls as in C#.
+- `Second` and `Millisecond` truncate the fraction instead of rounding it.
+- Concatenating a nullable number casts it to `text`, and concatenating a `bool`, an enum or a date or time value is rejected instead of using PostgreSQL's formatting.
+- `Distinct` after ordering by a value that is not selected drops the ordering from that key on, which PostgreSQL otherwise rejects.
+- An unnamed computed column is aliased `"Value"` when wrapped into a derived table instead of throwing `NullReferenceException`.
 
 ## [0.1.0-preview.0.1.0] - 2026-10-15
 

@@ -1,10 +1,8 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
-
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record NumericCombinationTests
 {
-    [Fact(Skip = "Nested negation renders --, which PostgreSQL reads as a line comment.")]
+    [Fact]
     public void NegatesNegatedColumn()
     {
         Expression query = Orders.Select(o => -(-o.Quantity)).Expression;
@@ -20,9 +18,7 @@ public sealed record NumericCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "Nested negation renders --, which comments out the rest of the statement."
-    )]
+    [Fact]
     public void FiltersByNestedNegation()
     {
         Expression query = Orders
@@ -42,9 +38,7 @@ public sealed record NumericCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "PostgreSQL binds prefix ~ looser than +, so ~a + 1 parses as ~(a + 1)."
-    )]
+    [Fact]
     public void AddsToComplement()
     {
         Expression query = Orders.Select(o => ~o.Quantity + 1).Expression;
@@ -60,9 +54,7 @@ public sealed record NumericCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "PostgreSQL binds prefix ~ looser than *, so ~a * 2 parses as ~(a * 2)."
-    )]
+    [Fact]
     public void MultipliesComplement()
     {
         Expression query = Orders.Select(o => ~o.Quantity * 2).Expression;
@@ -94,9 +86,7 @@ public sealed record NumericCombinationTests
         );
     }
 
-    [Fact(
-        Skip = "NOT binds looser than IS NOT DISTINCT FROM, so the whole comparison is negated."
-    )]
+    [Fact]
     public void ComparesNegatedBooleanWithNullableBoolean()
     {
         Expression query = Orders
