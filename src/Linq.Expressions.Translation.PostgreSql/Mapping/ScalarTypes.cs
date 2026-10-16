@@ -44,6 +44,11 @@ internal static class ScalarTypes
             || (value.IsArray && IsScalar(value.GetElementType()!));
     }
 
+    public static bool IsNumber(Type type)
+    {
+        return Numbers.ContainsKey(Underlying(type));
+    }
+
     public static string Number(Type type)
     {
         return Numbers[type];

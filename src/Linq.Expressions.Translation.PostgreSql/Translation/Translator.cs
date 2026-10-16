@@ -119,10 +119,9 @@ internal sealed partial class Translator
 
     private SqlQuery Operator(MethodCallExpression call)
     {
-        SqlQuery source = Operand(call);
         return Terminals.Contains(call.Method.Name)
-            ? Statement(Terminal(source, call))
-            : Sequence(source, call);
+            ? Statement(Terminal(call))
+            : Sequence(Operand(call), call);
     }
 
     private SqlQuery Sequence(SqlQuery source, MethodCallExpression call)
@@ -147,6 +146,11 @@ internal sealed partial class Translator
             ),
             nameof(Queryable.Skip) => Skip(source, Count(call.Arguments[1])),
             nameof(Queryable.Take) => Take(source, Count(call.Arguments[1])),
+            nameof(Queryable.TakeLast) => Reverse(
+                Take(Reverse(source, call.Method), Count(call.Arguments[1])),
+                call.Method
+            ),
+            nameof(Queryable.SkipLast) => SkipLast(source, call),
             nameof(Queryable.Distinct) => Distinct(source),
             nameof(Queryable.Reverse) => Reverse(source, call.Method),
             nameof(Queryable.Cast) or nameof(Queryable.OfType) => Cast(source, call),
@@ -215,7 +219,7 @@ internal sealed partial class Translator
         {
             return source;
         }
-        SelectQuery query = Open(source, Barrier.None);
+        SelectQuery query = Open(source, Barrier.Bound);
         query.Offset = (query.Offset ?? 0) + count;
         if (query.Limit is long limit)
         {
@@ -226,8 +230,35 @@ internal sealed partial class Translator
 
     private SelectQuery Take(SqlQuery source, int count)
     {
-        SelectQuery query = Open(source, Barrier.None);
+        SelectQuery query = Open(source, Barrier.Bound);
         query.Limit = Math.Min(query.Limit ?? long.MaxValue, Math.Max(count, 0));
+        return query;
+    }
+
+    private SelectQuery SkipLast(SqlQuery source, MethodCallExpression call)
+    {
+        SelectQuery query = Open(source, Barrier.Paging);
+        SelectQuery counted = Unordered(
+            Open(
+                Query(call.Arguments[0]),
+                Barrier.Paging | Barrier.Distinct | Barrier.Grouping
+            )
+        );
+        counted.Shape = new ScalarShape(
+            new SqlFunction(
+                "GREATEST",
+                [
+                    Calculate(
+                        "-",
+                        new SqlAggregate("COUNT", null, false, null, typeof(long)),
+                        Integer(Count(call.Arguments[1]))
+                    ),
+                    Integer(0),
+                ],
+                typeof(long)
+            )
+        );
+        query.Bound = new SqlScalarSubquery(counted, typeof(long));
         return query;
     }
 
@@ -253,15 +284,34 @@ internal sealed partial class Translator
     {
         Type target = call.Method.GetGenericArguments()[0];
         Type element = ElementType(call.Arguments[0].Type);
-        if (
-            call.Method.Name != nameof(Queryable.OfType)
-            || Nullable.GetUnderlyingType(element) != target
-        )
+        if (call.Method.Name == nameof(Queryable.OfType))
+        {
+            return OfType(source, element, target);
+        }
+        if (!ScalarTypes.IsNumber(element) || !ScalarTypes.IsNumber(target))
+        {
+            return source;
+        }
+        SelectQuery query = Open(source, Barrier.Distinct | Barrier.Projection);
+        query.Shape = new ScalarShape(Convert(Scalar(query.Shape), element, target));
+        return query;
+    }
+
+    private SqlQuery OfType(SqlQuery source, Type element, Type target)
+    {
+        Type value = Nullable.GetUnderlyingType(element) ?? element;
+        bool compatible = target.IsAssignableFrom(value);
+        if (compatible && value == element)
         {
             return source;
         }
         SelectQuery query = Restricted(source);
-        query.Where = And(query.Where, new SqlIsNull(Scalar(query.Shape), true));
+        query.Where = And(
+            query.Where,
+            compatible
+                ? new SqlIsNull(Scalar(query.Shape), true)
+                : new SqlConstant(false, typeof(bool))
+        );
         return query;
     }
 
@@ -277,6 +327,7 @@ internal sealed partial class Translator
         return ((barriers & Barrier.Paging) != 0 && query.IsPaged)
             || ((barriers & Barrier.Distinct) != 0 && query.Distinct)
             || ((barriers & Barrier.Grouping) != 0 && query.GroupBy is not null)
+            || ((barriers & Barrier.Bound) != 0 && query.Bound is not null)
             || (
                 (barriers & Barrier.Projection) != 0
                 && query.GroupBy is not null

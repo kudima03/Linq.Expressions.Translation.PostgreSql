@@ -106,7 +106,7 @@ public sealed record BitwiseTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Quantity" << t0."CustomerId"
+                SELECT t0."Quantity" << (t0."CustomerId" & 31)
                 FROM "Order" AS t0
                 """
             ),

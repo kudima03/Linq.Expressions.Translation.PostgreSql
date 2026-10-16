@@ -1,5 +1,3 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
-
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record StringSemanticsTests
@@ -94,7 +92,7 @@ public sealed record StringSemanticsTests
         );
     }
 
-    [Fact(Skip = "String.IndexOf with a start index is not translated.")]
+    [Fact]
     public void FindsStringFromStartIndex()
     {
         Expression query = Orders.Select(o => o.Number.IndexOf("-", 2)).Expression;
@@ -113,7 +111,7 @@ public sealed record StringSemanticsTests
         );
     }
 
-    [Fact(Skip = "String.IndexOf with a start index is not translated.")]
+    [Fact]
     public void FindsCharacterFromStartIndex()
     {
         Expression query = Orders.Select(o => o.Number.IndexOf('-', 2)).Expression;
@@ -132,7 +130,7 @@ public sealed record StringSemanticsTests
         );
     }
 
-    [Fact(Skip = "String.LastIndexOf is not translated.")]
+    [Fact]
     public void FindsLastIndexOfString()
     {
         Expression query = Orders.Select(o => o.Number.LastIndexOf("AB")).Expression;
@@ -142,7 +140,7 @@ public sealed record StringSemanticsTests
                 """
                 SELECT CASE
                 WHEN STRPOS(t0."Number", 'AB') = 0 THEN -1
-                ELSE LENGTH(t0."Number") - LENGTH('AB') + 1 - STRPOS(REVERSE(t0."Number"), 'BA')
+                ELSE ((LENGTH(t0."Number") - LENGTH('AB')) + 1) - STRPOS(REVERSE(t0."Number"), 'BA')
                 END
                 FROM "Order" AS t0
                 """
@@ -151,7 +149,7 @@ public sealed record StringSemanticsTests
         );
     }
 
-    [Fact(Skip = "String.LastIndexOf is not translated.")]
+    [Fact]
     public void FindsLastIndexOfCharacter()
     {
         Expression query = Orders.Select(o => o.Number.LastIndexOf('-')).Expression;
@@ -170,7 +168,7 @@ public sealed record StringSemanticsTests
         );
     }
 
-    [Fact(Skip = "String.Remove is not translated.")]
+    [Fact]
     public void RemovesTail()
     {
         Expression query = Orders.Select(o => o.Number.Remove(1)).Expression;
@@ -186,7 +184,7 @@ public sealed record StringSemanticsTests
         );
     }
 
-    [Fact(Skip = "String.Remove is not translated.")]
+    [Fact]
     public void RemovesMiddle()
     {
         Expression query = Orders.Select(o => o.Number.Remove(1, 2)).Expression;
@@ -202,7 +200,7 @@ public sealed record StringSemanticsTests
         );
     }
 
-    [Fact(Skip = "Trim of several characters is passed as an array.")]
+    [Fact]
     public void TrimsSeveralCharacters()
     {
         Expression query = Orders.Select(o => o.Number.Trim('-', '_')).Expression;
@@ -218,7 +216,7 @@ public sealed record StringSemanticsTests
         );
     }
 
-    [Fact(Skip = "TrimStart of several characters is passed as an array.")]
+    [Fact]
     public void TrimsSeveralCharactersFromTheStart()
     {
         Expression query = Orders.Select(o => o.Number.TrimStart('-', '_')).Expression;
@@ -234,7 +232,7 @@ public sealed record StringSemanticsTests
         );
     }
 
-    [Fact(Skip = "TrimEnd of several characters is passed as an array.")]
+    [Fact]
     public void TrimsSeveralCharactersFromTheEnd()
     {
         Expression query = Orders.Select(o => o.Number.TrimEnd('-', '_')).Expression;
@@ -250,7 +248,7 @@ public sealed record StringSemanticsTests
         );
     }
 
-    [Fact(Skip = "StartsWith with an ordinal comparison is not translated.")]
+    [Fact]
     public void MatchesOrdinalPrefix()
     {
         Expression query = Orders
@@ -270,7 +268,7 @@ public sealed record StringSemanticsTests
         );
     }
 
-    [Fact(Skip = "Contains with an ordinal comparison is not translated.")]
+    [Fact]
     public void MatchesOrdinalFragment()
     {
         Expression query = Orders
@@ -284,6 +282,61 @@ public sealed record StringSemanticsTests
                 SELECT t0."Id"
                 FROM "Order" AS t0
                 WHERE t0."Number" LIKE '%a\_b%'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void MatchesOrdinalSuffix()
+    {
+        Expression query = Orders
+            .Where(o => o.Number.EndsWith("-Z", StringComparison.Ordinal))
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE t0."Number" LIKE '%-Z'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void FindsLastIndexOfColumn()
+    {
+        Expression query = Orders.Select(o => o.Number.LastIndexOf(o.Note!)).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CASE
+                WHEN STRPOS(t0."Number", t0."Note") = 0 THEN -1
+                ELSE ((LENGTH(t0."Number") - LENGTH(t0."Note")) + 1) - STRPOS(REVERSE(t0."Number"), REVERSE(t0."Note"))
+                END
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ConcatenatesRemovedMiddleWithoutCoalescing()
+    {
+        Expression query = Orders.Select(o => o.Number.Remove(1, 2) + "x").Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT SUBSTRING(t0."Number", 1, 1) || SUBSTRING(t0."Number", 4) || 'x'
+                FROM "Order" AS t0
                 """
             ),
             new PostgreSqlQuery(query).TextValue

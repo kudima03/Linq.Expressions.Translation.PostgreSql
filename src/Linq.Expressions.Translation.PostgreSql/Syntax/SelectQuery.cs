@@ -20,9 +20,11 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
 
     public long? Offset { get; set; }
 
+    public SqlExpression? Bound { get; set; }
+
     public bool Distinct { get; set; }
 
-    public bool IsPaged => Limit is not null || Offset is not null;
+    public bool IsPaged => Limit is not null || Offset is not null || Bound is not null;
 
     public override void Render(SqlWriter writer)
     {
@@ -61,6 +63,10 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
         if (Limit is not null)
         {
             _ = writer.Append(" LIMIT " + Limit);
+        }
+        if (Bound is not null)
+        {
+            _ = writer.Append(" LIMIT ").Render(Bound, SqlMode.Value);
         }
         if (Offset is not null)
         {

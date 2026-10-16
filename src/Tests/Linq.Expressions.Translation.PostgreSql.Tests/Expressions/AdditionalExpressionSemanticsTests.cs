@@ -1,4 +1,3 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
 #pragma warning disable CA1861 // the array is the IndexOfAny argument under test
 #pragma warning disable CA1870 // SearchValues would hide the IndexOfAny translation
 
@@ -196,7 +195,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "A shift count is not masked to the operand width.")]
+    [Fact]
     public void MasksOversizedLeftShift()
     {
         Expression query = Orders.Select(o => o.Quantity << 33).Expression;
@@ -212,7 +211,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "A negative shift count is not masked to the operand width.")]
+    [Fact]
     public void MasksNegativeLeftShift()
     {
         Expression query = Orders.Select(o => o.Quantity << -1).Expression;
@@ -228,7 +227,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "A shift count is not masked to the long operand width.")]
+    [Fact]
     public void MasksOversizedLeftShiftOfLong()
     {
         Expression query = Orders.Select(o => o.Points << 65).Expression;
@@ -244,7 +243,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "A shift count is not masked to the operand width.")]
+    [Fact]
     public void MasksOversizedRightShift()
     {
         Expression query = Orders.Select(o => o.Quantity >> 33).Expression;
@@ -260,7 +259,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateTimeOffset.Date is not translated.")]
+    [Fact]
     public void SelectsDateOfDateTimeOffset()
     {
         Expression query = Orders.Select(o => o.PaidAt!.Value.Date).Expression;
@@ -276,7 +275,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateTime.TimeOfDay is not translated.")]
+    [Fact]
     public void SelectsTimeOfDay()
     {
         Expression query = Orders.Select(o => o.CreatedAt.TimeOfDay).Expression;
@@ -284,7 +283,7 @@ public sealed record AdditionalExpressionSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CAST(t0."CreatedAt" AS time)
+                SELECT t0."CreatedAt" - DATE_TRUNC('day', t0."CreatedAt")
                 FROM "Order" AS t0
                 """
             ),
@@ -292,7 +291,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateTimeOffset.UtcDateTime is not translated.")]
+    [Fact]
     public void SelectsUtcDateTime()
     {
         Expression query = Orders.Select(o => o.PaidAt!.Value.UtcDateTime).Expression;
@@ -308,7 +307,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateOnly.DayNumber is not translated.")]
+    [Fact]
     public void SelectsDayNumber()
     {
         Expression query = Orders.Select(o => o.ShippedOn!.Value.DayNumber).Expression;
@@ -324,7 +323,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateOnly.AddMonths is not cast back to date.")]
+    [Fact]
     public void AddsMonthsToDateOnlyFromColumn()
     {
         Expression query = Orders
@@ -342,7 +341,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "String.IndexOfAny is not translated.")]
+    [Fact]
     public void FindsAnyListedCharacter()
     {
         Expression query = Orders
@@ -360,7 +359,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "String.IndexOf with a start and a count is not translated.")]
+    [Fact]
     public void FindsCharacterInsideWindow()
     {
         Expression query = Orders.Select(o => o.Number.IndexOf('-', 1, 3)).Expression;
@@ -379,7 +378,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "Math.BigMul is not translated.")]
+    [Fact]
     public void MultipliesToLongWithoutOverflow()
     {
         Expression query = Orders
@@ -397,7 +396,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "Int32.Min is not translated.")]
+    [Fact]
     public void TakesLeastIntegerOnItsType()
     {
         Expression query = Orders.Select(o => int.Min(o.Quantity, 1)).Expression;
@@ -413,7 +412,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "Int64.Max is not translated.")]
+    [Fact]
     public void TakesGreatestLongOnItsType()
     {
         Expression query = Orders.Select(o => long.Max(o.Points, 1L)).Expression;
@@ -429,7 +428,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "Int64.Abs is not translated.")]
+    [Fact]
     public void TakesAbsoluteLongOnItsType()
     {
         Expression query = Orders.Select(o => long.Abs(o.Points)).Expression;
@@ -445,7 +444,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "Double.Abs is not translated.")]
+    [Fact]
     public void TakesAbsoluteDoubleOnItsType()
     {
         Expression query = Orders.Select(o => double.Abs(o.Weight)).Expression;
@@ -461,7 +460,7 @@ public sealed record AdditionalExpressionSemanticsTests
         );
     }
 
-    [Fact(Skip = "Decimal.Clamp is not translated.")]
+    [Fact]
     public void ClampsDecimalOnItsType()
     {
         Expression query = Orders.Select(o => decimal.Clamp(o.Total, 1m, 10m)).Expression;
@@ -521,5 +520,21 @@ public sealed record AdditionalExpressionSemanticsTests
         Expression query = Orders.Select(o => checked(-minimum)).Expression;
 
         _ = Assert.Throws<OverflowException>(() => new PostgreSqlQuery(query).TextValue);
+    }
+
+    [Fact]
+    public void MasksLongShiftByColumn()
+    {
+        Expression query = Orders.Select(o => o.Points << o.Quantity).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Points" << (t0."Quantity" & 63)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
     }
 }

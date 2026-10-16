@@ -1,7 +1,10 @@
 namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 
-internal sealed class SqlIn(SqlExpression operand, IReadOnlyList<SqlExpression> values)
-    : SqlExpression(typeof(bool))
+internal sealed class SqlIn(
+    SqlExpression operand,
+    IReadOnlyList<SqlExpression> values,
+    bool negated
+) : SqlExpression(typeof(bool))
 {
     public override bool IsCompound(SqlMode mode)
     {
@@ -12,7 +15,7 @@ internal sealed class SqlIn(SqlExpression operand, IReadOnlyList<SqlExpression> 
     {
         _ = writer
             .Operand(operand, SqlMode.Value)
-            .Append(" IN (")
+            .Append(negated ? " NOT IN (" : " IN (")
             .Join(values, value => writer.Render(value, SqlMode.Value))
             .Append(")");
     }

@@ -723,4 +723,46 @@ public sealed record UnsupportedOperatorTests
         );
         Assert.Contains("Helper", exception.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void RejectsSelectorAfterDefaultIfEmpty()
+    {
+        Expression query = Orders
+            .Select(o => o.Total)
+            .DefaultIfEmpty()
+            .Executed(q => q.Max(t => t * 2));
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("DefaultIfEmpty", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsElementAfterDefaultIfEmpty()
+    {
+        Expression query = Orders
+            .Select(o => o.Total)
+            .DefaultIfEmpty()
+            .Executed(q => q.First());
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("DefaultIfEmpty", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsDefaultIfEmptyValueBeforeAggregate()
+    {
+        Expression query = Orders
+            .Select(o => o.Total)
+            .DefaultIfEmpty(5m)
+            .Executed(q => q.Max());
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("DefaultIfEmpty", exception.Message, StringComparison.Ordinal);
+    }
 }

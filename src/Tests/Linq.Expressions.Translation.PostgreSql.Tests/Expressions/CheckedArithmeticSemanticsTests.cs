@@ -1,6 +1,4 @@
 #pragma warning disable IDE0004 // the casts and checked operators are the subject
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
-
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record CheckedArithmeticSemanticsTests
@@ -101,7 +99,7 @@ public sealed record CheckedArithmeticSemanticsTests
         );
     }
 
-    [Fact(Skip = "MultiplyChecked is not translated.")]
+    [Fact]
     public void MultipliesCheckedIntegers()
     {
         Expression query = Orders.Select(o => checked(o.Quantity * 2)).Expression;
@@ -117,7 +115,7 @@ public sealed record CheckedArithmeticSemanticsTests
         );
     }
 
-    [Fact(Skip = "SubtractChecked is not translated.")]
+    [Fact]
     public void SubtractsCheckedIntegers()
     {
         Expression query = Orders.Select(o => checked(o.Quantity - 1)).Expression;

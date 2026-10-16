@@ -29,7 +29,16 @@ internal sealed partial class Translator
         [nameof(DateTime.AddHours)] = "hour",
         [nameof(DateTime.AddMinutes)] = "minute",
         [nameof(DateTime.AddSeconds)] = "second",
+        [nameof(DateTime.AddMilliseconds)] = "millisecond",
     };
+
+    private static readonly HashSet<Type> Numeric =
+    [
+        typeof(int),
+        typeof(long),
+        typeof(decimal),
+        typeof(double),
+    ];
 
     private static readonly HashSet<Type> Printable =
     [
@@ -51,7 +60,7 @@ internal sealed partial class Translator
             : name == nameof(Enumerable.Contains) && owner != typeof(string)
                 ? Membership(call)
             : owner == typeof(string) ? StringMethod(call)
-            : owner == typeof(Math) ? MathMethod(call)
+            : owner == typeof(Math) || Numeric.Contains(owner) ? MathMethod(call)
             : Temporal.Contains(owner) ? TemporalMethod(call)
             : name == nameof(Nullable<>.GetValueOrDefault) ? Defaulted(call)
             : name == nameof(Enum.HasFlag) ? Flagged(call)
@@ -119,19 +128,29 @@ internal sealed partial class Translator
                 "LOWER",
                 call
             ),
-            (nameof(string.Trim), _) => Function("BTRIM", call),
-            (nameof(string.TrimStart), _) => Function("LTRIM", call),
-            (nameof(string.TrimEnd), _) => Function("RTRIM", call),
+            (nameof(string.Trim), _) => Trimmed("BTRIM", call),
+            (nameof(string.TrimStart), _) => Trimmed("LTRIM", call),
+            (nameof(string.TrimEnd), _) => Trimmed("RTRIM", call),
             (nameof(string.Replace), 2) => Function("REPLACE", call),
-            (nameof(string.Substring), _) => Substring(call),
+            (nameof(string.Substring), _) => Substring(
+                Sql(call.Object!),
+                Sql(arguments[0]),
+                [.. arguments.Skip(1).Select(Sql)]
+            ),
+            (nameof(string.Remove), _) => Removed(call),
             (nameof(string.IndexOf), 1) => Calculate(
                 "-",
                 Function("STRPOS", call),
-                new SqlConstant(1, typeof(int))
+                Integer(1)
             ),
-            (nameof(string.Contains), 1) => Contains(call),
-            (nameof(string.StartsWith), 1) => StartsWith(call),
-            (nameof(string.EndsWith), 1) => EndsWith(call),
+            (nameof(string.IndexOf), _)
+                when arguments.Skip(1).All(argument => argument.Type == typeof(int)) =>
+                Located(call),
+            (nameof(string.LastIndexOf), 1) => LastLocated(call),
+            (nameof(string.IndexOfAny), 1) => AnyLocated(call),
+            (nameof(string.Contains), _) when IsOrdinal(arguments) => Contains(call),
+            (nameof(string.StartsWith), _) when IsOrdinal(arguments) => StartsWith(call),
+            (nameof(string.EndsWith), _) when IsOrdinal(arguments) => EndsWith(call),
             (nameof(string.IsNullOrEmpty), 1) => IsNullOrEmpty(Sql(arguments[0])),
             (nameof(string.Concat), _) => Concatenation(call),
             _ => throw Unsupported.Method(call.Method),
@@ -147,17 +166,180 @@ internal sealed partial class Translator
         );
     }
 
-    private SqlExpression Substring(MethodCallExpression call)
+    private SqlFunction Trimmed(string name, MethodCallExpression call)
     {
-        SqlExpression start = Sql(call.Arguments[0]);
-        SqlExpression position = start is SqlConstant { Value: int index }
-            ? new SqlConstant(index + 1, typeof(int))
-            : Calculate("+", start, new SqlConstant(1, typeof(int)));
+        return new SqlFunction(
+            name,
+            [
+                Sql(call.Object!),
+                .. call
+                    .Arguments.Where(argument =>
+                        argument is not ConstantExpression { Value: char[] { Length: 0 } }
+                    )
+                    .Select(argument =>
+                        argument is ConstantExpression { Value: char[] characters }
+                            ? Text(new string(characters))
+                            : Sql(argument)
+                    ),
+            ],
+            call.Type
+        );
+    }
+
+    private static SqlFunction Substring(
+        SqlExpression text,
+        SqlExpression start,
+        IReadOnlyList<SqlExpression> length
+    )
+    {
         return new SqlFunction(
             "SUBSTRING",
-            [Sql(call.Object!), position, .. call.Arguments.Skip(1).Select(Sql)],
+            [text, Added(start, Integer(1)), .. length],
             typeof(string)
         );
+    }
+
+    private static SqlExpression Added(SqlExpression left, SqlExpression right)
+    {
+        return
+            left is SqlConstant { Value: int first }
+            && right is SqlConstant { Value: int second }
+            ? Integer(first + second)
+            : Calculate("+", left, right);
+    }
+
+    private SqlExpression Removed(MethodCallExpression call)
+    {
+        SqlExpression text = Sql(call.Object!);
+        SqlExpression start = Sql(call.Arguments[0]);
+        SqlExpression head = new SqlFunction(
+            "SUBSTRING",
+            [text, Integer(1), start],
+            typeof(string)
+        );
+        return call.Arguments.Count == 1
+            ? head
+            : new SqlBinary(
+                "||",
+                SqlBinaryKind.Concatenation,
+                head,
+                Substring(text, Added(start, Sql(call.Arguments[1])), []),
+                typeof(string),
+                false
+            );
+    }
+
+    private SqlExpression Located(MethodCallExpression call)
+    {
+        SqlExpression start = Sql(call.Arguments[1]);
+        SqlExpression position = new SqlFunction(
+            "STRPOS",
+            [
+                Substring(
+                    Sql(call.Object!),
+                    start,
+                    [.. call.Arguments.Skip(2).Select(Sql)]
+                ),
+                Sql(call.Arguments[0]),
+            ],
+            typeof(int)
+        );
+        return Found(
+            position,
+            Calculate("+", Calculate("-", position, Integer(1)), start)
+        );
+    }
+
+    private SqlExpression LastLocated(MethodCallExpression call)
+    {
+        SqlExpression text = Sql(call.Object!);
+        SqlExpression part = Sql(call.Arguments[0]);
+        bool character = call.Arguments[0].Type == typeof(char);
+        SqlExpression reversed =
+            character ? part
+            : part is SqlConstant { Value: string value }
+                ? Text(string.Concat(value.Reverse()))
+            : new SqlFunction("REVERSE", [part], typeof(string));
+        SqlExpression tail = new SqlFunction(
+            "STRPOS",
+            [new SqlFunction("REVERSE", [text], typeof(string)), reversed],
+            typeof(int)
+        );
+        SqlExpression length = new SqlFunction("LENGTH", [text], typeof(int));
+        return Found(
+            new SqlFunction("STRPOS", [text, part], typeof(int)),
+            character
+                ? Calculate("-", length, tail)
+                : Calculate(
+                    "-",
+                    Calculate(
+                        "+",
+                        Calculate(
+                            "-",
+                            length,
+                            new SqlFunction("LENGTH", [part], typeof(int))
+                        ),
+                        Integer(1)
+                    ),
+                    tail
+                )
+        );
+    }
+
+    private SqlExpression AnyLocated(MethodCallExpression call)
+    {
+        if (
+            call.Arguments[0]
+            is not ConstantExpression { Value: char[] { Length: > 0 } characters }
+        )
+        {
+            throw Unsupported.Method(call.Method);
+        }
+        SqlExpression text = Sql(call.Object!);
+        return new SqlFunction(
+            "COALESCE",
+            [
+                new SqlFunction(
+                    "LEAST",
+                    [
+                        .. characters.Select(character => new SqlFunction(
+                            "NULLIF",
+                            [
+                                Calculate(
+                                    "-",
+                                    new SqlFunction(
+                                        "STRPOS",
+                                        [text, new SqlConstant(character, typeof(char))],
+                                        typeof(int)
+                                    ),
+                                    Integer(1)
+                                ),
+                                Integer(-1),
+                            ],
+                            typeof(int?)
+                        )),
+                    ],
+                    typeof(int?)
+                ),
+                Integer(-1),
+            ],
+            typeof(int)
+        );
+    }
+
+    private static SqlCase Found(SqlExpression position, SqlExpression index)
+    {
+        return new SqlCase(
+            [new SqlWhen(Compare("=", position, Integer(0)), Integer(-1))],
+            index,
+            typeof(int)
+        );
+    }
+
+    private static bool IsOrdinal(IReadOnlyList<Expression> arguments)
+    {
+        return arguments.Count == 1
+            || arguments[1] is ConstantExpression { Value: StringComparison.Ordinal };
     }
 
     private SqlExpression Contains(MethodCallExpression call)
@@ -272,6 +454,31 @@ internal sealed partial class Translator
                 arguments,
                 call.Type
             ),
+            nameof(Math.Clamp) => new SqlFunction(
+                "LEAST",
+                [new SqlFunction("GREATEST", arguments[..2], call.Type), arguments[2]],
+                call.Type
+            ),
+            nameof(Math.BigMul) when call.Arguments[0].Type == typeof(int) => Calculate(
+                "*",
+                Convert(arguments[0], typeof(int), typeof(long)),
+                Convert(arguments[1], typeof(int), typeof(long))
+            ),
+            nameof(double.IsNaN) => Compare("=", arguments[0], Floating(double.NaN)),
+            nameof(double.IsInfinity) => Logical(
+                "OR",
+                Compare("=", arguments[0], Floating(double.PositiveInfinity)),
+                Compare("=", arguments[0], Floating(double.NegativeInfinity))
+            ),
+            nameof(double.IsFinite) => new SqlIn(
+                arguments[0],
+                [
+                    Floating(double.NaN),
+                    Floating(double.PositiveInfinity),
+                    Floating(double.NegativeInfinity),
+                ],
+                true
+            ),
             nameof(Math.Sign) => new SqlCast(
                 new SqlFunction("SIGN", arguments, call.Type),
                 "integer",
@@ -288,25 +495,64 @@ internal sealed partial class Translator
         };
     }
 
+    private static SqlConstant Floating(double value)
+    {
+        return new SqlConstant(value, typeof(double));
+    }
+
     private SqlExpression TemporalMethod(MethodCallExpression call)
     {
         string name = call.Method.Name;
+        bool day = call.Method.DeclaringType == typeof(DateOnly);
         return name == nameof(DateOnly.FromDateTime)
-                ? new SqlCast(Sql(call.Arguments[0]), "date", typeof(DateOnly))
-            : call.Method.DeclaringType == typeof(DateOnly)
-            && name == nameof(DateOnly.AddDays)
+                ? new SqlCast(Sql(call.Arguments[0]), day ? "date" : "time", call.Type)
+            : day && name == nameof(DateOnly.AddDays)
                 ? Calculate("+", Sql(call.Object!), Sql(call.Arguments[0]))
+            : name == nameof(DateTime.Add)
+                ? Calculate("+", Sql(call.Object!), Sql(call.Arguments[0]))
+            : name == nameof(DateTime.AddTicks) ? Ticked(call)
             : Intervals.TryGetValue(name, out string? unit)
-                ? Calculate(
-                    "+",
-                    Sql(call.Object!),
-                    Calculate(
-                        "*",
-                        Sql(call.Arguments[0]),
-                        new SqlFragment($"INTERVAL '1 {unit}'", typeof(TimeSpan))
-                    )
+                ? Dated(
+                    Shifted(Sql(call.Object!), Sql(call.Arguments[0]), unit),
+                    day,
+                    call.Type
                 )
             : throw Unsupported.Method(call.Method);
+    }
+
+    private SqlExpression Ticked(MethodCallExpression call)
+    {
+        return
+            call.Arguments[0] is ConstantExpression { Value: long ticks }
+            && ticks % TimeSpan.TicksPerMicrosecond == 0
+            ? Shifted(
+                Sql(call.Object!),
+                new SqlConstant(ticks / TimeSpan.TicksPerMicrosecond, typeof(long)),
+                "microsecond"
+            )
+            : throw Unsupported.Method(call.Method);
+    }
+
+    private static SqlBinary Shifted(
+        SqlExpression moment,
+        SqlExpression amount,
+        string unit
+    )
+    {
+        return Calculate(
+            "+",
+            moment,
+            Calculate(
+                "*",
+                amount,
+                new SqlFragment($"INTERVAL '1 {unit}'", typeof(TimeSpan))
+            )
+        );
+    }
+
+    private static SqlExpression Dated(SqlExpression moment, bool day, Type type)
+    {
+        return day ? new SqlCast(moment, "date", type) : moment;
     }
 
     private SqlBinary Flagged(MethodCallExpression call)
@@ -335,7 +581,7 @@ internal sealed partial class Translator
         SqlExpression membership =
             present.Count == 0
                 ? new SqlConstant(false, typeof(bool))
-                : new SqlIn(value, present);
+                : new SqlIn(value, present, false);
         return values.Cast<object?>().Contains(null)
             ? Logical("OR", membership, new SqlIsNull(value, false))
             : membership;

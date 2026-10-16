@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Translation of `TakeLast` (a reversed `LIMIT` in a derived table) and `SkipLast` (`LIMIT` by a row-count subquery).
+- Translation of `DefaultIfEmpty()` before `Count`/`LongCount`, `Sum`, `Average`, `Min`, `Max` and `Any`, substituting the default for an empty sequence.
+- Translation of `Abs`, `Min`, `Max` and `Clamp` on `int`, `long`, `decimal` and `double`, `Math.Clamp`, `Math.BigMul`, `double.IsNaN`/`IsInfinity`/`IsFinite`, and checked subtraction and multiplication.
+- Translation of `string.IndexOf` with a start index and count, `LastIndexOf`, `IndexOfAny`, `Remove`, trimming of several characters, and `Contains`/`StartsWith`/`EndsWith` with `StringComparison.Ordinal`.
+- Translation of `Millisecond`/`Microsecond`, `AddMilliseconds`, `AddTicks` (whole microseconds), `Add(TimeSpan)`, `DateTime.TimeOfDay`, `DateTimeOffset.Date`/`UtcDateTime`/`Now`, `DateOnly.DayNumber` and `TimeOnly.FromDateTime`.
+- `Any()` without a predicate on a group.
+
+### Fixed
+
+- `FirstOrDefault`, `SingleOrDefault`, `LastOrDefault` and `ElementAtOrDefault` of a non-nullable value inside a lambda substitute the type's default instead of `NULL` when no row matches.
+- `Any`/`All` on a filtered group are `FALSE`/`TRUE` instead of `NULL` when no row matches the filter.
+- Chained `Where` calls on a group combine their predicates instead of keeping only the last one.
+- `Cast` to another numeric type converts the values, and `OfType` of an incompatible type returns no rows instead of every row.
+- `DateOnly.AddMonths`/`AddYears` return a `date`, and shift counts are masked to the operand width as in C#.
+
 ## [0.1.0-preview.0.1.0] - 2026-10-15
 
 ### Added
