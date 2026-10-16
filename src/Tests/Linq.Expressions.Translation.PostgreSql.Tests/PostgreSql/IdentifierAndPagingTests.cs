@@ -32,6 +32,39 @@ public sealed record IdentifierAndPagingTests
         public int Größe { get; init; }
     }
 
+    public class Entity
+    {
+        public int Id { get; init; }
+    }
+
+    public class AuditedEntity : Entity
+    {
+        public DateTime CreatedAt { get; init; }
+    }
+
+    public sealed class Invoice : AuditedEntity
+    {
+        public string Number { get; init; } = string.Empty;
+
+        public decimal Amount { get; init; }
+    }
+
+    [Fact]
+    public void MapsInheritedPropertiesBeforeDeclaredOnes()
+    {
+        Expression query = new CapturingQueryable<Invoice>().Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", t0."CreatedAt", t0."Number", t0."Amount"
+                FROM "Invoice" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
     [Fact]
     public void QuotesSchemaAndTableName()
     {
