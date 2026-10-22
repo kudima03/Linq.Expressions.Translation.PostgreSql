@@ -23,6 +23,7 @@ internal static class SqlLiteral
                 )
                 .ToString()!,
             double number => Floating(number, "double precision"),
+            float number => Floating(number, "real"),
             Guid guid => $"UUID '{guid}'",
             DateTime moment => Timestamp(moment),
             DateTimeOffset moment =>
@@ -127,8 +128,11 @@ internal static class SqlLiteral
         return text.Length == 0 ? "PT0S" : "P" + text;
     }
 
+    // ARRAY[] has no element type; the empty array literal is cast by its context.
     private static string Items(Array items)
     {
-        return "ARRAY[" + string.Join(", ", items.Cast<object?>().Select(Render)) + "]";
+        return items.Length == 0
+            ? "'{}'"
+            : "ARRAY[" + string.Join(", ", items.Cast<object?>().Select(Render)) + "]";
     }
 }

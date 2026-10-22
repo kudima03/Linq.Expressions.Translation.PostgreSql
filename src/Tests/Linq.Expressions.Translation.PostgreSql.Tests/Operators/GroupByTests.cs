@@ -961,4 +961,171 @@ public sealed record GroupByTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void CountsGroupsOfComputedKey()
+    {
+        Expression query = Orders.GroupBy(o => o.Total * 2).Executed(q => q.Count());
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(COUNT(*) AS integer)
+                FROM (
+                    SELECT t0."Total" * 2
+                    FROM "Order" AS t0
+                    GROUP BY t0."Total" * 2
+                ) AS t1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void FiltersPagedComputedKeys()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.Total * 2)
+            .Select(g => g.Key)
+            .Skip(1)
+            .Where(k => k > 1)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Value"
+                FROM (
+                    SELECT t0."Total" * 2 AS "Value"
+                    FROM "Order" AS t0
+                    GROUP BY t0."Total" * 2
+                    OFFSET 1
+                ) AS t1
+                WHERE t1."Value" > 1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SumsDistinctGroupedValues()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Select(o => o.Total).Distinct().Sum())
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT COALESCE(SUM(DISTINCT t0."Total"), 0)
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void AveragesDistinctGroupedValues()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Select(o => o.Quantity).Distinct().Average())
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT AVG(DISTINCT CAST(t0."Quantity" AS double precision))
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SumsDistinctGroupElements()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId, o => o.Quantity)
+            .Select(g => g.Distinct().Sum())
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(COALESCE(SUM(DISTINCT t0."Quantity"), 0) AS integer)
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SumsDistinctFilteredGroupedValues()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Where(o => o.IsPaid).Select(o => o.Total).Distinct().Sum())
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT COALESCE(SUM(DISTINCT t0."Total") FILTER (WHERE t0."IsPaid"), 0)
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void IgnoresDistinctForGroupedMaximum()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Select(o => o.Total).Distinct().Max())
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT MAX(t0."Total")
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void IgnoresDistinctForGroupedMinimumWithSelector()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Distinct().Min(o => o.Total))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT MIN(t0."Total")
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

@@ -804,4 +804,44 @@ public sealed record ComparisonTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void ComparesNullableOrderingWithBooleanColumn()
+    {
+        Expression query = Orders
+            .Where(o => (o.Priority > 5) == o.IsPaid)
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE COALESCE(t0."Priority" > 5, FALSE) = t0."IsPaid"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesNullableOrderingWithOrdering()
+    {
+        Expression query = Orders
+            .Where(o => (o.Priority > 5) == (o.Quantity > 3))
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE COALESCE(t0."Priority" > 5, FALSE) = (t0."Quantity" > 3)
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

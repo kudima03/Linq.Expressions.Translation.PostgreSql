@@ -1697,4 +1697,54 @@ public sealed record StringTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void SelectsTrimmedOfCharacters()
+    {
+        Expression query = Orders.Select(o => o.Number.Trim('-', '+')).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT BTRIM(t0."Number", '-+')
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SelectsTrimmedEndOfCapturedCharacters()
+    {
+        char[] characters = ['-', '+'];
+        Expression query = Orders.Select(o => o.Number.TrimEnd(characters)).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT RTRIM(t0."Number", '-+')
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SelectsTrimmedStartOfNoCharacters()
+    {
+        char[] characters = [];
+        Expression query = Orders.Select(o => o.Number.TrimStart(characters)).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT LTRIM(t0."Number")
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

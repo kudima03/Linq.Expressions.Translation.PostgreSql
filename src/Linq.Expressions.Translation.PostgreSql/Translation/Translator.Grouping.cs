@@ -71,6 +71,13 @@ internal sealed partial class Translator
             nameof(Enumerable.Any) or nameof(Enumerable.All) => new ScalarShape(
                 Quantified(group, call)
             ),
+            // Distinct entities summed by a selector are not the distinct values of the
+            // selector, which is what SUM(DISTINCT ...) adds up.
+            nameof(Enumerable.Sum)
+            or nameof(Enumerable.Average) when group.Distinct && selected =>
+                throw new NotSupportedException(
+                    $"'{name}' with a selector over distinct group elements is not supported; select the value before Distinct."
+                ),
             nameof(Enumerable.Sum)
             or nameof(Enumerable.Average)
             or nameof(Enumerable.Min)
@@ -81,6 +88,8 @@ internal sealed partial class Translator
                         selected ? Bind(Lambda(call, 1), group.Element) : group.Element
                     ),
                     call.Type,
+                    group.Distinct
+                        && name is not (nameof(Enumerable.Min) or nameof(Enumerable.Max)),
                     group.Filter
                 )
             ),

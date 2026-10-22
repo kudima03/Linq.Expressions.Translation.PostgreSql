@@ -1176,4 +1176,24 @@ public sealed record CapturedVariableTests
     public sealed record Holder(Customer Customer);
 
     public sealed record Range(int Min, int Max);
+
+    [Fact]
+    public void ComparesWithStaticField()
+    {
+        Expression query = Orders
+            .Where(o => o.Number == string.Empty)
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE t0."Number" = ''
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

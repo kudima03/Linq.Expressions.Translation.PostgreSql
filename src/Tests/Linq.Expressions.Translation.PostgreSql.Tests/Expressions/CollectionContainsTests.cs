@@ -1104,4 +1104,94 @@ public sealed record CollectionContainsTests
     public sealed record Filter(int[] Ids);
 
     public sealed record Holder(Filter Filter);
+
+    [Fact]
+    public void SelectsMembershipOfNullableColumnWithCoalesce()
+    {
+        Expression query = Orders
+            .Select(o => new int?[] { 1, 2 }.Contains(o.Priority))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT COALESCE(t0."Priority" IN (1, 2), FALSE)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void FiltersByMembershipOfNullableColumnWithoutCoalesce()
+    {
+        Expression query = Orders
+            .Where(o => new int?[] { 1, 2 }.Contains(o.Priority))
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE t0."Priority" IN (1, 2)
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SelectsNegatedMembershipOfNullableColumn()
+    {
+        Expression query = Orders
+            .Select(o => !new int?[] { 1, 2 }.Contains(o.Priority))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT NOT COALESCE(t0."Priority" IN (1, 2), FALSE)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void UsesMembershipOfNullableColumnAsCaseCondition()
+    {
+        Expression query = Orders
+            .Select(o => new int?[] { 1, 2 }.Contains(o.Priority) ? 1 : 0)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CASE WHEN t0."Priority" IN (1, 2) THEN 1 ELSE 0 END
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SelectsArrayMembershipOfNullableColumnWithCoalesce()
+    {
+        Expression query = Orders.Select(o => o.Tags.Contains(o.Note!)).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT COALESCE(t0."Note" = ANY (t0."Tags"), FALSE)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }
