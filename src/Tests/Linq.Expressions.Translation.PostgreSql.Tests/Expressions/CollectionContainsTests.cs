@@ -1182,7 +1182,7 @@ public sealed record CollectionContainsTests
     [Fact]
     public void SelectsArrayMembershipOfNullableColumnWithCoalesce()
     {
-        Expression query = Orders.Select(o => o.Tags.Contains(o.Note!)).Expression;
+        Expression query = Orders.Select(o => o.Tags.Contains(o.Note)).Expression;
 
         Assert.Equal(
             Sql.Valid(
