@@ -1,0 +1,26 @@
+name: Translation time
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  translation-time:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ./src
+    steps:
+    - uses: actions/checkout@v7
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: 10.x.x
+    - name: Restore dependencies
+      run: dotnet restore Tests/Linq.Expressions.Translation.PostgreSql.PerformanceTests
+    - name: Build
+      run: dotnet build Tests/Linq.Expressions.Translation.PostgreSql.PerformanceTests --no-restore --configuration Release -warnaserror
+    - name: Translate each sample under 100 ms
+      run: dotnet test Tests/Linq.Expressions.Translation.PostgreSql.PerformanceTests --no-build --configuration Release --logger "console;verbosity=detailed"

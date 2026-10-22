@@ -1,0 +1,5 @@
+{
+  "stryker-config": {
+    "test-case-filter": "FullyQualifiedName!~.PerformanceTests."
+  }
+}
