@@ -5,7 +5,7 @@ namespace Linq.Expressions.Translation.PostgreSql.PerformanceTests;
 
 public sealed class TranslationTimeTests(ITestOutputHelper output)
 {
-    private static readonly TimeSpan Budget = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan Budget = TimeSpan.FromMilliseconds(100);
 
     public static TheoryData<string> Names => [.. Samples.All.Select(s => s.Name)];
 
