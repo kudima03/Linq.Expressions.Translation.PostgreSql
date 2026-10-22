@@ -436,4 +436,24 @@ public sealed record OrderByTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void OrdersByNullableOrderingWithoutNullsFirst()
+    {
+        Expression query = Orders
+            .OrderBy(o => o.Priority > 5)
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                ORDER BY COALESCE(t0."Priority" > 5, FALSE)
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

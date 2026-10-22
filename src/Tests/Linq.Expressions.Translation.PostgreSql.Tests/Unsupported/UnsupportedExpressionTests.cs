@@ -897,4 +897,53 @@ public sealed record UnsupportedExpressionTests
         );
         Assert.Contains("IndexOf", exception.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void RejectsTypeAs()
+    {
+        Expression query = Orders.Select(o => o.Note as object).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("TypeAs", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsTypeAsOfEntity()
+    {
+        Expression query = Orders.Select(o => o as object).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("TypeAs", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsConversionToDateTimeOffset()
+    {
+        Expression query = Orders
+            .Where(o => (DateTimeOffset)o.CreatedAt > DateTimeOffset.UtcNow)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Convert", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsUnassignedMemberOfInitializedRecord()
+    {
+        Expression query = Orders
+            .Select(o => new CustomerCard { Id = o.Id })
+            .Select(c => c.Title)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Title", exception.Message, StringComparison.Ordinal);
+    }
 }

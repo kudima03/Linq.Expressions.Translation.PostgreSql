@@ -1453,4 +1453,40 @@ public sealed record DateTimeTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void AddsMonthsToDate()
+    {
+        Expression query = Orders.Select(o => o.ShippedOn!.Value.AddMonths(1)).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(t0."ShippedOn" + (1 * INTERVAL '1 month') AS date)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void FiltersByDatePlusYears()
+    {
+        Expression query = Orders
+            .Where(o => o.ShippedOn!.Value.AddYears(1) > new DateOnly(2025, 1, 1))
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE CAST(t0."ShippedOn" + (1 * INTERVAL '1 year') AS date) > DATE '2025-01-01'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

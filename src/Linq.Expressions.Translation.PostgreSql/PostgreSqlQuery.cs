@@ -11,6 +11,7 @@ public sealed record PostgreSqlQuery
 
     public PostgreSqlQuery(Expression expression)
     {
+        ArgumentNullException.ThrowIfNull(expression);
         _expression = expression;
     }
 

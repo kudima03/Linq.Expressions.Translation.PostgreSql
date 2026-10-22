@@ -763,4 +763,91 @@ public sealed record SetOperationTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void FiltersComputedValuesAfterUnion()
+    {
+        Expression query = Orders
+            .Select(o => o.Total * 2)
+            .Union(Orders.Select(o => o.Total))
+            .Where(x => x > 1)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Value"
+                FROM (
+                    SELECT t0."Total" * 2 AS "Value"
+                    FROM "Order" AS t0
+                    UNION
+                    SELECT t1."Total"
+                    FROM "Order" AS t1
+                ) AS t2
+                WHERE t2."Value" > 1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OrdersComputedValuesAfterConcat()
+    {
+        Expression query = Orders
+            .Select(o => o.Quantity + 1)
+            .Concat(Orders.Select(o => o.Quantity))
+            .OrderBy(x => x)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Value"
+                FROM (
+                    SELECT t0."Quantity" + 1 AS "Value"
+                    FROM "Order" AS t0
+                    UNION ALL
+                    SELECT t1."Quantity"
+                    FROM "Order" AS t1
+                ) AS t2
+                ORDER BY t2."Value"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void NamesComputedValuesOfLeftmostOperandOfNestedSetOperations()
+    {
+        Expression query = Orders
+            .Select(o => o.Quantity + 1)
+            .Concat(Orders.Select(o => o.Quantity))
+            .Union(Orders.Select(o => o.Quantity * 2))
+            .Where(x => x > 1)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t3."Value"
+                FROM (
+                    (
+                        SELECT t0."Quantity" + 1 AS "Value"
+                        FROM "Order" AS t0
+                        UNION ALL
+                        SELECT t1."Quantity"
+                        FROM "Order" AS t1
+                    )
+                    UNION
+                    SELECT t2."Quantity" * 2
+                    FROM "Order" AS t2
+                ) AS t3
+                WHERE t3."Value" > 1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

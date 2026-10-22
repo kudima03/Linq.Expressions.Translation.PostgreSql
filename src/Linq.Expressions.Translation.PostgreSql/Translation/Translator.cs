@@ -95,9 +95,12 @@ internal sealed partial class Translator
 
     private SqlQuery Query(Expression expression)
     {
-        return expression is ConstantExpression { Value: IQueryable root }
-            ? Root(root)
-            : Operator((MethodCallExpression)expression);
+        return expression switch
+        {
+            ConstantExpression { Value: IQueryable root } => Root(root),
+            MethodCallExpression call => Operator(call),
+            _ => throw Unsupported.Node(expression),
+        };
     }
 
     private SelectQuery Root(IQueryable root)

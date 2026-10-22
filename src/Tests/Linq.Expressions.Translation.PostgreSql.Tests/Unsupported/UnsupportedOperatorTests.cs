@@ -765,4 +765,248 @@ public sealed record UnsupportedOperatorTests
         );
         Assert.Contains("DefaultIfEmpty", exception.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void RejectsSumWithSelectorOverDistinctGroupElements()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Distinct().Sum(o => o.Total))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Sum", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsAverageWithSelectorOverDistinctGroupElements()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Distinct().Average(o => o.Quantity))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Average", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsCountingDistinctEntitiesOfGroup()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Distinct().Count())
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("single value", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsMaximumOfGroupEntities()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Max())
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("single value", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsMaximumOfEntities()
+    {
+        Expression query = Orders.Executed(q => q.Max());
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("single value", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsMinimumOfProjections()
+    {
+        Expression query = Orders
+            .Select(o => new { o.Id, o.Total })
+            .Executed(q => q.Min());
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("single value", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsCollectionValuedProjection()
+    {
+        Expression query = Customers
+            .Select(c => Orders.Where(o => o.CustomerId == c.Id))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Where", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsProjectingGroupJoinGroupElements()
+    {
+        Expression query = Customers
+            .GroupJoin(Orders, c => c.Id, o => o.CustomerId, (c, g) => new { c, g })
+            .Select(x => x.g.Select(o => o.Total))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Select", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsEntityValuedSubquery()
+    {
+        Expression query = Customers.Select(c => Orders.First()).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains(
+            "single scalar value",
+            exception.Message,
+            StringComparison.Ordinal
+        );
+    }
+
+    [Fact]
+    public void RejectsProjectionValuedSubquery()
+    {
+        Expression query = Customers
+            .Select(c => Orders.Select(o => new { o.Id, o.Total }).First())
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains(
+            "single scalar value",
+            exception.Message,
+            StringComparison.Ordinal
+        );
+    }
+
+    [Fact]
+    public void RejectsFirstEntityOfGroupJoinGroup()
+    {
+        Expression query = Customers
+            .GroupJoin(Orders, c => c.Id, o => o.CustomerId, (c, g) => new { c, g })
+            .Select(x => x.g.First())
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains(
+            "single scalar value",
+            exception.Message,
+            StringComparison.Ordinal
+        );
+    }
+
+    [Fact]
+    public void RejectsContainsOfEntity()
+    {
+        Order order = new();
+        Expression query = Orders.Executed(q => q.Contains(order));
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("single value", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsContainsOfProjection()
+    {
+        Expression query = Orders
+            .Select(o => new { o.Id })
+            .Executed(q => q.Contains(new { Id = 1 }));
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("single value", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsNullCheckOfLeftJoinedEntity()
+    {
+        Expression query = Customers
+            .GroupJoin(Orders, c => c.Id, o => o.CustomerId, (c, g) => new { c, g })
+            .SelectMany(x => x.g.DefaultIfEmpty(), (x, o) => o == null ? 0m : o.Total)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("single value", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsExpressionThatIsNotAQuery()
+    {
+        Expression query = Expression.Constant(5);
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Constant", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsSelectingGroupJoinGroup()
+    {
+        Expression query = Customers
+            .GroupJoin(Orders, c => c.Id, o => o.CustomerId, (c, g) => g)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("GroupJoin", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsLeftJoiningGroupJoinGroup()
+    {
+        Expression query = Customers
+            .SelectMany(
+                c =>
+                    Customers
+                        .GroupJoin(
+                            Orders,
+                            x => x.Id,
+                            o => o.CustomerId,
+                            (x, g) => new { x, g }
+                        )
+                        .DefaultIfEmpty(),
+                (c, y) => c.Name
+            )
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("GroupJoin", exception.Message, StringComparison.Ordinal);
+    }
 }

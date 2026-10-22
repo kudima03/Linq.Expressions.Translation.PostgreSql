@@ -367,4 +367,64 @@ public sealed record QuantifierTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void SelectsMembershipInNullableSubqueryValuesWithCoalesce()
+    {
+        Expression query = Customers
+            .Select(c => Orders.Select(o => o.Priority).Contains(c.Id))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT COALESCE(t0."Id" IN (
+                    SELECT t1."Priority"
+                    FROM "Order" AS t1
+                ), FALSE)
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SelectsMembershipOfNullableColumnInSubqueryWithCoalesce()
+    {
+        Expression query = Orders
+            .Select(o => Orders.Select(x => (int?)x.Id).Contains(o.Priority))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT COALESCE(t0."Priority" IN (
+                    SELECT t1."Id"
+                    FROM "Order" AS t1
+                ), FALSE)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ChecksMembershipInNullableColumnWithCoalesce()
+    {
+        Expression query = Orders.Select(o => o.Priority).Executed(q => q.Contains(5));
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT COALESCE(5 IN (
+                    SELECT t0."Priority"
+                    FROM "Order" AS t0
+                ), FALSE)
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

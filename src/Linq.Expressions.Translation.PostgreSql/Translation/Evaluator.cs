@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Linq.Expressions.Translation.PostgreSql.Translation;
 
@@ -41,16 +42,28 @@ internal sealed class Evaluator(HashSet<Expression> candidates) : ExpressionVisi
 
     private static Expression Evaluated(Expression node)
     {
-        object? value = node is ConstantExpression constant
-            ? constant.Value
-            : Expression
-                .Lambda<Func<object?>>(Expression.Convert(node, typeof(object)))
-                .Compile()();
+        object? value = Value(node);
         return
             value is IQueryable query
             && !(query.Expression is ConstantExpression root && root.Value == value)
             ? Evaluate(query.Expression)
             : Expression.Constant(value, node.Type);
+    }
+
+    private static object? Value(Expression node)
+    {
+        return node switch
+        {
+            ConstantExpression constant => constant.Value,
+            MemberExpression
+            {
+                Expression: ConstantExpression { Value: object target },
+                Member: FieldInfo field,
+            } => field.GetValue(target),
+            _ => Expression
+                .Lambda<Func<object?>>(Expression.Convert(node, typeof(object)))
+                .Compile()(),
+        };
     }
 
     private static bool CanEvaluate(Expression node)

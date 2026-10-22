@@ -1,5 +1,6 @@
 using System.Reflection;
 using Linq.Expressions.Translation.PostgreSql.Syntax;
+using Linq.Expressions.Translation.PostgreSql.Translation;
 
 namespace Linq.Expressions.Translation.PostgreSql.Shapes;
 
@@ -31,10 +32,13 @@ internal sealed class EntityShape(IReadOnlyList<EntityColumn> columns) : Shape
 
     public ScalarShape Member(MemberInfo member)
     {
-        return new ScalarShape(
-            columns.ToDictionary(column => column.Member, column => column.Value)[
-                member.Name
-            ]
-        );
+        foreach (EntityColumn column in columns)
+        {
+            if (column.Member == member.Name)
+            {
+                return new ScalarShape(column.Value);
+            }
+        }
+        throw Unsupported.Member(member);
     }
 }

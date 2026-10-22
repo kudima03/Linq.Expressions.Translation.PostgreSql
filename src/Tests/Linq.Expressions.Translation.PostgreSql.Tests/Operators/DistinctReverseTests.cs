@@ -338,4 +338,90 @@ public sealed record DistinctReverseTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void OrdersDistinctComputedValues()
+    {
+        Expression query = Orders
+            .Select(o => o.Total * 2)
+            .Distinct()
+            .OrderBy(x => x)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Value"
+                FROM (
+                    SELECT DISTINCT t0."Total" * 2 AS "Value"
+                    FROM "Order" AS t0
+                ) AS t1
+                ORDER BY t1."Value"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void DropsOrderingByUnprojectedColumnBeforeDistinct()
+    {
+        Expression query = Orders
+            .OrderBy(o => o.Id)
+            .Select(o => o.CustomerId)
+            .Distinct()
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT DISTINCT t0."CustomerId"
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsOrderingByProjectedColumnBeforeDistinct()
+    {
+        Expression query = Orders
+            .OrderBy(o => o.CustomerId)
+            .Select(o => o.CustomerId)
+            .Distinct()
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT DISTINCT t0."CustomerId"
+                FROM "Order" AS t0
+                ORDER BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsOrderingOfDistinctEntities()
+    {
+        Expression query = Orders
+            .OrderBy(o => o.Id)
+            .Select(o => new { o.Id, o.Number })
+            .Distinct()
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT DISTINCT t0."Id", t0."Number"
+                FROM "Order" AS t0
+                ORDER BY t0."Id"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

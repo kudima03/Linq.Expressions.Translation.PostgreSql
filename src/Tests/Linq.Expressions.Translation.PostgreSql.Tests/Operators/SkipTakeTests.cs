@@ -438,4 +438,80 @@ public sealed record SkipTakeTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void FiltersComputedValuesAfterSkip()
+    {
+        Expression query = Orders
+            .Select(o => o.Total * 2)
+            .Skip(1)
+            .Where(x => x > 5)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Value"
+                FROM (
+                    SELECT t0."Total" * 2 AS "Value"
+                    FROM "Order" AS t0
+                    OFFSET 1
+                ) AS t1
+                WHERE t1."Value" > 5
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsOrderingOfComputedValuesAcrossWrap()
+    {
+        Expression query = Orders
+            .OrderBy(o => o.Total * 2)
+            .Select(o => o.Total * 2)
+            .Take(3)
+            .Where(x => x > 5)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Value"
+                FROM (
+                    SELECT t0."Total" * 2 AS "Value"
+                    FROM "Order" AS t0
+                    ORDER BY t0."Total" * 2
+                    LIMIT 3
+                ) AS t1
+                WHERE t1."Value" > 5
+                ORDER BY t1."Value"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void CountsPagedComputedValues()
+    {
+        Expression query = Orders
+            .Select(o => o.Total * 2)
+            .Take(3)
+            .Executed(q => q.Count());
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(COUNT(*) AS integer)
+                FROM (
+                    SELECT t0."Total" * 2 AS "Value"
+                    FROM "Order" AS t0
+                    LIMIT 3
+                ) AS t1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

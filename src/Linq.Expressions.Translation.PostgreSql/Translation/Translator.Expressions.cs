@@ -58,7 +58,11 @@ internal sealed partial class Translator
 
     private static SqlExpression Scalar(Shape shape)
     {
-        return ((ScalarShape)shape).Value;
+        return shape is ScalarShape scalar
+            ? scalar.Value
+            : throw new NotSupportedException(
+                "Entities and projections cannot be used where a single value is required."
+            );
     }
 
     private SqlExpression Sql(Expression expression)
@@ -182,6 +186,12 @@ internal sealed partial class Translator
         if (source == target)
         {
             return value;
+        }
+        if (!ScalarTypes.IsNumber(target))
+        {
+            throw new NotSupportedException(
+                $"Converting '{from.Name}' to '{to.Name}' is not supported."
+            );
         }
         SqlExpression operand =
             Fractional.Contains(source) && !Fractional.Contains(target)
@@ -399,7 +409,8 @@ internal sealed partial class Translator
     private SqlUnary Unary(UnaryExpression unary)
     {
         string symbol =
-            unary.NodeType != ExpressionType.Not ? "-"
+            unary.NodeType is ExpressionType.Negate or ExpressionType.NegateChecked ? "-"
+            : unary.NodeType != ExpressionType.Not ? throw Unsupported.Node(unary)
             : IsBoolean(unary.Type) ? "NOT "
             : "~";
         return new SqlUnary(symbol, Sql(unary.Operand), unary.Type);

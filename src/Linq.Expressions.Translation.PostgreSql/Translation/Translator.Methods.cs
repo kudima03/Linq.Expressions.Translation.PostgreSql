@@ -78,7 +78,7 @@ internal sealed partial class Translator
         return source is GroupingShape grouping ? Grouped(grouping, call)
             : source is GroupJoinShape group
                 ? Terminals.Contains(call.Method.Name)
-                        ? new ScalarShape(Terminal(Correlated(group), call))
+                        ? new ScalarShape(Single(Terminal(Correlated(group), call)))
                     : group.Then(call)
             : source is ScalarShape { Value: SqlConstant or { Type.IsArray: true } } items
             && Matched(call) is Expression item

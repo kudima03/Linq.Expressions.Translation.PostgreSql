@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The package is marked `IsAotCompatible`. `TextValue` is annotated `[RequiresUnreferencedCode]`, as columns are read from the public properties of the queried element types, which trimming removes unless they are preserved.
 - `ToString()` describes the expression instead of translating it.
 - Package validation compares the public API with the `0.1.0-preview.0.1.0` package.
+- Captured closure fields are read by reflection instead of compiling a delegate for each one.
 
 ### Fixed
 
@@ -39,6 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Concatenating a nullable number casts it to `text`, and concatenating a `bool`, an enum or a date or time value is rejected instead of using PostgreSQL's formatting.
 - `Distinct` after ordering by a value that is not selected drops the ordering from that key on, which PostgreSQL otherwise rejects.
 - An unnamed computed column is aliased `"Value"` when wrapped into a derived table instead of throwing `NullReferenceException`.
+- `Distinct()` before `Sum` or `Average` on a group is `SUM(DISTINCT ...)`/`AVG(DISTINCT ...)` instead of being ignored; `Sum`/`Average` with a selector over distinct group elements is rejected.
+- A comparison nested in another comparison keeps its `COALESCE(..., FALSE)`, and a lifted comparison is not treated as a nullable ordering key or equality operand, matching its `bool` type in C#.
+- A non-terminal query (`Where`, `Select`, ...) used as a value is rejected instead of being translated as `First()`; a subquery selecting an entity or a projection is rejected instead of rendering a multi-column scalar subquery.
+- `float.NaN` and infinities render as `CAST('...' AS real)`, and an empty array constant renders as `'{}'` instead of the untyped `ARRAY[]`.
+- `as` casts are rejected instead of rendering as negation, conversions to non-numeric types, `[NotMapped]` members, entities or projections in scalar positions and expressions that are not queries throw `NotSupportedException` instead of `InvalidCastException`, `KeyNotFoundException` or `NullReferenceException`, and a `null` expression throws `ArgumentNullException`.
 
 ## [0.1.0-preview.0.1.0] - 2026-10-15
 

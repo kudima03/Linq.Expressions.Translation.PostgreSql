@@ -1,3 +1,4 @@
+#pragma warning disable IDE0004 // the cast to float is the subject
 #pragma warning disable CA1861 // constant arrays are the subject
 
 namespace Linq.Expressions.Translation.PostgreSql.Tests.PostgreSql;
@@ -1277,6 +1278,48 @@ public sealed record LiteralTests
                 SELECT t0."Id"
                 FROM "Order" AS t0
                 WHERE t0."Number" LIKE E'%a\nb%'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Theory]
+    [InlineData(float.NaN, "CAST('NaN' AS real)")]
+    [InlineData(float.PositiveInfinity, "CAST('Infinity' AS real)")]
+    [InlineData(float.NegativeInfinity, "CAST('-Infinity' AS real)")]
+    [InlineData(1.5f, "1.5")]
+    public void RendersSpecialSingleValues(float value, string literal)
+    {
+        Expression query = Orders
+            .Where(o => (float)o.Quantity > value)
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                $"""
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE CAST(t0."Quantity" AS real) > {literal}
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void RendersEmptyArray()
+    {
+        string[] none = [];
+        Expression query = Orders.Where(o => o.Tags == none).Select(o => o.Id).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE t0."Tags" = '{}'
                 """
             ),
             new PostgreSqlQuery(query).TextValue

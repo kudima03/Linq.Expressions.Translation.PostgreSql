@@ -12,7 +12,8 @@ internal sealed class SqlBinary(
     // PostgreSQL binds these tighter than a prefix ~, so ~a + 1 means ~(a + 1).
     private static readonly HashSet<string> Arithmetic = ["+", "-", "*", "/", "%"];
 
-    public override bool Nullable => nullable;
+    // A lifted comparison is a bool in C#: NULL in SQL, it is FALSE as a value.
+    public override bool Nullable => nullable && Kind != SqlBinaryKind.Comparison;
 
     public string Symbol { get; } = symbol;
 
@@ -41,7 +42,7 @@ internal sealed class SqlBinary(
 
     private bool IsCoalesced(SqlMode mode)
     {
-        return mode == SqlMode.Value && Kind == SqlBinaryKind.Comparison && Nullable;
+        return mode == SqlMode.Value && Kind == SqlBinaryKind.Comparison && nullable;
     }
 
     private void RenderOperation(SqlWriter writer, SqlMode mode)
@@ -54,12 +55,14 @@ internal sealed class SqlBinary(
         _ = RenderOperand(writer, Right, mode);
     }
 
+    // Only logical operators pass a predicate position on; every other operand is a value.
     private SqlWriter RenderOperand(SqlWriter writer, SqlExpression operand, SqlMode mode)
     {
+        SqlMode inner = Kind == SqlBinaryKind.Logical ? mode : SqlMode.Value;
         return
             IsChained(operand) || (Kind == SqlBinaryKind.Logical && operand is SqlUnary)
-            ? writer.Render(operand, mode)
-            : writer.Operand(operand, mode);
+            ? writer.Render(operand, inner)
+            : writer.Operand(operand, inner);
     }
 
     private bool IsChained(SqlExpression operand)

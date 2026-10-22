@@ -79,4 +79,10 @@ public sealed record PostgreSqlQueryTests
             new PostgreSqlQuery(query).ToString()
         );
     }
+
+    [Fact]
+    public void RejectsNullExpression()
+    {
+        _ = Assert.Throws<ArgumentNullException>(() => new PostgreSqlQuery(null!));
+    }
 }

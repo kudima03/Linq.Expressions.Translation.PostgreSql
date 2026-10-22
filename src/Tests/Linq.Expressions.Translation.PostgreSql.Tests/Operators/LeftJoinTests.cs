@@ -425,4 +425,30 @@ public sealed record LeftJoinTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void ProjectsComputedValueOfLeftJoinedRows()
+    {
+        Expression query = Customers
+            .SelectMany(
+                c =>
+                    Orders
+                        .Where(o => o.CustomerId == c.Id)
+                        .Select(o => o.Total * 2)
+                        .DefaultIfEmpty(),
+                (c, total) => new { c.Name, Total = total }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", t1."Total" * 2 AS "Total"
+                FROM "Customer" AS t0
+                LEFT JOIN "Order" AS t1 ON t1."CustomerId" = t0."Id"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

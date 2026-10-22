@@ -40,9 +40,20 @@ internal sealed partial class Translator
 
     private SqlExpression Subquery(MethodCallExpression call)
     {
-        SqlExpression result = Terminal(call);
+        SqlExpression result = Single(Terminal(call));
         return call.Method.Name.EndsWith("OrDefault", StringComparison.Ordinal)
             ? Substituted(result, call.Type)
+            : result;
+    }
+
+    // A subquery in a value position must produce one column; the shape of an element
+    // query is the shape of its source, which may be an entity or a projection.
+    private static SqlExpression Single(SqlExpression result)
+    {
+        return result is SqlScalarSubquery { Query.Shape: not ScalarShape }
+            ? throw new NotSupportedException(
+                "A subquery used as a value must select a single scalar value."
+            )
             : result;
     }
 
@@ -140,16 +151,17 @@ internal sealed partial class Translator
             ),
             nameof(Queryable.ElementAt) or nameof(Queryable.ElementAtOrDefault) =>
                 Element(Positioned(source, Count(call.Arguments[1])), 1, call),
-            _ => Element(
+            nameof(Queryable.First) or nameof(Queryable.FirstOrDefault) => Element(
                 filtered ? Where(source, Lambda(call, 1)) : source,
-                call.Method.Name.StartsWith(
-                    nameof(Queryable.Single),
-                    StringComparison.Ordinal
-                )
-                    ? 2
-                    : 1,
+                1,
                 call
             ),
+            nameof(Queryable.Single) or nameof(Queryable.SingleOrDefault) => Element(
+                filtered ? Where(source, Lambda(call, 1)) : source,
+                2,
+                call
+            ),
+            _ => throw Unsupported.Method(call.Method),
         };
     }
 
@@ -172,7 +184,7 @@ internal sealed partial class Translator
                 ? Scalar(Bind(Lambda(call, 1), query.Shape))
                 : Scalar(query.Shape);
         query.Shape = new ScalarShape(
-            Aggregate(call.Method.Name, value, call.Type, null)
+            Aggregate(call.Method.Name, value, call.Type, false, null)
         );
         return new SqlScalarSubquery(query, call.Type);
     }
@@ -206,6 +218,7 @@ internal sealed partial class Translator
         string name,
         SqlExpression value,
         Type type,
+        bool distinct,
         SqlExpression? filter
     )
     {
@@ -215,7 +228,7 @@ internal sealed partial class Translator
             SqlExpression sum = new SqlFunction(
                 "COALESCE",
                 [
-                    new SqlAggregate("SUM", value, false, filter, type),
+                    new SqlAggregate("SUM", value, distinct, filter, type),
                     new SqlConstant(0, typeof(int)),
                 ],
                 result
@@ -232,7 +245,7 @@ internal sealed partial class Translator
         return new SqlAggregate(
             name == nameof(Queryable.Average) ? "AVG" : name.ToUpperInvariant(),
             argument,
-            false,
+            distinct,
             filter,
             type
         );

@@ -497,4 +497,17 @@ public sealed record IdentifierAndPagingTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void RejectsNotMappedProperty()
+    {
+        Expression query = new CapturingQueryable<QuotedRow>()
+            .Select(r => r.Ignored)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Ignored", exception.Message, StringComparison.Ordinal);
+    }
 }
