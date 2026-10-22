@@ -45,6 +45,11 @@ The repository is not part of the Pure ecosystem: do not reference `Pure.*` pack
 - Unsupported constructs are asserted with `Assert.Throws<NotSupportedException>`.
 - `xUnit1044` is suppressed in the test project for expression-valued theory data, as are the culture/`StringComparison` analyzers `CA1304`, `CA1307`, `CA1309`, `CA1310`, `CA1311`, `CA1847`, `CA1862`, `CA1865`, `CA1866` and `CA2249`, as the tests exercise exactly those overloads. Combinations use `[Theory]` with `InlineData`/`MemberData`.
 
+**Performance test project:** `Linq.Expressions.Translation.PostgreSql.PerformanceTests` references the test project for its tables and model.
+- `Samples` lists 15 queries from simple to complex; `TranslationTimeTests` asserts that each translates cold (no warm-up) under 500 ms and that the output parses.
+- The `Translation time` workflow (`.github/workflows/translation-time.yml`) runs it in `Release` on PRs to `main`: `dotnet test Tests/Linq.Expressions.Translation.PostgreSql.PerformanceTests --configuration Release`.
+- `stryker-config.json` filters these tests out of mutation testing (Stryker runs in solution mode, which ignores `test-projects`), since timing must not decide whether a mutant is killed.
+
 **Multi-targeting:** net8.0, net9.0, net10.0.
 
 **Publishing:** triggered by pushing a semver tag (pattern `*.*.*`). The tag becomes the `PackageVersion`. The workflow publishes to both GitHub Packages and NuGet.org. `dotnet pack` validates the public API against `PackageValidationBaselineVersion` (the latest released tag, from `git describe --tags --abbrev=0`); move it to the new tag after a release.
