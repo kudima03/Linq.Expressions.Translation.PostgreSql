@@ -21,6 +21,7 @@ internal sealed class TableMapping
             .. type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(property =>
                     property.GetCustomAttribute<NotMappedAttribute>() is null
+                    && IsColumn(property)
                 )
                 .OrderBy(property => Depth(property.DeclaringType!))
                 .Select(property => new ColumnMapping(property)),
@@ -32,6 +33,14 @@ internal sealed class TableMapping
     public string? Schema { get; }
 
     public IReadOnlyList<ColumnMapping> Columns { get; }
+
+    // A column is read through a public getter; an indexer and a write-only property
+    // have no value to select.
+    private static bool IsColumn(PropertyInfo property)
+    {
+        return property.GetIndexParameters().Length == 0
+            && property.GetMethod is { IsPublic: true };
+    }
 
     // Properties come in declaration order, derived types first; the stable sort puts
     // base types first. Metadata tokens would be exact but do not exist under Native AOT.

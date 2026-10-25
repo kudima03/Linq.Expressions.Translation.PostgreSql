@@ -16,9 +16,10 @@ internal sealed class ColumnMapping
         Member = property.Name;
         Name = property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name;
         Type = property.PropertyType;
+        // Without nullable annotations a reference may be null as well.
         Nullable =
             new NullabilityInfoContext().Create(property).ReadState
-            == NullabilityState.Nullable;
+            != NullabilityState.NotNull;
     }
 
     public string Member { get; }
