@@ -452,6 +452,15 @@ internal sealed partial class Translator
         {
             query.Shape = scalar.Named();
         }
+        if (query.Shape is GroupingShape { Key: ScalarShape key } grouping)
+        {
+            query.Shape = new GroupingShape(
+                key.Named(),
+                grouping.Element,
+                grouping.Filter,
+                grouping.Distinct
+            );
+        }
     }
 
     private string NextAlias()

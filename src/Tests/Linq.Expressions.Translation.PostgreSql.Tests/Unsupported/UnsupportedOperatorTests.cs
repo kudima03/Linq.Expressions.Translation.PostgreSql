@@ -1095,4 +1095,45 @@ public sealed record UnsupportedOperatorTests
         );
         Assert.Contains("Distinct", exception.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void RejectsPagedGroupingsAsResult()
+    {
+        Expression query = Customers.GroupBy(c => c.Region).Take(5).Distinct().Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("GroupBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsCombinedGroupingsAsResult()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Region)
+            .Concat(Customers.GroupBy(c => c.Name))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("GroupBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsAggregatingElementsOfPagedGroups()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Region)
+            .Take(5)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("aggregate", exception.Message, StringComparison.Ordinal);
+    }
 }

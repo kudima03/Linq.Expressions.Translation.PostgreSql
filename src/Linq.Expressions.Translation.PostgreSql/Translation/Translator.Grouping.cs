@@ -54,12 +54,17 @@ internal sealed partial class Translator
     {
         string name = call.Method.Name;
         bool selected = call.Arguments.Count > 1;
+        Shape element =
+            group.Element
+            ?? throw new NotSupportedException(
+                "The elements of a group are not available once the groups have been paged, made distinct or combined; aggregate them before that."
+            );
         return name switch
         {
             nameof(Enumerable.Where) => new GroupingShape(
                 group.Key,
-                group.Element,
-                Conjoined(Scalar(Bind(Lambda(call, 1), group.Element)), group.Filter),
+                element,
+                Conjoined(Scalar(Bind(Lambda(call, 1), element)), group.Filter),
                 group.Distinct
             ),
             // A projection of the distinct elements is not the distinct projection,
@@ -70,30 +75,27 @@ internal sealed partial class Translator
                 ),
             nameof(Enumerable.Select) => new GroupingShape(
                 group.Key,
-                Bind(Lambda(call, 1), group.Element),
+                Bind(Lambda(call, 1), element),
                 group.Filter,
                 group.Distinct
             ),
             nameof(Enumerable.Distinct) => new GroupingShape(
                 group.Key,
-                group.Element,
+                element,
                 group.Filter,
                 true
             ),
             nameof(Enumerable.Count) or nameof(Enumerable.LongCount) => new ScalarShape(
                 Counting(
                     name,
-                    group.Distinct ? Scalar(group.Element) : null,
+                    group.Distinct ? Scalar(element) : null,
                     selected
-                        ? Conjoined(
-                            Scalar(Bind(Lambda(call, 1), group.Element)),
-                            group.Filter
-                        )
+                        ? Conjoined(Scalar(Bind(Lambda(call, 1), element)), group.Filter)
                         : group.Filter
                 )
             ),
             nameof(Enumerable.Any) or nameof(Enumerable.All) => new ScalarShape(
-                Quantified(group, call)
+                Quantified(group, element, call)
             ),
             // Distinct entities summed by a selector are not the distinct values of the
             // selector, which is what SUM(DISTINCT ...) adds up.
@@ -108,9 +110,7 @@ internal sealed partial class Translator
             or nameof(Enumerable.Max) => new ScalarShape(
                 Aggregate(
                     name,
-                    Scalar(
-                        selected ? Bind(Lambda(call, 1), group.Element) : group.Element
-                    ),
+                    Scalar(selected ? Bind(Lambda(call, 1), element) : element),
                     call.Type,
                     group.Distinct
                         && name is not (nameof(Enumerable.Min) or nameof(Enumerable.Max)),
@@ -121,14 +121,16 @@ internal sealed partial class Translator
         };
     }
 
-    private SqlExpression Quantified(GroupingShape group, MethodCallExpression call)
+    private SqlExpression Quantified(
+        GroupingShape group,
+        Shape element,
+        MethodCallExpression call
+    )
     {
         bool any = call.Method.Name == nameof(Enumerable.Any);
         SqlExpression aggregate = new SqlAggregate(
             any ? "BOOL_OR" : "BOOL_AND",
-            call.Arguments.Count > 1
-                ? Scalar(Bind(Lambda(call, 1), group.Element))
-                : True,
+            call.Arguments.Count > 1 ? Scalar(Bind(Lambda(call, 1), element)) : True,
             false,
             group.Filter,
             typeof(bool)

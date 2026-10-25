@@ -972,7 +972,7 @@ public sealed record GroupByTests
                 """
                 SELECT CAST(COUNT(*) AS integer)
                 FROM (
-                    SELECT t0."Total" * 2
+                    SELECT t0."Total" * 2 AS "Value"
                     FROM "Order" AS t0
                     GROUP BY t0."Total" * 2
                 ) AS t1
@@ -1360,6 +1360,144 @@ public sealed record GroupByTests
                 SELECT BOOL_OR(t0."IsPaid") AS "AnyPaid", BOOL_AND(t0."IsPaid") AS "AllPaid"
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SelectsKeyOfPagedGroupsAfterDistinct()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Region)
+            .Take(5)
+            .Distinct()
+            .Select(g => g.Key)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Region"
+                FROM (
+                    SELECT DISTINCT t1."Region"
+                    FROM (
+                        SELECT t0."Region"
+                        FROM "Customer" AS t0
+                        GROUP BY t0."Region"
+                        LIMIT 5
+                    ) AS t1
+                ) AS t2
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OrdersPagedGroupsByKey()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Region)
+            .Take(5)
+            .OrderBy(g => g.Key)
+            .Select(g => g.Key)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Region"
+                FROM (
+                    SELECT t0."Region"
+                    FROM "Customer" AS t0
+                    GROUP BY t0."Region"
+                    LIMIT 5
+                ) AS t1
+                ORDER BY t1."Region"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void NamesComputedKeyOfPagedGroups()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Name.ToUpper())
+            .Take(5)
+            .Where(g => g.Key != "A")
+            .Select(g => g.Key)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Value"
+                FROM (
+                    SELECT UPPER(t0."Name") AS "Value"
+                    FROM "Customer" AS t0
+                    GROUP BY UPPER(t0."Name")
+                    LIMIT 5
+                ) AS t1
+                WHERE t1."Value" <> 'A'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ChecksAnyPagedGroupByKey()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Region)
+            .Take(5)
+            .Executed(q => q.Any(g => g.Key == "EU"));
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM (
+                        SELECT t0."Region"
+                        FROM "Customer" AS t0
+                        GROUP BY t0."Region"
+                        LIMIT 5
+                    ) AS t1
+                    WHERE t1."Region" = 'EU'
+                )
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SelectsKeysOfCombinedGroups()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Region)
+            .Concat(Customers.GroupBy(c => c.Name))
+            .Select(g => g.Key)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Region"
+                FROM (
+                    SELECT t0."Region"
+                    FROM "Customer" AS t0
+                    GROUP BY t0."Region"
+                    UNION ALL
+                    SELECT t1."Name"
+                    FROM "Customer" AS t1
+                    GROUP BY t1."Name"
+                ) AS t2
                 """
             ),
             new PostgreSqlQuery(query).TextValue
