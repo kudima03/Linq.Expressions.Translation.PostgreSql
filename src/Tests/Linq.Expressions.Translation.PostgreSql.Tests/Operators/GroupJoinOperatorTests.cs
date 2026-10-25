@@ -226,4 +226,76 @@ public sealed record GroupJoinOperatorTests
         );
         Assert.Contains("SkipWhile", exception.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void SubstitutesDefaultForFirstOrDefaultOfGroupJoinValue()
+    {
+        Expression query = Customers
+            .GroupJoin(
+                Orders,
+                c => c.Id,
+                o => o.CustomerId,
+                (c, os) =>
+                    new
+                    {
+                        c.Name,
+                        Latest = os.OrderByDescending(o => o.CreatedAt)
+                            .Select(o => o.Total)
+                            .FirstOrDefault(),
+                    }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", COALESCE((
+                    SELECT t1."Total"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                    ORDER BY t1."CreatedAt" DESC
+                    LIMIT 1
+                ), 0) AS "Latest"
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsNullForFirstOrDefaultOfNullableGroupJoinValue()
+    {
+        Expression query = Customers
+            .GroupJoin(
+                Orders,
+                c => c.Id,
+                o => o.CustomerId,
+                (c, os) =>
+                    new
+                    {
+                        c.Name,
+                        Latest = os.OrderByDescending(o => o.CreatedAt)
+                            .Select(o => (decimal?)o.Total)
+                            .FirstOrDefault(),
+                    }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", (
+                    SELECT t1."Total"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                    ORDER BY t1."CreatedAt" DESC
+                    LIMIT 1
+                ) AS "Latest"
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }
