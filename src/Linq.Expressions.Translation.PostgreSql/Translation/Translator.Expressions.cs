@@ -142,22 +142,34 @@ internal sealed partial class Translator
                 (argument, index) =>
                     new ObjectMember(
                         creation.Constructor!.GetParameters()[index].Name!,
-                        Shape(argument)
+                        Ungrouped(Shape(argument))
                     )
             ),
         ]);
+    }
+
+    // A nested group has no SQL value; projected, it would silently become its key.
+    private static Shape Ungrouped(Shape shape)
+    {
+        return shape is GroupingShape
+            ? throw new NotSupportedException(
+                "Returning or projecting IGrouping results of GroupBy is not supported; aggregate the groups or select their keys."
+            )
+            : shape;
     }
 
     private ObjectShape Initialization(MemberInitExpression initialization)
     {
         List<ObjectMember> assigned =
         [
-            .. initialization
-                .Bindings.Cast<MemberAssignment>()
-                .Select(binding => new ObjectMember(
-                    binding.Member.Name,
-                    Shape(binding.Expression)
-                )),
+            .. initialization.Bindings.Select(binding =>
+                binding is MemberAssignment assignment
+                    ? new ObjectMember(
+                        assignment.Member.Name,
+                        Ungrouped(Shape(assignment.Expression))
+                    )
+                    : throw Unsupported.Binding(binding)
+            ),
         ];
         // An initializer runs after the constructor, so it replaces the argument.
         return new ObjectShape([

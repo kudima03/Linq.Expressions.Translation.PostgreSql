@@ -16,12 +16,7 @@ internal sealed partial class Translator
     public string Translate(Expression expression)
     {
         SqlQuery query = Query(Evaluator.Evaluate(expression));
-        if (query.Shape is GroupingShape)
-        {
-            throw new NotSupportedException(
-                "Returning IGrouping results of GroupBy is not supported; project the groups with Select."
-            );
-        }
+        _ = Ungrouped(query.Shape);
         SqlWriter writer = new();
         query.Render(writer);
         return writer.ToString();
