@@ -1128,4 +1128,87 @@ public sealed record GroupByTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void GroupsAllRowsByConstantKey()
+    {
+        Expression query = Orders
+            .GroupBy(o => 1)
+            .Select(g => new { Count = g.Count(), Total = g.Sum(o => o.Total) })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(COUNT(*) AS integer) AS "Count",
+                COALESCE(SUM(t0."Total"), 0) AS "Total"
+                FROM "Order" AS t0
+                GROUP BY CAST(1 AS integer)
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ProjectsConstantGroupKey()
+    {
+        Expression query = Orders
+            .GroupBy(o => "all")
+            .Select(g => new { g.Key, Count = g.Count() })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT 'all' AS "Key", CAST(COUNT(*) AS integer) AS "Count"
+                FROM "Order" AS t0
+                GROUP BY CAST(1 AS integer)
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OmitsConstantMemberOfCompositeGroupKey()
+    {
+        Expression query = Orders
+            .GroupBy(o => new { o.CustomerId, All = true })
+            .Select(g => new { g.Key, Count = g.Count() })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."CustomerId" AS "Key.CustomerId", TRUE AS "Key.All",
+                CAST(COUNT(*) AS integer) AS "Count"
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OmitsConstantGroupKeyFromOrdering()
+    {
+        Expression query = Orders
+            .GroupBy(o => 1)
+            .OrderBy(g => g.Key)
+            .Select(g => g.Count())
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(COUNT(*) AS integer)
+                FROM "Order" AS t0
+                GROUP BY CAST(1 AS integer)
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

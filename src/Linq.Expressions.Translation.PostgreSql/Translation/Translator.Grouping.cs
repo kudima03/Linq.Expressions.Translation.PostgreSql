@@ -13,7 +13,7 @@ internal sealed partial class Translator
         bool selected =
             call.Arguments.Count > 2 && ParameterCount(call.Arguments[2]) == 1;
         Shape element = selected ? Bind(Lambda(call, 2), query.Shape) : query.Shape;
-        query.GroupBy = [.. key.Columns().Select(column => column.Value)];
+        query.GroupBy = Partitioned(key);
         query.Orderings = [];
         query.Shape = new GroupingShape(key, element, null, false);
         if (call.Arguments.Count > (selected ? 3 : 2))
@@ -25,6 +25,20 @@ internal sealed partial class Translator
             );
         }
         return query;
+    }
+
+    // A constant key puts every row into one group. A bare literal in GROUP BY is a
+    // positional reference or an error, and without a GROUP BY an empty source would
+    // still produce a group.
+    private static List<SqlExpression> Partitioned(Shape key)
+    {
+        List<SqlExpression> keys =
+        [
+            .. key.Columns()
+                .Select(column => column.Value)
+                .Where(value => value is not SqlConstant),
+        ];
+        return keys.Count > 0 ? keys : [new SqlCast(Integer(1), "integer", typeof(int))];
     }
 
     private static int ParameterCount(Expression argument)

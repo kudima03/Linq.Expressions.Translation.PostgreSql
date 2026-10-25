@@ -209,10 +209,13 @@ internal sealed partial class Translator
     )
     {
         SelectQuery query = Open(source, Barrier.Paging | Barrier.Distinct);
+        // A constant key orders nothing; as a bare literal in ORDER BY it would be a
+        // positional reference or an error.
         List<Ordering> keys =
         [
             .. Bind(selector, query.Shape)
                 .Columns()
+                .Where(column => column.Value is not SqlConstant)
                 .Select(column => new Ordering(column.Value, descending)),
         ];
         query.Orderings = then

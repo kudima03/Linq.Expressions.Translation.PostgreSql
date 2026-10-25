@@ -456,4 +456,61 @@ public sealed record OrderByTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void OmitsConstantOrderingKey()
+    {
+        Expression query = Orders
+            .Select(o => new { o.Id, Kind = "x" })
+            .OrderBy(x => x.Kind)
+            .ThenBy(x => x.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", 'x' AS "Kind"
+                FROM "Order" AS t0
+                ORDER BY t0."Id"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OmitsConstantMemberOfCompositeOrderingKey()
+    {
+        Expression query = Orders
+            .OrderByDescending(o => new { First = 1, o.Total })
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                ORDER BY t0."Total" DESC
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void LeavesRowsUnorderedByConstantKey()
+    {
+        Expression query = Orders.OrderBy(o => 0).Select(o => o.Id).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }
