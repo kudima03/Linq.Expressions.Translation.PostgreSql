@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-preview.0.3.0] - 2026-10-25
+
+### Added
+
+- Translation of `Order()`/`OrderDescending()`, which sort the elements themselves, and of `Any()` on an array column (`CARDINALITY(...) > 0`).
+- Translation of the fields and totals of a `TimeSpan` (`Days`, `Hours`, `Minutes`, `Seconds`, `Milliseconds`, `Total...` and `Ticks`).
+- Conversion of a `DateTime` to a `DateTimeOffset`, so comparisons such as `o.PaidAt > o.CreatedAt` or `DateTimeOffset.UtcNow > o.CreatedAt` are translated instead of rejected.
+- Translation of `DateTime.Today` as the start of the local day, like `DateTime.Now.Date`.
+- A left-joined entity can be compared with `null` (`x.o == null`, `g.Count(x => x.o != null)`); it is null only where the left join found no row.
+
+### Changed
+
+- Only properties with a public getter and no index parameters are mapped to columns; indexers and write-only properties are no longer selected.
+- A reference property without nullable annotations (`#nullable disable`) is treated as nullable, so comparisons, ordering and concatenation keep its `NULL` rows as C# does.
+
+### Fixed
+
+- Nullability is derived from conditional branches, scalar subqueries and `MIN`/`MAX` of reference types, both sides of `Concat`/`Union`/`Intersect`/`Except` and computed columns of a left-joined source, instead of from the CLR type alone.
+- A negated comparison with a nullable correlated operand (`m.Id != e.ManagerId`) uses `IS DISTINCT FROM` and keeps the rows C# keeps.
+- `Contains` matches a null item with a null element of a subquery or array column, and `Join`/`GroupJoin` match two null keys, as in C#.
+- `All` and `OfType` on a grouped query restrict it in `HAVING` instead of putting aggregates into `WHERE`; `OfType` drops nulls from a nullable sequence and checks the entity's table type, and `Cast` to an entity type the table is not assignable to is rejected.
+- `Min`/`Max` of booleans use `BOOL_AND`/`BOOL_OR` instead of `MIN`/`MAX`, which PostgreSQL lacks; `Min`/`Max` of `Guid` are rejected, as uuids order differently in .NET.
+- `Distinct().Count()` of a nullable value on a group counts `NULL` as one of the distinct values.
+- `Select` after `Distinct` over group elements is rejected instead of applying `DISTINCT` to the projected value.
+- `ElementAtOrDefault` with a negative index yields no row instead of the first one.
+- A paged query wrapped into a derived table keeps ordering by keys that are not selected, so `First`, `Last`, `Reverse` and `TakeLast` after it respect the original order.
+- A grouping that is paged, made distinct or combined keeps its key selectable and its result rejected, instead of silently selecting the keys or failing on `g.Key`.
+- A constructed object of constants in a projection (`new CustomerSummary(1, "a")`) is projected member by member instead of being rejected.
+- A lifted exclusive-or of booleans (`o.IsGift ^ o.IsPaid`) stays `NULL` when an operand is, instead of being coalesced to `FALSE`.
+- `Trim`, `TrimStart` and `TrimEnd` remove every white-space character, not only spaces, and invisible characters in string literals are written as `\u` escapes instead of invalid byte escapes.
+
+## [0.1.0-preview.0.2.1] - 2026-10-22
+
+### Changed
+
+- Captured closure fields are read by reflection instead of compiling a delegate for each one.
+
+### Fixed
+
+- `Distinct()` before `Sum` or `Average` on a group is `SUM(DISTINCT ...)`/`AVG(DISTINCT ...)` instead of being ignored; `Sum`/`Average` with a selector over distinct group elements is rejected.
+- A comparison nested in another comparison keeps its `COALESCE(..., FALSE)`, and a lifted comparison is not treated as a nullable ordering key or equality operand, matching its `bool` type in C#.
+- A non-terminal query (`Where`, `Select`, ...) used as a value is rejected instead of being translated as `First()`; a subquery selecting an entity or a projection is rejected instead of rendering a multi-column scalar subquery.
+- `float.NaN` and infinities render as `CAST('...' AS real)`, and an empty array constant renders as `'{}'` instead of the untyped `ARRAY[]`.
+- `as` casts are rejected instead of rendering as negation, conversions to non-numeric types, `[NotMapped]` members, entities or projections in scalar positions and expressions that are not queries throw `NotSupportedException` instead of `InvalidCastException`, `KeyNotFoundException` or `NullReferenceException`, and a `null` expression throws `ArgumentNullException`.
+
+## [0.1.0-preview.0.2.0] - 2026-10-16
+
 ### Added
 
 - Translation of `TakeLast` (a reversed `LIMIT` in a derived table) and `SkipLast` (`LIMIT` by a row-count subquery).
@@ -23,7 +70,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The package is marked `IsAotCompatible`. `TextValue` is annotated `[RequiresUnreferencedCode]`, as columns are read from the public properties of the queried element types, which trimming removes unless they are preserved.
 - `ToString()` describes the expression instead of translating it.
 - Package validation compares the public API with the `0.1.0-preview.0.1.0` package.
-- Captured closure fields are read by reflection instead of compiling a delegate for each one.
 
 ### Fixed
 
@@ -40,11 +86,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Concatenating a nullable number casts it to `text`, and concatenating a `bool`, an enum or a date or time value is rejected instead of using PostgreSQL's formatting.
 - `Distinct` after ordering by a value that is not selected drops the ordering from that key on, which PostgreSQL otherwise rejects.
 - An unnamed computed column is aliased `"Value"` when wrapped into a derived table instead of throwing `NullReferenceException`.
-- `Distinct()` before `Sum` or `Average` on a group is `SUM(DISTINCT ...)`/`AVG(DISTINCT ...)` instead of being ignored; `Sum`/`Average` with a selector over distinct group elements is rejected.
-- A comparison nested in another comparison keeps its `COALESCE(..., FALSE)`, and a lifted comparison is not treated as a nullable ordering key or equality operand, matching its `bool` type in C#.
-- A non-terminal query (`Where`, `Select`, ...) used as a value is rejected instead of being translated as `First()`; a subquery selecting an entity or a projection is rejected instead of rendering a multi-column scalar subquery.
-- `float.NaN` and infinities render as `CAST('...' AS real)`, and an empty array constant renders as `'{}'` instead of the untyped `ARRAY[]`.
-- `as` casts are rejected instead of rendering as negation, conversions to non-numeric types, `[NotMapped]` members, entities or projections in scalar positions and expressions that are not queries throw `NotSupportedException` instead of `InvalidCastException`, `KeyNotFoundException` or `NullReferenceException`, and a `null` expression throws `ArgumentNullException`.
 
 ## [0.1.0-preview.0.1.0] - 2026-10-15
 
