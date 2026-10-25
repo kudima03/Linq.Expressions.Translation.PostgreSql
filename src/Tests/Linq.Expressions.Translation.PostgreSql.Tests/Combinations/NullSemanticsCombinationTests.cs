@@ -560,7 +560,7 @@ public sealed record NullSemanticsCombinationTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE NOT COALESCE(t0."Note" = ANY (t0."Tags"), FALSE)
+                WHERE NOT (COALESCE(t0."Note" = ANY (t0."Tags"), FALSE) OR ((t0."Note" IS NULL) AND (ARRAY_POSITION(t0."Tags", NULL) IS NOT NULL)))
                 """
             ),
             new PostgreSqlQuery(query).TextValue

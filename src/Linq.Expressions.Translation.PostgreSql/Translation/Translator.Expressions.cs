@@ -338,17 +338,32 @@ internal sealed partial class Translator
         bool distinct =
             (one.Nullable && other.Nullable)
             || (nullable && (negated || !IsCorrelation(left, right)));
-        string symbol =
-            distinct ? (negated ? "IS DISTINCT FROM" : "IS NOT DISTINCT FROM")
-            : negated ? "<>"
-            : "=";
+        return distinct
+            ? Distinct(one, other, negated)
+            : new SqlBinary(
+                negated ? "<>" : "=",
+                SqlBinaryKind.Comparison,
+                one,
+                other,
+                typeof(bool),
+                nullable
+            );
+    }
+
+    // IS [NOT] DISTINCT FROM is never NULL.
+    private static SqlBinary Distinct(
+        SqlExpression left,
+        SqlExpression right,
+        bool negated
+    )
+    {
         return new SqlBinary(
-            symbol,
+            negated ? "IS DISTINCT FROM" : "IS NOT DISTINCT FROM",
             SqlBinaryKind.Comparison,
-            one,
-            other,
+            left,
+            right,
             typeof(bool),
-            nullable && !distinct
+            false
         );
     }
 

@@ -10,7 +10,7 @@ public sealed record MembershipNullSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT COALESCE(t0."Note" = ANY (t0."Tags"), FALSE)
+                SELECT COALESCE(t0."Note" = ANY (t0."Tags"), FALSE) OR ((t0."Note" IS NULL) AND (ARRAY_POSITION(t0."Tags", NULL) IS NOT NULL))
                 FROM "Order" AS t0
                 """
             ),
@@ -139,6 +139,146 @@ public sealed record MembershipNullSemanticsTests
                 """
                 SELECT t0."Id" IN (SELECT t1."CustomerId" FROM "Order" AS t1)
                 FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void MatchesNullItemWithNullOfSubquery()
+    {
+        Expression query = Employees
+            .Where(e => Employees.Select(m => m.ManagerId).Contains(e.ManagerId))
+            .Select(e => e.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Employee" AS t0
+                WHERE (t0."ManagerId" IN (
+                    SELECT t1."ManagerId"
+                    FROM "Employee" AS t1
+                )) OR ((t0."ManagerId" IS NULL) AND EXISTS (
+                    SELECT 1
+                    FROM "Employee" AS t2
+                    WHERE t2."ManagerId" IS NULL
+                ))
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void MatchesNullItemWithNullOfPagedSubqueryWithoutHiddenKey()
+    {
+        Expression query = Employees
+            .Where(e =>
+                Employees
+                    .OrderBy(m => m.Name)
+                    .Select(m => m.ManagerId)
+                    .Take(5)
+                    .Contains(e.ManagerId)
+            )
+            .Select(e => e.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Employee" AS t0
+                WHERE (t0."ManagerId" IN (
+                    SELECT t1."ManagerId"
+                    FROM "Employee" AS t1
+                    ORDER BY t1."Name"
+                    LIMIT 5
+                )) OR ((t0."ManagerId" IS NULL) AND EXISTS (
+                    SELECT 1
+                    FROM (
+                        SELECT t2."ManagerId"
+                        FROM "Employee" AS t2
+                        ORDER BY t2."Name"
+                        LIMIT 5
+                    ) AS t3
+                    WHERE t3."ManagerId" IS NULL
+                ))
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsPlainInForNonNullableItem()
+    {
+        Expression query = Employees
+            .Where(e => Employees.Select(m => m.ManagerId).Contains(e.Id))
+            .Select(e => e.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Employee" AS t0
+                WHERE t0."Id" IN (
+                    SELECT t1."ManagerId"
+                    FROM "Employee" AS t1
+                )
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsPlainInForNonNullableSequence()
+    {
+        Expression query = Employees
+            .Where(e => Employees.Select(m => (int?)m.Id).Contains(e.ManagerId))
+            .Select(e => e.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Employee" AS t0
+                WHERE t0."ManagerId" IN (
+                    SELECT t1."Id"
+                    FROM "Employee" AS t1
+                )
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void MatchesNullKeysOfGroupJoin()
+    {
+        Expression query = Employees
+            .GroupJoin(
+                Employees,
+                e => e.ManagerId,
+                m => m.ManagerId,
+                (e, ms) => ms.Count()
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT (
+                    SELECT CAST(COUNT(*) AS integer)
+                    FROM "Employee" AS t1
+                    WHERE t1."ManagerId" IS NOT DISTINCT FROM t0."ManagerId"
+                )
+                FROM "Employee" AS t0
                 """
             ),
             new PostgreSqlQuery(query).TextValue

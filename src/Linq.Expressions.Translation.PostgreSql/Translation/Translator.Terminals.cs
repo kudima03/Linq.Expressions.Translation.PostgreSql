@@ -148,11 +148,7 @@ internal sealed partial class Translator
                 new SqlExists(Unmatched(source, call)),
                 typeof(bool)
             ),
-            nameof(Queryable.Contains) => new SqlInQuery(
-                Sql(call.Arguments[1]),
-                Unordered(Open(source, Barrier.None)),
-                Scalar(source.Shape).Nullable
-            ),
+            nameof(Queryable.Contains) => Membership(source, call),
             nameof(Queryable.Last) or nameof(Queryable.LastOrDefault) => Element(
                 Reverse(filtered ? Where(source, Lambda(call, 1)) : source, call.Method),
                 1,
@@ -172,6 +168,29 @@ internal sealed partial class Translator
             ),
             _ => throw Unsupported.Method(call.Method),
         };
+    }
+
+    // Contains matches a null item with a NULL of the sequence, which IN never does.
+    private SqlExpression Membership(SqlQuery source, MethodCallExpression call)
+    {
+        SqlExpression item = Sql(call.Arguments[1]);
+        bool nullable = Scalar(source.Shape).Nullable;
+        SqlExpression membership = new SqlInQuery(
+            item,
+            Unordered(Open(source, Barrier.None)),
+            nullable
+        );
+        if (!item.Nullable || !nullable)
+        {
+            return membership;
+        }
+        SelectQuery nulls = Restricted(Query(call.Arguments[0]), false);
+        Restrict(nulls, new SqlIsNull(Scalar(nulls.Shape), false));
+        return Logical(
+            "OR",
+            membership,
+            Logical("AND", new SqlIsNull(item, false), new SqlExists(Existing(nulls)))
+        );
     }
 
     private SqlScalarSubquery Counted(SqlQuery source, string name, Type type)

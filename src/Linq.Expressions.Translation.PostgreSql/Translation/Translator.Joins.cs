@@ -184,7 +184,15 @@ internal sealed partial class Translator
                     (first, second) => Matching(first.Shape, second.Shape)
                 )
                 .Aggregate((first, second) => Logical("AND", first, second))
-            : Compare("=", Scalar(left), Scalar(right));
+            : Keyed(Scalar(left), Scalar(right));
+    }
+
+    // Join matches null keys with each other, which = never does.
+    private static SqlBinary Keyed(SqlExpression left, SqlExpression right)
+    {
+        return left.Nullable && right.Nullable
+            ? Distinct(left, right, false)
+            : Compare("=", left, right);
     }
 
     private static SqlExpression Conjoined(SqlExpression first, SqlExpression? second)

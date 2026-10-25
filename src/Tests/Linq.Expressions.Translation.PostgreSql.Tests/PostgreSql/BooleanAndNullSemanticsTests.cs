@@ -685,7 +685,7 @@ public sealed record BooleanAndNullSemanticsTests
     }
 
     [Fact]
-    public void JoinsNeverMatchNullKeys()
+    public void JoinsMatchNullKeysLikeCSharp()
     {
         Expression query = Orders
             .Join(Orders, a => a.Priority, b => b.Priority, (a, b) => a.Id)
@@ -696,7 +696,7 @@ public sealed record BooleanAndNullSemanticsTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                INNER JOIN "Order" AS t1 ON t0."Priority" = t1."Priority"
+                INNER JOIN "Order" AS t1 ON t0."Priority" IS NOT DISTINCT FROM t1."Priority"
                 """
             ),
             new PostgreSqlQuery(query).TextValue

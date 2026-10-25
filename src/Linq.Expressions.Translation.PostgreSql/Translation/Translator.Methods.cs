@@ -683,7 +683,26 @@ internal sealed partial class Translator
     {
         if (source is not SqlConstant { Value: IEnumerable values })
         {
-            return new SqlAny(value, source);
+            SqlExpression any = new SqlAny(value, source);
+            // A null item is contained when the array holds a NULL, which = ANY misses.
+            return value.Nullable
+                ? Logical(
+                    "OR",
+                    any,
+                    Logical(
+                        "AND",
+                        new SqlIsNull(value, false),
+                        new SqlIsNull(
+                            new SqlFunction(
+                                "ARRAY_POSITION",
+                                [source, new SqlConstant(null, value.Type)],
+                                typeof(int?)
+                            ),
+                            true
+                        )
+                    )
+                )
+                : any;
         }
         List<SqlExpression> present =
         [
