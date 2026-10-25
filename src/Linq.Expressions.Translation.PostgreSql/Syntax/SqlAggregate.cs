@@ -8,7 +8,10 @@ internal sealed class SqlAggregate(
     Type type
 ) : SqlExpression(type)
 {
-    public override bool Nullable => System.Nullable.GetUnderlyingType(Type) is not null;
+    // MIN and MAX of a reference type are NULL when every value is NULL or filtered out.
+    public override bool Nullable =>
+        System.Nullable.GetUnderlyingType(Type) is not null
+        || (!Type.IsValueType && (filter is not null || argument is { Nullable: true }));
 
     public override void Render(SqlWriter writer, SqlMode mode)
     {

@@ -1,7 +1,13 @@
+using Linq.Expressions.Translation.PostgreSql.Shapes;
+
 namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 
-internal sealed class SetOperationQuery(string operation, SqlQuery left, SqlQuery right)
-    : SqlQuery(left.Shape)
+internal sealed class SetOperationQuery(
+    string operation,
+    SqlQuery left,
+    SqlQuery right,
+    Shape shape
+) : SqlQuery(shape)
 {
     public string Operation { get; } = operation;
 

@@ -469,4 +469,126 @@ public sealed record ConditionalTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void ComparesConditionalWithNullBranchNullSafe()
+    {
+        Expression query = Customers
+            .Select(c => c.IsActive ? c.Email : null)
+            .Where(e => e != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CASE WHEN t0."IsActive" THEN t0."Email" ELSE NULL END
+                FROM "Customer" AS t0
+                WHERE CASE WHEN t0."IsActive" THEN t0."Email" ELSE NULL END IS DISTINCT FROM 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesConditionalWithNullableBranchNullSafe()
+    {
+        Expression query = Customers
+            .Select(c => c.IsActive ? c.Email : "none")
+            .Where(e => e != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CASE WHEN t0."IsActive" THEN t0."Email" ELSE 'none' END
+                FROM "Customer" AS t0
+                WHERE CASE WHEN t0."IsActive" THEN t0."Email" ELSE 'none' END IS DISTINCT FROM 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesConditionalWithoutNullableBranchDirectly()
+    {
+        Expression query = Customers
+            .Select(c => c.IsActive ? c.Name : "none")
+            .Where(n => n != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CASE WHEN t0."IsActive" THEN t0."Name" ELSE 'none' END
+                FROM "Customer" AS t0
+                WHERE CASE WHEN t0."IsActive" THEN t0."Name" ELSE 'none' END <> 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OrdersNullsFirstByConditionalWithNullBranch()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.IsActive ? c.Email : null)
+            .Select(c => c.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Customer" AS t0
+                ORDER BY CASE WHEN t0."IsActive" THEN t0."Email" ELSE NULL END NULLS FIRST
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ConcatenatesConditionalWithNullBranchAsEmpty()
+    {
+        Expression query = Customers
+            .Select(c => (c.IsActive ? c.Email : null) + "!")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT COALESCE(CASE WHEN t0."IsActive" THEN t0."Email" ELSE NULL END, '') || '!'
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesChainedConditionalWithOneNullableBranchNullSafe()
+    {
+        Expression query = Customers
+            .Select(c =>
+                c.IsActive ? c.Email
+                : c.Id > 1 ? "few"
+                : "many"
+            )
+            .Where(e => e != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CASE WHEN t0."IsActive" THEN t0."Email" WHEN t0."Id" > 1 THEN 'few' ELSE 'many' END
+                FROM "Customer" AS t0
+                WHERE CASE WHEN t0."IsActive" THEN t0."Email" WHEN t0."Id" > 1 THEN 'few' ELSE 'many' END IS DISTINCT FROM 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

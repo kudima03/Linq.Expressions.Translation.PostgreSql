@@ -13,7 +13,7 @@ internal abstract class SqlExpression(Type type)
 
     public virtual SqlExpression AsNullable()
     {
-        return this;
+        return new SqlNullable(this);
     }
 
     public abstract void Render(SqlWriter writer, SqlMode mode);

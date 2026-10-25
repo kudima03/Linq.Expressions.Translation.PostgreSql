@@ -1211,4 +1211,92 @@ public sealed record GroupByTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void ComparesMaximumOfNullableTextNullSafe()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Max(o => o.Note))
+            .Where(n => n != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT MAX(t0."Note")
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                HAVING MAX(t0."Note") IS DISTINCT FROM 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesFilteredMaximumOfTextNullSafe()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Where(o => o.IsPaid).Max(o => o.Number))
+            .Where(n => n != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT MAX(t0."Number") FILTER (WHERE t0."IsPaid")
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                HAVING MAX(t0."Number") FILTER (WHERE t0."IsPaid") IS DISTINCT FROM 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesMaximumOfTextDirectly()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Max(o => o.Number))
+            .Where(n => n != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT MAX(t0."Number")
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                HAVING MAX(t0."Number") <> 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesFilteredMaximumOfValueDirectly()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Where(o => o.IsPaid).Max(o => o.Total))
+            .Where(t => t != 1)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT MAX(t0."Total") FILTER (WHERE t0."IsPaid")
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                HAVING MAX(t0."Total") FILTER (WHERE t0."IsPaid") <> 1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

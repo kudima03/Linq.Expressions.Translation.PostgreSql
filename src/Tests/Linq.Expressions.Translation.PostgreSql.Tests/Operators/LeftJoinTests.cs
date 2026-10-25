@@ -451,4 +451,59 @@ public sealed record LeftJoinTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void ComparesComputedColumnOfLeftJoinedSourceNullSafe()
+    {
+        Expression query = Customers
+            .SelectMany(
+                c =>
+                    Orders
+                        .Where(o => o.CustomerId == c.Id)
+                        .Select(o => o.Quantity + 1)
+                        .DefaultIfEmpty(),
+                (c, q) => new { c.Name, Quantity = q }
+            )
+            .Where(x => x.Quantity != 5)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", t1."Quantity" + 1 AS "Quantity"
+                FROM "Customer" AS t0
+                LEFT JOIN "Order" AS t1 ON t1."CustomerId" = t0."Id"
+                WHERE (t1."Quantity" + 1) IS DISTINCT FROM 5
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void DropsConstantColumnOfLeftJoinedSourceFromOrderBy()
+    {
+        Expression query = Customers
+            .SelectMany(
+                c =>
+                    Orders
+                        .Where(o => o.CustomerId == c.Id)
+                        .Select(o => "order")
+                        .DefaultIfEmpty(),
+                (c, s) => new { c.Name, Kind = s }
+            )
+            .OrderBy(x => x.Kind)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", 'order' AS "Kind"
+                FROM "Customer" AS t0
+                LEFT JOIN "Order" AS t1 ON t1."CustomerId" = t0."Id"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

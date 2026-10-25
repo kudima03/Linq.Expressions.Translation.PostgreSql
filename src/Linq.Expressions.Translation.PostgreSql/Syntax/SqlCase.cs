@@ -6,7 +6,9 @@ internal sealed class SqlCase(
     Type type
 ) : SqlExpression(type)
 {
-    public override bool Nullable => System.Nullable.GetUnderlyingType(Type) is not null;
+    // The value is one of the branches, so it is nullable when one of them is.
+    public override bool Nullable =>
+        Otherwise.Nullable || Whens.Any(branch => branch.Result.Nullable);
 
     public IReadOnlyList<SqlWhen> Whens { get; } = whens;
 
