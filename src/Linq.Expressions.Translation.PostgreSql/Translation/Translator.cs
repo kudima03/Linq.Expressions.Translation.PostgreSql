@@ -137,6 +137,8 @@ internal sealed partial class Translator
         {
             nameof(Queryable.Where) => Where(source, Lambda(call, 1)),
             nameof(Queryable.Select) => Select(source, Lambda(call, 1)),
+            nameof(Queryable.Order) => Order(source, false),
+            nameof(Queryable.OrderDescending) => Order(source, true),
             nameof(Queryable.OrderBy) => Order(source, Lambda(call, 1), false, false),
             nameof(Queryable.OrderByDescending) => Order(
                 source,
@@ -217,12 +219,28 @@ internal sealed partial class Translator
     )
     {
         SelectQuery query = Open(source, Barrier.Paging | Barrier.Distinct);
+        return Ordered(query, Bind(selector, query.Shape), descending, then);
+    }
+
+    // Order() sorts the elements themselves.
+    private SelectQuery Order(SqlQuery source, bool descending)
+    {
+        SelectQuery query = Open(source, Barrier.Paging | Barrier.Distinct);
+        return Ordered(query, query.Shape, descending, false);
+    }
+
+    private static SelectQuery Ordered(
+        SelectQuery query,
+        Shape key,
+        bool descending,
+        bool then
+    )
+    {
         // A constant key orders nothing; as a bare literal in ORDER BY it would be a
         // positional reference or an error.
         List<Ordering> keys =
         [
-            .. Bind(selector, query.Shape)
-                .Columns()
+            .. key.Columns()
                 .Where(column => column.Value is not SqlConstant)
                 .Select(column => new Ordering(column.Value, descending)),
         ];

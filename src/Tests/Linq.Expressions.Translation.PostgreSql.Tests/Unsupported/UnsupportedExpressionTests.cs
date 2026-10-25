@@ -542,19 +542,6 @@ public sealed record UnsupportedExpressionTests
     }
 
     [Fact]
-    public void RejectsTotalDaysOfTimeSpan()
-    {
-        Expression query = Orders
-            .Select(o => (o.CreatedAt - new DateTime(2024, 1, 1)).TotalDays)
-            .Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("TotalDays", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void RejectsDateTimeConstructionFromColumns()
     {
         Expression query = Orders.Select(o => new DateTime(o.Quantity, 1, 1)).Expression;
@@ -596,17 +583,6 @@ public sealed record UnsupportedExpressionTests
             new PostgreSqlQuery(query).TextValue
         );
         Assert.Contains("ArrayIndex", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsArrayAny()
-    {
-        Expression query = Orders.Select(o => o.Tags.Any()).Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("Any", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -913,19 +889,6 @@ public sealed record UnsupportedExpressionTests
     }
 
     [Fact]
-    public void RejectsConversionToDateTimeOffset()
-    {
-        Expression query = Orders
-            .Where(o => (DateTimeOffset)o.CreatedAt > DateTimeOffset.UtcNow)
-            .Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("Convert", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void RejectsUnassignedMemberOfInitializedRecord()
     {
         Expression query = Orders
@@ -963,5 +926,29 @@ public sealed record UnsupportedExpressionTests
             new PostgreSqlQuery(query).TextValue
         );
         Assert.Contains("Parcel.Labels", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsConversionOfNumberToCharacter()
+    {
+        Expression query = Orders.Select(o => (char)o.Quantity).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Char", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsMicrosecondsOfTimeSpan()
+    {
+        Expression query = Orders
+            .Select(o => (o.CreatedAt - new DateTime(2024, 1, 1)).Microseconds)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Microseconds", exception.Message, StringComparison.Ordinal);
     }
 }

@@ -513,4 +513,65 @@ public sealed record OrderByTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void OrdersScalarsByThemselves()
+    {
+        Expression query = Customers.Select(c => c.Name).Order().Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name"
+                FROM "Customer" AS t0
+                ORDER BY t0."Name"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OrdersPagedScalarsByThemselvesBeforeEarlierKeys()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Id)
+            .Select(c => c.Name)
+            .Take(5)
+            .Order()
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Name"
+                FROM (
+                    SELECT t0."Name", t0."Id" AS "$0"
+                    FROM "Customer" AS t0
+                    ORDER BY t0."Id"
+                    LIMIT 5
+                ) AS t1
+                ORDER BY t1."Name", t1."$0"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OrdersNullableScalarsByThemselvesDescending()
+    {
+        Expression query = Customers.Select(c => c.Email).OrderDescending().Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Email"
+                FROM "Customer" AS t0
+                ORDER BY t0."Email" DESC NULLS LAST
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

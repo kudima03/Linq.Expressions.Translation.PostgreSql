@@ -1509,4 +1509,75 @@ public sealed record DateTimeTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void ComparesDateTimeWithDateTimeOffsetThroughSessionTimeZone()
+    {
+        Expression query = Orders
+            .Where(o => o.PaidAt > o.CreatedAt && DateTimeOffset.UtcNow > o.CreatedAt)
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE (t0."PaidAt" > t0."CreatedAt") AND (NOW() > t0."CreatedAt")
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void TranslatesTotalsOfTimeSpan()
+    {
+        Expression query = Orders
+            .Select(o => new
+            {
+                Days = (DateTime.Now - o.CreatedAt).TotalDays,
+                Hours = (DateTime.Now - o.CreatedAt).TotalHours,
+                Minutes = (DateTime.Now - o.CreatedAt).TotalMinutes,
+                Seconds = (DateTime.Now - o.CreatedAt).TotalSeconds,
+                Milliseconds = (DateTime.Now - o.CreatedAt).TotalMilliseconds,
+                TickCount = (DateTime.Now - o.CreatedAt).Ticks,
+            })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(EXTRACT(EPOCH FROM (LOCALTIMESTAMP - t0."CreatedAt")) / 86400 AS double precision) AS "Days", CAST(EXTRACT(EPOCH FROM (LOCALTIMESTAMP - t0."CreatedAt")) / 3600 AS double precision) AS "Hours", CAST(EXTRACT(EPOCH FROM (LOCALTIMESTAMP - t0."CreatedAt")) / 60 AS double precision) AS "Minutes", CAST(EXTRACT(EPOCH FROM (LOCALTIMESTAMP - t0."CreatedAt")) AS double precision) AS "Seconds", CAST(EXTRACT(EPOCH FROM (LOCALTIMESTAMP - t0."CreatedAt")) * 1000 AS double precision) AS "Milliseconds", CAST(EXTRACT(EPOCH FROM (LOCALTIMESTAMP - t0."CreatedAt")) * 10000000 AS bigint) AS "TickCount"
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void TranslatesWholeFieldsOfTimeSpan()
+    {
+        Expression query = Orders
+            .Select(o => new
+            {
+                WholeDays = (DateTime.Now - o.CreatedAt).Days,
+                WholeHours = (DateTime.Now - o.CreatedAt).Hours,
+                WholeMinutes = (DateTime.Now - o.CreatedAt).Minutes,
+                WholeSeconds = (DateTime.Now - o.CreatedAt).Seconds,
+                WholeMilliseconds = (DateTime.Now - o.CreatedAt).Milliseconds,
+            })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(EXTRACT(DAY FROM JUSTIFY_HOURS(LOCALTIMESTAMP - t0."CreatedAt")) AS integer) AS "WholeDays", CAST(EXTRACT(HOUR FROM JUSTIFY_HOURS(LOCALTIMESTAMP - t0."CreatedAt")) AS integer) AS "WholeHours", CAST(EXTRACT(MINUTE FROM JUSTIFY_HOURS(LOCALTIMESTAMP - t0."CreatedAt")) AS integer) AS "WholeMinutes", CAST(TRUNC(EXTRACT(SECOND FROM JUSTIFY_HOURS(LOCALTIMESTAMP - t0."CreatedAt"))) AS integer) AS "WholeSeconds", CAST(TRUNC(EXTRACT(MILLISECONDS FROM JUSTIFY_HOURS(LOCALTIMESTAMP - t0."CreatedAt"))) AS integer) % 1000 AS "WholeMilliseconds"
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

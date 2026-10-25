@@ -94,6 +94,16 @@ internal sealed partial class Translator
                 ? new ScalarShape(
                     new SqlFunction("CARDINALITY", [array.Value], call.Type)
                 )
+            : source is ScalarShape { Value.Type.IsArray: true } elements
+            && call.Method.Name == nameof(Enumerable.Any)
+            && call.Arguments.Count == 1
+                ? new ScalarShape(
+                    Compare(
+                        ">",
+                        new SqlFunction("CARDINALITY", [elements.Value], typeof(int)),
+                        Integer(0)
+                    )
+                )
             : throw Unsupported.Method(call.Method);
     }
 

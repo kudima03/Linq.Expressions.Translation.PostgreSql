@@ -199,6 +199,12 @@ internal sealed partial class Translator
         {
             return value;
         }
+        // Only a DateTime converts to a DateTimeOffset: a timestamp compares with a
+        // timestamptz through the session time zone, as the conversion uses the local one.
+        if (target == typeof(DateTimeOffset))
+        {
+            return value;
+        }
         if (!ScalarTypes.IsNumber(target))
         {
             throw new NotSupportedException(
