@@ -782,4 +782,23 @@ public sealed record ElementOperatorTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void YieldsNoRowForNegativeElementIndex()
+    {
+        Expression query = Customers
+            .Select(c => c.Name)
+            .Executed(q => q.ElementAtOrDefault(-1));
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name"
+                FROM "Customer" AS t0
+                LIMIT 0 OFFSET 0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

@@ -315,6 +315,11 @@ internal sealed partial class Translator
     {
         SelectQuery query = Open(Skip(source, index), Barrier.None);
         query.Offset ??= 0;
+        // No element precedes the first one.
+        if (index < 0)
+        {
+            query.Limit = 0;
+        }
         return query;
     }
 
