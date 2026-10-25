@@ -1069,4 +1069,15 @@ public sealed record UnsupportedOperatorTests
         );
         Assert.Contains("Employee", exception.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void RejectsMaximumOfGuid()
+    {
+        Expression query = Orders.Executed(q => q.Max(o => o.TrackingId));
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Max", exception.Message, StringComparison.Ordinal);
+    }
 }

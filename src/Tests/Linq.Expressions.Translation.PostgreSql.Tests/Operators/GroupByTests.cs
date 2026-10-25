@@ -1299,4 +1299,70 @@ public sealed record GroupByTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void CountsNullAmongDistinctNullableValues()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Select(o => o.Note).Distinct().Count())
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(COUNT(DISTINCT t0."Note") + CASE WHEN BOOL_OR(t0."Note" IS NULL) THEN 1 ELSE 0 END AS integer)
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void CountsNullAmongDistinctFilteredNullableValues()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g =>
+                g.Where(o => o.IsPaid).Select(o => o.Note).Distinct().LongCount()
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT COUNT(DISTINCT t0."Note") FILTER (WHERE t0."IsPaid") + CASE WHEN BOOL_OR(t0."Note" IS NULL) FILTER (WHERE t0."IsPaid") THEN 1 ELSE 0 END
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void AggregatesBooleansWithBoolOrAndBoolAnd()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => new
+            {
+                AnyPaid = g.Max(o => o.IsPaid),
+                AllPaid = g.Min(o => o.IsPaid),
+            })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT BOOL_OR(t0."IsPaid") AS "AnyPaid", BOOL_AND(t0."IsPaid") AS "AllPaid"
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

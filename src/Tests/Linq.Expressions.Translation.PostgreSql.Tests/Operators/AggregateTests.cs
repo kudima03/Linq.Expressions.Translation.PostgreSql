@@ -721,4 +721,36 @@ public sealed record AggregateTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void TranslatesMaximumOfBooleanAsBoolOr()
+    {
+        Expression query = Orders.Executed(q => q.Max(o => o.IsPaid));
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT BOOL_OR(t0."IsPaid")
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void TranslatesMinimumOfBooleanAsBoolAnd()
+    {
+        Expression query = Orders.Executed(q => q.Min(o => o.IsPaid));
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT BOOL_AND(t0."IsPaid")
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

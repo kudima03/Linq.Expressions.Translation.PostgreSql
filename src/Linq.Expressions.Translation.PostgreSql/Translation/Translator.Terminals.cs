@@ -196,22 +196,36 @@ internal sealed partial class Translator
         return new SqlScalarSubquery(query, call.Type);
     }
 
+    // COUNT(DISTINCT x) skips NULL, which Distinct() keeps as one of the values.
     private static SqlExpression Counting(
         string name,
         SqlExpression? distinct,
         SqlExpression? filter
     )
     {
-        return Sized(
-            name,
-            new SqlAggregate(
-                "COUNT",
-                distinct,
-                distinct is not null,
-                filter,
-                typeof(long)
-            )
+        SqlExpression count = new SqlAggregate(
+            "COUNT",
+            distinct,
+            distinct is not null,
+            filter,
+            typeof(long)
         );
+        if (distinct is { Nullable: true })
+        {
+            SqlAggregate missing = new(
+                "BOOL_OR",
+                new SqlIsNull(distinct, false),
+                false,
+                filter,
+                typeof(bool)
+            );
+            count = Calculate(
+                "+",
+                count,
+                new SqlCase([new SqlWhen(missing, Integer(1))], Integer(0), typeof(int))
+            );
+        }
+        return Sized(name, count);
     }
 
     private static SqlExpression Sized(string name, SqlExpression count)
@@ -250,12 +264,26 @@ internal sealed partial class Translator
                 ? new SqlCast(value, "double precision", typeof(double))
                 : value;
         return new SqlAggregate(
-            name == nameof(Queryable.Average) ? "AVG" : name.ToUpperInvariant(),
+            name == nameof(Queryable.Average) ? "AVG" : Extreme(name, value.Type),
             argument,
             distinct,
             filter,
             type
         );
+    }
+
+    // PostgreSQL has no MIN or MAX of boolean or uuid: booleans have BOOL_AND and
+    // BOOL_OR, and uuids order differently in .NET.
+    private static string Extreme(string name, Type type)
+    {
+        Type value = ScalarTypes.Underlying(type);
+        return value == typeof(bool)
+                ? (name == nameof(Queryable.Max) ? "BOOL_OR" : "BOOL_AND")
+            : value == typeof(Guid)
+                ? throw new NotSupportedException(
+                    $"'{name}' of Guid values is not supported: PostgreSQL orders uuids differently from .NET."
+                )
+            : name.ToUpperInvariant();
     }
 
     private SelectQuery Unmatched(SqlQuery source, MethodCallExpression call)
