@@ -485,4 +485,24 @@ public sealed record LogicalTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void KeepsLiftedExclusiveOrNullable()
+    {
+        Expression query = Orders
+            .Select(o => o.IsGift ^ o.IsPaid)
+            .Where(x => x != true)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."IsGift" <> t0."IsPaid"
+                FROM "Order" AS t0
+                WHERE (t0."IsGift" <> t0."IsPaid") IS DISTINCT FROM TRUE
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

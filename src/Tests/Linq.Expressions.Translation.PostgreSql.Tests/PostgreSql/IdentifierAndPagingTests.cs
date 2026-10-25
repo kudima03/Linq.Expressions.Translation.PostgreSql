@@ -49,6 +49,34 @@ public sealed record IdentifierAndPagingTests
         public decimal Amount { get; init; }
     }
 
+#pragma warning disable CA1044, CA1822 // the write-only property is the subject
+    public sealed class Shelf
+    {
+        public int Id { get; init; }
+
+        public string this[int slot] => slot.ToString();
+
+        public int Audit
+        {
+            set { }
+        }
+
+        public string Code { private get; init; } = string.Empty;
+
+        public string Label { get; init; } = string.Empty;
+    }
+#pragma warning restore CA1044, CA1822
+
+#nullable disable
+    public sealed class LegacyNote
+    {
+        public int Id { get; init; }
+
+        public string Text { get; init; }
+    }
+
+#nullable restore
+
     [Fact]
     public void MapsInheritedPropertiesBeforeDeclaredOnes()
     {
@@ -509,5 +537,41 @@ public sealed record IdentifierAndPagingTests
             new PostgreSqlQuery(query).TextValue
         );
         Assert.Contains("Ignored", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MapsOnlyPropertiesReadableThroughPublicGetter()
+    {
+        Expression query = new CapturingQueryable<Shelf>().Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", t0."Label"
+                FROM "Shelf" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void TreatsUnannotatedReferenceAsNullable()
+    {
+        Expression query = new CapturingQueryable<LegacyNote>()
+            .Where(n => n.Text != "a")
+            .Select(n => n.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "LegacyNote" AS t0
+                WHERE t0."Text" IS DISTINCT FROM 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
     }
 }

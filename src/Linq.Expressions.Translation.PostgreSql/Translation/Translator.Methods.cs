@@ -43,6 +43,13 @@ internal sealed partial class Translator
         typeof(double),
     ];
 
+    private static readonly string WhiteSpace = string.Concat(
+        Enumerable
+            .Range(char.MinValue, char.MaxValue)
+            .Select(code => (char)code)
+            .Where(char.IsWhiteSpace)
+    );
+
     private static readonly HashSet<Type> Printable =
     [
         typeof(int),
@@ -86,6 +93,16 @@ internal sealed partial class Translator
             : source is ScalarShape { Value.Type.IsArray: true } array && IsCounted(call)
                 ? new ScalarShape(
                     new SqlFunction("CARDINALITY", [array.Value], call.Type)
+                )
+            : source is ScalarShape { Value.Type.IsArray: true } elements
+            && call.Method.Name == nameof(Enumerable.Any)
+            && call.Arguments.Count == 1
+                ? new ScalarShape(
+                    Compare(
+                        ">",
+                        new SqlFunction("CARDINALITY", [elements.Value], typeof(int)),
+                        Integer(0)
+                    )
                 )
             : throw Unsupported.Method(call.Method);
     }
@@ -275,24 +292,27 @@ internal sealed partial class Translator
         );
     }
 
+    // Without characters, Trim removes every white-space character, BTRIM only spaces.
     private SqlFunction Trimmed(string name, MethodCallExpression call)
     {
-        return new SqlFunction(
-            name,
-            [
-                Sql(call.Object!),
-                .. call
-                    .Arguments.Where(argument =>
-                        argument is not ConstantExpression { Value: char[] { Length: 0 } }
-                    )
-                    .Select(argument =>
-                        argument is ConstantExpression { Value: char[] characters }
-                            ? Text(new string(characters))
-                            : Sql(argument)
-                    ),
-            ],
-            call.Type
-        );
+        List<SqlExpression> arguments =
+        [
+            Sql(call.Object!),
+            .. call
+                .Arguments.Where(argument =>
+                    argument is not ConstantExpression { Value: char[] { Length: 0 } }
+                )
+                .Select(argument =>
+                    argument is ConstantExpression { Value: char[] characters }
+                        ? Text(new string(characters))
+                        : Sql(argument)
+                ),
+        ];
+        if (arguments.Count == 1)
+        {
+            arguments.Add(Text(WhiteSpace));
+        }
+        return new SqlFunction(name, arguments, call.Type);
     }
 
     private static SqlFunction Substring(
@@ -683,7 +703,26 @@ internal sealed partial class Translator
     {
         if (source is not SqlConstant { Value: IEnumerable values })
         {
-            return new SqlAny(value, source);
+            SqlExpression any = new SqlAny(value, source);
+            // A null item is contained when the array holds a NULL, which = ANY misses.
+            return value.Nullable
+                ? Logical(
+                    "OR",
+                    any,
+                    Logical(
+                        "AND",
+                        new SqlIsNull(value, false),
+                        new SqlIsNull(
+                            new SqlFunction(
+                                "ARRAY_POSITION",
+                                [source, new SqlConstant(null, value.Type)],
+                                typeof(int?)
+                            ),
+                            true
+                        )
+                    )
+                )
+                : any;
         }
         List<SqlExpression> present =
         [

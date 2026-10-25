@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using System.Reflection;
+using Linq.Expressions.Translation.PostgreSql.Mapping;
 
 namespace Linq.Expressions.Translation.PostgreSql.Translation;
 
@@ -106,6 +107,46 @@ internal sealed class Evaluator(HashSet<Expression> candidates) : ExpressionVisi
         private bool _blocked;
 
         public HashSet<Expression> Candidates { get; } = [];
+
+        // A constructed object that is projected keeps its constructor and has its
+        // arguments evaluated: folded, it would be a constant with no SQL literal.
+        protected override Expression VisitLambda<T>(Expression<T> node)
+        {
+            Projected(node.Body);
+            return node;
+        }
+
+        // An argument of a constructed object is projected with it.
+        protected override Expression VisitNew(NewExpression node)
+        {
+            foreach (Expression argument in node.Arguments)
+            {
+                Projected(argument);
+            }
+            return node;
+        }
+
+        protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
+        {
+            Projected(node.Expression);
+            return node;
+        }
+
+        private void Projected(Expression expression)
+        {
+            if (
+                expression is NewExpression { Members: null } creation
+                && !ScalarTypes.IsScalar(creation.Type)
+            )
+            {
+                foreach (Expression argument in creation.Arguments)
+                {
+                    Projected(argument);
+                }
+                return;
+            }
+            _ = Visit(expression);
+        }
 
         public override Expression? Visit(Expression? node)
         {

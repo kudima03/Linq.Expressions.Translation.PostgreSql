@@ -972,7 +972,7 @@ public sealed record GroupByTests
                 """
                 SELECT CAST(COUNT(*) AS integer)
                 FROM (
-                    SELECT t0."Total" * 2
+                    SELECT t0."Total" * 2 AS "Value"
                     FROM "Order" AS t0
                     GROUP BY t0."Total" * 2
                 ) AS t1
@@ -1206,6 +1206,298 @@ public sealed record GroupByTests
                 SELECT CAST(COUNT(*) AS integer)
                 FROM "Order" AS t0
                 GROUP BY CAST(1 AS integer)
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesMaximumOfNullableTextNullSafe()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Max(o => o.Note))
+            .Where(n => n != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT MAX(t0."Note")
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                HAVING MAX(t0."Note") IS DISTINCT FROM 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesFilteredMaximumOfTextNullSafe()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Where(o => o.IsPaid).Max(o => o.Number))
+            .Where(n => n != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT MAX(t0."Number") FILTER (WHERE t0."IsPaid")
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                HAVING MAX(t0."Number") FILTER (WHERE t0."IsPaid") IS DISTINCT FROM 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesMaximumOfTextDirectly()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Max(o => o.Number))
+            .Where(n => n != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT MAX(t0."Number")
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                HAVING MAX(t0."Number") <> 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesFilteredMaximumOfValueDirectly()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Where(o => o.IsPaid).Max(o => o.Total))
+            .Where(t => t != 1)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT MAX(t0."Total") FILTER (WHERE t0."IsPaid")
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                HAVING MAX(t0."Total") FILTER (WHERE t0."IsPaid") <> 1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void CountsNullAmongDistinctNullableValues()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Select(o => o.Note).Distinct().Count())
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(COUNT(DISTINCT t0."Note") + CASE WHEN BOOL_OR(t0."Note" IS NULL) THEN 1 ELSE 0 END AS integer)
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void CountsNullAmongDistinctFilteredNullableValues()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g =>
+                g.Where(o => o.IsPaid).Select(o => o.Note).Distinct().LongCount()
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT COUNT(DISTINCT t0."Note") FILTER (WHERE t0."IsPaid") + CASE WHEN BOOL_OR(t0."Note" IS NULL) FILTER (WHERE t0."IsPaid") THEN 1 ELSE 0 END
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void AggregatesBooleansWithBoolOrAndBoolAnd()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => new
+            {
+                AnyPaid = g.Max(o => o.IsPaid),
+                AllPaid = g.Min(o => o.IsPaid),
+            })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT BOOL_OR(t0."IsPaid") AS "AnyPaid", BOOL_AND(t0."IsPaid") AS "AllPaid"
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SelectsKeyOfPagedGroupsAfterDistinct()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Region)
+            .Take(5)
+            .Distinct()
+            .Select(g => g.Key)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Region"
+                FROM (
+                    SELECT DISTINCT t1."Region"
+                    FROM (
+                        SELECT t0."Region"
+                        FROM "Customer" AS t0
+                        GROUP BY t0."Region"
+                        LIMIT 5
+                    ) AS t1
+                ) AS t2
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OrdersPagedGroupsByKey()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Region)
+            .Take(5)
+            .OrderBy(g => g.Key)
+            .Select(g => g.Key)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Region"
+                FROM (
+                    SELECT t0."Region"
+                    FROM "Customer" AS t0
+                    GROUP BY t0."Region"
+                    LIMIT 5
+                ) AS t1
+                ORDER BY t1."Region"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void NamesComputedKeyOfPagedGroups()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Name.ToUpper())
+            .Take(5)
+            .Where(g => g.Key != "A")
+            .Select(g => g.Key)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Value"
+                FROM (
+                    SELECT UPPER(t0."Name") AS "Value"
+                    FROM "Customer" AS t0
+                    GROUP BY UPPER(t0."Name")
+                    LIMIT 5
+                ) AS t1
+                WHERE t1."Value" <> 'A'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ChecksAnyPagedGroupByKey()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Region)
+            .Take(5)
+            .Executed(q => q.Any(g => g.Key == "EU"));
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM (
+                        SELECT t0."Region"
+                        FROM "Customer" AS t0
+                        GROUP BY t0."Region"
+                        LIMIT 5
+                    ) AS t1
+                    WHERE t1."Region" = 'EU'
+                )
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SelectsKeysOfCombinedGroups()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Region)
+            .Concat(Customers.GroupBy(c => c.Name))
+            .Select(g => g.Key)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Region"
+                FROM (
+                    SELECT t0."Region"
+                    FROM "Customer" AS t0
+                    GROUP BY t0."Region"
+                    UNION ALL
+                    SELECT t1."Name"
+                    FROM "Customer" AS t1
+                    GROUP BY t1."Name"
+                ) AS t2
                 """
             ),
             new PostgreSqlQuery(query).TextValue

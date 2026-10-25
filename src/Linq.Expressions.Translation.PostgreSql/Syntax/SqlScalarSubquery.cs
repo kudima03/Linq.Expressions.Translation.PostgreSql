@@ -5,7 +5,9 @@ internal sealed class SqlScalarSubquery(SelectQuery query, Type type)
 {
     public SelectQuery Query { get; } = query;
 
-    public override bool Nullable => System.Nullable.GetUnderlyingType(Type) is not null;
+    // Without a row, the subquery yields NULL: the default of a reference type.
+    public override bool Nullable =>
+        !Type.IsValueType || System.Nullable.GetUnderlyingType(Type) is not null;
 
     public override void Render(SqlWriter writer, SqlMode mode)
     {

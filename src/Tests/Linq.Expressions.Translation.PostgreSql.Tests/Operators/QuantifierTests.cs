@@ -427,4 +427,55 @@ public sealed record QuantifierTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void ChecksAllGroupsInHaving()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Region)
+            .Select(g => g.Count())
+            .Executed(q => q.All(n => n > 1));
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT NOT EXISTS (
+                    SELECT 1
+                    FROM "Customer" AS t0
+                    GROUP BY t0."Region"
+                    HAVING NOT (CAST(COUNT(*) AS integer) > 1)
+                )
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ChecksAllOfPagedRowsWithoutHiddenOrderingKey()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Region)
+            .Select(c => c.Name)
+            .Take(5)
+            .Executed(q => q.All(n => n != "a"));
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT NOT EXISTS (
+                    SELECT 1
+                    FROM (
+                        SELECT t0."Name"
+                        FROM "Customer" AS t0
+                        ORDER BY t0."Region"
+                        LIMIT 5
+                    ) AS t1
+                    WHERE NOT (t1."Name" <> 'a')
+                )
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

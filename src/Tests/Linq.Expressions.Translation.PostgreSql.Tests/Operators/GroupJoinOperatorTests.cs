@@ -298,4 +298,41 @@ public sealed record GroupJoinOperatorTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void TakesFirstOfPagedGroupByHiddenOrderingKey()
+    {
+        Expression query = Customers
+            .GroupJoin(
+                Orders
+                    .OrderBy(o => o.CreatedAt)
+                    .Select(o => new { o.CustomerId, o.Total })
+                    .Take(5),
+                c => c.Id,
+                x => x.CustomerId,
+                (c, xs) => xs.Select(x => x.Total).FirstOrDefault()
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT COALESCE((
+                    SELECT t2."Total"
+                    FROM (
+                        SELECT t1."CustomerId", t1."Total", t1."CreatedAt" AS "$0"
+                        FROM "Order" AS t1
+                        ORDER BY t1."CreatedAt"
+                        LIMIT 5
+                    ) AS t2
+                    WHERE t2."CustomerId" = t0."Id"
+                    ORDER BY t2."$0"
+                    LIMIT 1
+                ), 0)
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

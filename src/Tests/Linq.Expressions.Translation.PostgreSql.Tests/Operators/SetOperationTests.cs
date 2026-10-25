@@ -850,4 +850,139 @@ public sealed record SetOperationTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void ComparesColumnNullableOnTheRightSideNullSafe()
+    {
+        Expression query = Customers
+            .Select(c => c.Name)
+            .Concat(Customers.Select(c => c.Email))
+            .Where(n => n != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Name"
+                FROM (
+                    SELECT t0."Name"
+                    FROM "Customer" AS t0
+                    UNION ALL
+                    SELECT t1."Email"
+                    FROM "Customer" AS t1
+                ) AS t2
+                WHERE t2."Name" IS DISTINCT FROM 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesComputedColumnNullableOnTheRightSideNullSafe()
+    {
+        Expression query = Customers
+            .Select(c => c.Name.ToUpper())
+            .Concat(Customers.Select(c => c.Email))
+            .Where(n => n != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Value"
+                FROM (
+                    SELECT UPPER(t0."Name") AS "Value"
+                    FROM "Customer" AS t0
+                    UNION ALL
+                    SELECT t1."Email"
+                    FROM "Customer" AS t1
+                ) AS t2
+                WHERE t2."Value" IS DISTINCT FROM 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesColumnNotNullableOnEitherSideDirectly()
+    {
+        Expression query = Customers
+            .Select(c => c.Name)
+            .Concat(Customers.Select(c => c.Region))
+            .Where(n => n != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Name"
+                FROM (
+                    SELECT t0."Name"
+                    FROM "Customer" AS t0
+                    UNION ALL
+                    SELECT t1."Region"
+                    FROM "Customer" AS t1
+                ) AS t2
+                WHERE t2."Name" <> 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void MergesNullabilityOfProjectionMembersByPosition()
+    {
+        Expression query = Customers
+            .Select(c => new { c.Id, Text = (string?)c.Name })
+            .Union(Customers.Select(c => new { c.Id, Text = c.Email }))
+            .Where(x => x.Id != 1 && x.Text != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Id", t2."Text"
+                FROM (
+                    SELECT t0."Id", t0."Name" AS "Text"
+                    FROM "Customer" AS t0
+                    UNION
+                    SELECT t1."Id", t1."Email" AS "Text"
+                    FROM "Customer" AS t1
+                ) AS t2
+                WHERE (t2."Id" <> 1) AND (t2."Text" IS DISTINCT FROM 'a')
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OrdersNullsFirstByColumnNullableOnTheRightSide()
+    {
+        Expression query = Customers
+            .Select(c => c.Name)
+            .Union(Customers.Select(c => c.Email))
+            .OrderBy(n => n)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Name"
+                FROM (
+                    SELECT t0."Name"
+                    FROM "Customer" AS t0
+                    UNION
+                    SELECT t1."Email"
+                    FROM "Customer" AS t1
+                ) AS t2
+                ORDER BY t2."Name" NULLS FIRST
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

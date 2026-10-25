@@ -998,4 +998,189 @@ public sealed record SubqueryTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void ComparesTextOfFirstOrDefaultNullSafe()
+    {
+        Expression query = Customers
+            .Select(c =>
+                Orders
+                    .Where(o => o.CustomerId == c.Id)
+                    .Select(o => o.Number)
+                    .FirstOrDefault()
+            )
+            .Where(n => n != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT (
+                    SELECT t1."Number"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                    LIMIT 1
+                )
+                FROM "Customer" AS t0
+                WHERE (
+                    SELECT t1."Number"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                    LIMIT 1
+                ) IS DISTINCT FROM 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesNullableValueOfFirstOrDefaultNullSafe()
+    {
+        Expression query = Customers
+            .Select(c =>
+                Orders
+                    .Where(o => o.CustomerId == c.Id)
+                    .Select(o => o.Discount)
+                    .FirstOrDefault()
+            )
+            .Where(d => d != 1)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT (
+                    SELECT t1."Discount"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                    LIMIT 1
+                )
+                FROM "Customer" AS t0
+                WHERE (
+                    SELECT t1."Discount"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                    LIMIT 1
+                ) IS DISTINCT FROM 1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesTextMaximumOfSubqueryNullSafe()
+    {
+        Expression query = Customers
+            .Select(c => Orders.Where(o => o.CustomerId == c.Id).Max(o => o.Number))
+            .Where(n => n != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT (
+                    SELECT MAX(t1."Number")
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                )
+                FROM "Customer" AS t0
+                WHERE (
+                    SELECT MAX(t1."Number")
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                ) IS DISTINCT FROM 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesValueMaximumOfSubqueryDirectly()
+    {
+        Expression query = Customers
+            .Select(c => Orders.Where(o => o.CustomerId == c.Id).Max(o => o.Total))
+            .Where(t => t != 1)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT (
+                    SELECT MAX(t1."Total")
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                )
+                FROM "Customer" AS t0
+                WHERE (
+                    SELECT MAX(t1."Total")
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                ) <> 1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ConcatenatesTextOfFirstOrDefaultAsEmpty()
+    {
+        Expression query = Customers
+            .Select(c =>
+                c.Name
+                + Orders
+                    .Where(o => o.CustomerId == c.Id)
+                    .Select(o => o.Number)
+                    .FirstOrDefault()
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name" || COALESCE((
+                    SELECT t1."Number"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                    LIMIT 1
+                ), '')
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OrdersNullsFirstByTextOfFirstOrDefault()
+    {
+        Expression query = Customers
+            .OrderBy(c =>
+                Orders
+                    .Where(o => o.CustomerId == c.Id)
+                    .Select(o => o.Number)
+                    .FirstOrDefault()
+            )
+            .Select(c => c.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Customer" AS t0
+                ORDER BY (
+                    SELECT t1."Number"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                    LIMIT 1
+                ) NULLS FIRST
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

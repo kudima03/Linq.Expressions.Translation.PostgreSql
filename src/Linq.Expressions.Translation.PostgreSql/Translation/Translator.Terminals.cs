@@ -128,7 +128,7 @@ internal sealed partial class Translator
         return call.Method.Name switch
         {
             nameof(Queryable.Count) or nameof(Queryable.LongCount) => Counted(
-                filtered ? Where(source, Lambda(call, 1)) : source,
+                filtered ? Where(source, Lambda(call, 1), false) : source,
                 call.Method.Name,
                 call.Type
             ),
@@ -138,7 +138,9 @@ internal sealed partial class Translator
             or nameof(Queryable.Max) => Aggregated(source, call),
             nameof(Queryable.Any) => new SqlExists(
                 Existing(
-                    filtered ? Where(source, Lambda(call, 1)) : Open(source, Barrier.None)
+                    filtered
+                        ? Where(source, Lambda(call, 1), false)
+                        : Open(source, Barrier.None)
                 )
             ),
             nameof(Queryable.All) => new SqlUnary(
@@ -146,11 +148,7 @@ internal sealed partial class Translator
                 new SqlExists(Unmatched(source, call)),
                 typeof(bool)
             ),
-            nameof(Queryable.Contains) => new SqlInQuery(
-                Sql(call.Arguments[1]),
-                Unordered(Open(source, Barrier.None)),
-                Scalar(source.Shape).Nullable
-            ),
+            nameof(Queryable.Contains) => Membership(source, call),
             nameof(Queryable.Last) or nameof(Queryable.LastOrDefault) => Element(
                 Reverse(filtered ? Where(source, Lambda(call, 1)) : source, call.Method),
                 1,
@@ -172,10 +170,33 @@ internal sealed partial class Translator
         };
     }
 
+    // Contains matches a null item with a NULL of the sequence, which IN never does.
+    private SqlExpression Membership(SqlQuery source, MethodCallExpression call)
+    {
+        SqlExpression item = Sql(call.Arguments[1]);
+        bool nullable = Scalar(source.Shape).Nullable;
+        SqlExpression membership = new SqlInQuery(
+            item,
+            Unordered(Open(source, Barrier.None)),
+            nullable
+        );
+        if (!item.Nullable || !nullable)
+        {
+            return membership;
+        }
+        SelectQuery nulls = Restricted(Query(call.Arguments[0]), false);
+        Restrict(nulls, new SqlIsNull(Scalar(nulls.Shape), false));
+        return Logical(
+            "OR",
+            membership,
+            Logical("AND", new SqlIsNull(item, false), new SqlExists(Existing(nulls)))
+        );
+    }
+
     private SqlScalarSubquery Counted(SqlQuery source, string name, Type type)
     {
         SelectQuery query = Unordered(
-            Open(source, Barrier.Paging | Barrier.Distinct | Barrier.Grouping)
+            Open(source, Barrier.Paging | Barrier.Distinct | Barrier.Grouping, false)
         );
         query.Shape = new ScalarShape(Counting(name, null, null));
         return new SqlScalarSubquery(query, type);
@@ -184,7 +205,7 @@ internal sealed partial class Translator
     private SqlScalarSubquery Aggregated(SqlQuery source, MethodCallExpression call)
     {
         SelectQuery query = Unordered(
-            Open(source, Barrier.Paging | Barrier.Distinct | Barrier.Grouping)
+            Open(source, Barrier.Paging | Barrier.Distinct | Barrier.Grouping, false)
         );
         SqlExpression value =
             call.Arguments.Count > 1
@@ -196,22 +217,36 @@ internal sealed partial class Translator
         return new SqlScalarSubquery(query, call.Type);
     }
 
+    // COUNT(DISTINCT x) skips NULL, which Distinct() keeps as one of the values.
     private static SqlExpression Counting(
         string name,
         SqlExpression? distinct,
         SqlExpression? filter
     )
     {
-        return Sized(
-            name,
-            new SqlAggregate(
-                "COUNT",
-                distinct,
-                distinct is not null,
-                filter,
-                typeof(long)
-            )
+        SqlExpression count = new SqlAggregate(
+            "COUNT",
+            distinct,
+            distinct is not null,
+            filter,
+            typeof(long)
         );
+        if (distinct is { Nullable: true })
+        {
+            SqlAggregate missing = new(
+                "BOOL_OR",
+                new SqlIsNull(distinct, false),
+                false,
+                filter,
+                typeof(bool)
+            );
+            count = Calculate(
+                "+",
+                count,
+                new SqlCase([new SqlWhen(missing, Integer(1))], Integer(0), typeof(int))
+            );
+        }
+        return Sized(name, count);
     }
 
     private static SqlExpression Sized(string name, SqlExpression count)
@@ -250,7 +285,7 @@ internal sealed partial class Translator
                 ? new SqlCast(value, "double precision", typeof(double))
                 : value;
         return new SqlAggregate(
-            name == nameof(Queryable.Average) ? "AVG" : name.ToUpperInvariant(),
+            name == nameof(Queryable.Average) ? "AVG" : Extreme(name, value.Type),
             argument,
             distinct,
             filter,
@@ -258,11 +293,25 @@ internal sealed partial class Translator
         );
     }
 
+    // PostgreSQL has no MIN or MAX of boolean or uuid: booleans have BOOL_AND and
+    // BOOL_OR, and uuids order differently in .NET.
+    private static string Extreme(string name, Type type)
+    {
+        Type value = ScalarTypes.Underlying(type);
+        return value == typeof(bool)
+                ? (name == nameof(Queryable.Max) ? "BOOL_OR" : "BOOL_AND")
+            : value == typeof(Guid)
+                ? throw new NotSupportedException(
+                    $"'{name}' of Guid values is not supported: PostgreSQL orders uuids differently from .NET."
+                )
+            : name.ToUpperInvariant();
+    }
+
     private SelectQuery Unmatched(SqlQuery source, MethodCallExpression call)
     {
-        SelectQuery query = Restricted(source);
-        query.Where = And(
-            query.Where,
+        SelectQuery query = Restricted(source, false);
+        Restrict(
+            query,
             new SqlUnary("NOT ", Scalar(Bind(Lambda(call, 1), query.Shape)), typeof(bool))
         );
         return Existing(query);
@@ -287,6 +336,11 @@ internal sealed partial class Translator
     {
         SelectQuery query = Open(Skip(source, index), Barrier.None);
         query.Offset ??= 0;
+        // No element precedes the first one.
+        if (index < 0)
+        {
+            query.Limit = 0;
+        }
         return query;
     }
 

@@ -1187,8 +1187,25 @@ public sealed record CollectionContainsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT COALESCE(t0."Note" = ANY (t0."Tags"), FALSE)
+                SELECT COALESCE(t0."Note" = ANY (t0."Tags"), FALSE) OR ((t0."Note" IS NULL) AND (ARRAY_POSITION(t0."Tags", NULL) IS NOT NULL))
                 FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ChecksArrayColumnForElements()
+    {
+        Expression query = Orders.Where(o => o.Tags.Any()).Select(o => o.Id).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE CARDINALITY(t0."Tags") > 0
                 """
             ),
             new PostgreSqlQuery(query).TextValue

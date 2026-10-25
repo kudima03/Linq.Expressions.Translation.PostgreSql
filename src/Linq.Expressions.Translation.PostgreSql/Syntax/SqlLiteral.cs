@@ -50,7 +50,7 @@ internal static class SqlLiteral
                 "PostgreSQL text cannot contain the NUL character."
             );
         }
-        if (!text.Any(char.IsControl))
+        if (!text.Any(IsInvisible))
         {
             return "'" + text.Replace("'", "''", StringComparison.Ordinal) + "'";
         }
@@ -67,12 +67,23 @@ internal static class SqlLiteral
                     '\t' => "\\t",
                     '\b' => "\\b",
                     '\f' => "\\f",
-                    _ when char.IsControl(character) => $"\\x{(int)character:x2}",
+                    // \x writes a byte, which is no UTF-8 character above 0x7f.
+                    _ when char.IsControl(character) && character < 0x80 =>
+                        $"\\x{(int)character:x2}",
+                    _ when IsInvisible(character) => $"\\u{(int)character:x4}",
                     _ => character.ToString(),
                 }
             );
         }
         return escaped.Append('\'').ToString();
+    }
+
+    // A control character or a white-space character other than the space is written
+    // as an escape, so that the statement shows it and stays a single line.
+    private static bool IsInvisible(char character)
+    {
+        return char.IsControl(character)
+            || (char.IsWhiteSpace(character) && character != ' ');
     }
 
     private static string Floating(IFormattable number, string type)

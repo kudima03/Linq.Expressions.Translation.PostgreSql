@@ -1325,4 +1325,36 @@ public sealed record LiteralTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void EscapesNonBreakingSpaceAsUnicode()
+    {
+        Expression query = Customers.Select(c => "a b").Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT E'a\u00a0b'
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void EscapesControlCharactersAboveAsciiAsUnicode()
+    {
+        Expression query = Customers.Select(c => "a\u0080b").Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT E'a\u0080b'
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

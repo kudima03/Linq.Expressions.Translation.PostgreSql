@@ -25,6 +25,23 @@ internal sealed partial class Translator
         [nameof(DateTime.DayOfWeek)] = "DOW",
     };
 
+    // Seconds of a duration; 0 is .NET's own unit.
+    private static readonly Dictionary<string, int> Totals = new()
+    {
+        [nameof(TimeSpan.TotalDays)] = 86400,
+        [nameof(TimeSpan.TotalHours)] = 3600,
+        [nameof(TimeSpan.TotalMinutes)] = 60,
+        [nameof(TimeSpan.TotalSeconds)] = 1,
+    };
+
+    private static readonly Dictionary<string, string> Durations = new()
+    {
+        [nameof(TimeSpan.Days)] = "DAY",
+        [nameof(TimeSpan.Hours)] = "HOUR",
+        [nameof(TimeSpan.Minutes)] = "MINUTE",
+        [nameof(TimeSpan.Seconds)] = "SECOND",
+    };
+
     private static readonly Dictionary<string, string> Fractions = new()
     {
         [nameof(DateTime.Millisecond)] = "MILLISECONDS",
@@ -67,6 +84,11 @@ internal sealed partial class Translator
                 owner,
                 new SqlConstant(DateOnly.MinValue, typeof(DateOnly))
             ),
+            _ when member.DeclaringType == typeof(TimeSpan) => Duration(
+                owner,
+                member,
+                type
+            ),
             _ when Temporal.Contains(member.DeclaringType!)
                     && DateParts.TryGetValue(member.Name, out string? part) =>
                 new SqlCast(Extracted(part, owner), "integer", type),
@@ -81,6 +103,47 @@ internal sealed partial class Translator
         };
     }
 
+    // The whole fields of an interval come out once its hours are carried into
+    // days, as .NET always keeps them; the totals come from its seconds.
+    private static SqlExpression Duration(
+        SqlExpression owner,
+        MemberInfo member,
+        Type type
+    )
+    {
+        SqlExpression seconds = new SqlExtract("EPOCH", owner);
+        SqlExpression justified = new SqlFunction("JUSTIFY_HOURS", [owner], owner.Type);
+        return member.Name switch
+        {
+            _ when Totals.TryGetValue(member.Name, out int unit) => new SqlCast(
+                unit == 1 ? seconds : Calculate("/", seconds, Integer(unit)),
+                "double precision",
+                type
+            ),
+            nameof(TimeSpan.TotalMilliseconds) => new SqlCast(
+                Calculate("*", seconds, Integer(1000)),
+                "double precision",
+                type
+            ),
+            nameof(TimeSpan.Ticks) => new SqlCast(
+                Calculate("*", seconds, Integer(10_000_000)),
+                "bigint",
+                type
+            ),
+            _ when Durations.TryGetValue(member.Name, out string? field) => new SqlCast(
+                Extracted(field, justified),
+                "integer",
+                type
+            ),
+            nameof(TimeSpan.Milliseconds) => Calculate(
+                "%",
+                new SqlCast(Extracted("MILLISECONDS", justified), "integer", type),
+                Integer(1000)
+            ),
+            _ => throw Unsupported.Member(member),
+        };
+    }
+
     private static SqlExpression Extracted(string field, SqlExpression owner)
     {
         SqlExtract extract = new(field, owner);
@@ -90,14 +153,27 @@ internal sealed partial class Translator
             : extract;
     }
 
+    // Only the clocks reach here; everything else static is evaluated.
     private static SqlExpression StaticMember(MemberInfo member)
     {
-        return member.Name == nameof(DateTime.Now)
-            && member.DeclaringType == typeof(DateTime)
-                ? new SqlFragment("LOCALTIMESTAMP", typeof(DateTime))
-            : member.Name != nameof(DateTime.Today)
-                ? new SqlFunction("NOW", [], ((PropertyInfo)member).PropertyType)
-            : throw Unsupported.Member(member);
+        SqlFragment local = new("LOCALTIMESTAMP", typeof(DateTime));
+        return member.DeclaringType != typeof(DateTime)
+            ? Now(member)
+            : member.Name switch
+            {
+                nameof(DateTime.Now) => local,
+                nameof(DateTime.Today) => new SqlFunction(
+                    "DATE_TRUNC",
+                    [Text("day"), local],
+                    typeof(DateTime)
+                ),
+                _ => Now(member),
+            };
+    }
+
+    private static SqlFunction Now(MemberInfo member)
+    {
+        return new SqlFunction("NOW", [], ((PropertyInfo)member).PropertyType);
     }
 
     private static SqlConstant Text(string text)

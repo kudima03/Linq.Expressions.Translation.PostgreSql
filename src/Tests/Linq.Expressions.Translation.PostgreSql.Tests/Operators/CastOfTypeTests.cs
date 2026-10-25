@@ -140,4 +140,63 @@ public sealed record CastOfTypeTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void DropsNullsFromNullableTextOfType()
+    {
+        Expression query = Customers.Select(c => c.Email).OfType<string>().Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Email"
+                FROM "Customer" AS t0
+                WHERE t0."Email" IS NOT NULL
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void DropsNullsFromGroupedNullableValuesInHaving()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Max(o => o.Priority))
+            .OfType<int>()
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT MAX(t0."Priority")
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                HAVING MAX(t0."Priority") IS NOT NULL
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsEntitiesOfTypeOfTheirTableAfterInterfaceCast()
+    {
+        Expression query = Customers
+            .Cast<INamed>()
+            .OfType<Customer>()
+            .Select(c => c.Email)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Email"
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

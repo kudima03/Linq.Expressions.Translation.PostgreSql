@@ -2,6 +2,13 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record ProjectionShapeTests
 {
+    public sealed class Envelope
+    {
+        public CustomerSummary? Summary { get; init; }
+    }
+
+    public sealed record Parcel(CustomerSummary Summary, string Label);
+
     public sealed record Summary(int Id, string Number);
 
     public sealed record Wrapper(Summary Summary, decimal Total);
@@ -305,8 +312,8 @@ public sealed record ProjectionShapeTests
 
         Assert.Equal(
             Sql.Valid(
-                """
-                SELECT LENGTH(UPPER(BTRIM(t0."Number")))
+                $"""
+                SELECT LENGTH(UPPER(BTRIM(t0."Number", {Sql.WhiteSpace})))
                 FROM "Order" AS t0
                 """
             ),
@@ -415,6 +422,175 @@ public sealed record ProjectionShapeTests
                 SELECT t0."CustomerId" AS "Id", MAX(t0."Number") AS "Number"
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ProjectsConstructedObjectOfConstants()
+    {
+        Expression query = Customers.Select(c => new CustomerSummary(1, "a")).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT 1 AS "Id", 'a' AS "Name"
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void EvaluatesConstantArgumentsOfProjectedObject()
+    {
+        Expression query = Customers
+            .Select(c => new CustomerSummary(c.Id, string.Concat("a", "b")))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", 'ab' AS "Name"
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ProjectsConstructedObjectOfConstantsAsMember()
+    {
+        Expression query = Customers
+            .Select(c => new { Summary = new CustomerSummary(1, "a"), c.Id })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT 1 AS "Summary.Id", 'a' AS "Summary.Name", t0."Id"
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ProjectsConstructedObjectNestedInConstructedObject()
+    {
+        Expression query = Customers
+            .Select(c => new Parcel(new CustomerSummary(1, "a"), c.Name))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT 1 AS "Summary.Id", 'a' AS "Summary.Name", t0."Name" AS "Label"
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void EvaluatesConstantAssignedMembers()
+    {
+        Expression query = Customers
+            .Select(c => new CustomerCard { Id = c.Id, Title = string.Concat("a", "b") })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", 'ab' AS "Title"
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ProjectsConstructedObjectOfConstantsAsAssignedMember()
+    {
+        Expression query = Customers
+            .Select(c => new Envelope { Summary = new CustomerSummary(1, "a") })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT 1 AS "Summary.Id", 'a' AS "Summary.Name"
+                FROM "Customer" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ReadsMemberOfConstructedObjectOfConstants()
+    {
+        Expression query = Customers
+            .Where(c => c.Name == new CustomerSummary(1, "a").Name)
+            .Select(c => c.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Customer" AS t0
+                WHERE t0."Name" = 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void StillEvaluatesConstructedScalarsAndCollections()
+    {
+        Expression query = Orders
+            .Where(o =>
+                o.CreatedAt > new DateTime(2024, 1, 2)
+                && new HashSet<int> { 1, 2 }.Contains(o.Quantity)
+            )
+            .Select(o => new { o.Id, Day = new DateTime(2024, 1, 2) })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", TIMESTAMP '2024-01-02 00:00:00' AS "Day"
+                FROM "Order" AS t0
+                WHERE (t0."CreatedAt" > TIMESTAMP '2024-01-02 00:00:00') AND (t0."Quantity" IN (1, 2))
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void StillEvaluatesInitializedCollectionOfConstructedObjects()
+    {
+        Expression query = Customers
+            .Where(c => new List<CustomerSummary> { new(1, "a") }.Count == c.Id)
+            .Select(c => c.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Customer" AS t0
+                WHERE 1 = t0."Id"
                 """
             ),
             new PostgreSqlQuery(query).TextValue

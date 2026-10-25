@@ -11,7 +11,7 @@ internal sealed partial class Translator
     private SelectQuery Join(SqlQuery source, MethodCallExpression call)
     {
         SelectQuery outer = Opened(source);
-        SelectQuery inner = Simple(Joined(call));
+        SelectQuery inner = Simple(Joined(call), false);
         SqlExpression condition = Matching(
             Bind(Lambda(call, 2), outer.Shape),
             Bind(Lambda(call, 3), inner.Shape)
@@ -71,7 +71,7 @@ internal sealed partial class Translator
         {
             throw Unsupported.Method(call.Method);
         }
-        SelectQuery inner = Simple(Query(group.Inner));
+        SelectQuery inner = Simple(Query(group.Inner), false);
         SqlExpression condition = Conjoined(
             Matching(group.OuterKey, Bind(group.InnerKey, inner.Shape)),
             inner.Where
@@ -90,7 +90,7 @@ internal sealed partial class Translator
         SqlQuery query = Query(items);
         bool correlated = collection.Uses > uses;
         bool simple = IsSimple(query);
-        SelectQuery inner = simple ? (SelectQuery)query : Wrap(query);
+        SelectQuery inner = simple ? (SelectQuery)query : Wrap(query, false);
         if (simple && !correlated && !left)
         {
             Absorb(outer, inner);
@@ -123,7 +123,7 @@ internal sealed partial class Translator
 
     private SqlQuery Correlated(GroupJoinShape group)
     {
-        SelectQuery inner = Simple(Query(group.Inner));
+        SelectQuery inner = Simple(Query(group.Inner), true);
         inner.Where = Conjoined(
             Matching(Bind(group.InnerKey, inner.Shape), group.OuterKey),
             inner.Where
@@ -156,9 +156,9 @@ internal sealed partial class Translator
             : call.Arguments[1];
     }
 
-    private SelectQuery Simple(SqlQuery query)
+    private SelectQuery Simple(SqlQuery query, bool ordered)
     {
-        return IsSimple(query) ? (SelectQuery)query : Wrap(query);
+        return IsSimple(query) ? (SelectQuery)query : Wrap(query, ordered);
     }
 
     private static bool IsSimple(SqlQuery query)
@@ -184,7 +184,15 @@ internal sealed partial class Translator
                     (first, second) => Matching(first.Shape, second.Shape)
                 )
                 .Aggregate((first, second) => Logical("AND", first, second))
-            : Compare("=", Scalar(left), Scalar(right));
+            : Keyed(Scalar(left), Scalar(right));
+    }
+
+    // Join matches null keys with each other, which = never does.
+    private static SqlBinary Keyed(SqlExpression left, SqlExpression right)
+    {
+        return left.Nullable && right.Nullable
+            ? Distinct(left, right, false)
+            : Compare("=", left, right);
     }
 
     private static SqlExpression Conjoined(SqlExpression first, SqlExpression? second)

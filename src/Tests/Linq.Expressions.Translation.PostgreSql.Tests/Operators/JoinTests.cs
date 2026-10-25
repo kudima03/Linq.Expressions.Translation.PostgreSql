@@ -237,7 +237,7 @@ public sealed record JoinTests
                 """
                 SELECT t0."Id", t1."Id" AS "ManagerOf"
                 FROM "Employee" AS t0
-                INNER JOIN "Employee" AS t1 ON t0."ManagerId" = t1."ManagerId"
+                INNER JOIN "Employee" AS t1 ON t0."ManagerId" IS NOT DISTINCT FROM t1."ManagerId"
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -648,6 +648,38 @@ public sealed record JoinTests
                 FROM "Customer" AS t0
                 INNER JOIN "Order" AS t1 ON t0."Id" = t1."CustomerId"
                 WHERE t0."Region" = 'EU'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void JoinsPagedProjectionWithoutHiddenOrderingKey()
+    {
+        Expression query = Customers
+            .Join(
+                Orders
+                    .OrderBy(o => o.CreatedAt)
+                    .Select(o => new { o.CustomerId, o.Total })
+                    .Take(5),
+                c => c.Id,
+                x => x.CustomerId,
+                (c, x) => new { c.Name, x.Total }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", t2."Total"
+                FROM "Customer" AS t0
+                INNER JOIN (
+                    SELECT t1."CustomerId", t1."Total"
+                    FROM "Order" AS t1
+                    ORDER BY t1."CreatedAt"
+                    LIMIT 5
+                ) AS t2 ON t0."Id" = t2."CustomerId"
                 """
             ),
             new PostgreSqlQuery(query).TextValue

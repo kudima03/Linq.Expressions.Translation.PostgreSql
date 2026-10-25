@@ -199,6 +199,12 @@ internal sealed partial class Translator
         {
             return value;
         }
+        // Only a DateTime converts to a DateTimeOffset: a timestamp compares with a
+        // timestamptz through the session time zone, as the conversion uses the local one.
+        if (target == typeof(DateTimeOffset))
+        {
+            return value;
+        }
         if (!ScalarTypes.IsNumber(target))
         {
             throw new NotSupportedException(
@@ -316,11 +322,11 @@ internal sealed partial class Translator
     {
         if (left is ConstantExpression { Value: null })
         {
-            return new SqlIsNull(Sql(right), negated);
+            return Nullity(right, negated);
         }
         if (right is ConstantExpression { Value: null })
         {
-            return new SqlIsNull(Sql(left), negated);
+            return Nullity(left, negated);
         }
         Shape first = Shape(left);
         Shape second = Shape(right);
@@ -332,21 +338,64 @@ internal sealed partial class Translator
         }
         SqlExpression one = Scalar(first);
         SqlExpression other = Scalar(second);
+        // A correlation key equal to NULL is false in both languages, but not equal
+        // to it is true in C# and NULL in SQL.
         bool nullable = one.Nullable || other.Nullable;
         bool distinct =
-            (one.Nullable && other.Nullable) || (nullable && !IsCorrelation(left, right));
-        string symbol =
-            distinct ? (negated ? "IS DISTINCT FROM" : "IS NOT DISTINCT FROM")
-            : negated ? "<>"
-            : "=";
+            (one.Nullable && other.Nullable)
+            || (nullable && (negated || !IsCorrelation(left, right)));
+        return distinct
+            ? Distinct(one, other, negated)
+            : new SqlBinary(
+                negated ? "<>" : "=",
+                SqlBinaryKind.Comparison,
+                one,
+                other,
+                typeof(bool),
+                nullable
+            );
+    }
+
+    // IS [NOT] DISTINCT FROM is never NULL.
+    private static SqlBinary Distinct(
+        SqlExpression left,
+        SqlExpression right,
+        bool negated
+    )
+    {
         return new SqlBinary(
-            symbol,
+            negated ? "IS DISTINCT FROM" : "IS NOT DISTINCT FROM",
             SqlBinaryKind.Comparison,
-            one,
-            other,
+            left,
+            right,
             typeof(bool),
-            nullable && !distinct
+            false
         );
+    }
+
+    private SqlExpression Nullity(Expression expression, bool negated)
+    {
+        Shape shape = Shape(expression);
+        return shape is EntityShape entity
+            ? Nullity(entity, negated)
+            : new SqlIsNull(Scalar(shape), negated);
+    }
+
+    // An entity is null only where a left join found no row, which leaves every column
+    // NULL; a column the table requires tells, and without one all columns have to.
+    private static SqlExpression Nullity(EntityShape entity, bool negated)
+    {
+        EntityColumn? required = entity.Fields.FirstOrDefault(column => column.Required);
+        return required is null
+                ? entity
+                    .Fields.Select(column =>
+                        (SqlExpression)new SqlIsNull(column.Value, negated)
+                    )
+                    .Aggregate(
+                        (first, second) => Logical(negated ? "OR" : "AND", first, second)
+                    )
+            : required.Value.Nullable ? new SqlIsNull(required.Value, negated)
+            : new SqlConstant(negated, typeof(bool));
     }
 
     private void Coalesced(Expression expression, List<SqlExpression> arguments)

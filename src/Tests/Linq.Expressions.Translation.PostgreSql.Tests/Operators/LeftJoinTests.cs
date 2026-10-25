@@ -2,6 +2,13 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record LeftJoinTests
 {
+    public sealed class Sticker
+    {
+        public int? OrderId { get; init; }
+
+        public string? Text { get; init; }
+    }
+
     [Fact]
     public void LeftJoinsWithGroupJoinAndDefaultIfEmpty()
     {
@@ -446,6 +453,199 @@ public sealed record LeftJoinTests
                 SELECT t0."Name", t1."Total" * 2 AS "Total"
                 FROM "Customer" AS t0
                 LEFT JOIN "Order" AS t1 ON t1."CustomerId" = t0."Id"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesComputedColumnOfLeftJoinedSourceNullSafe()
+    {
+        Expression query = Customers
+            .SelectMany(
+                c =>
+                    Orders
+                        .Where(o => o.CustomerId == c.Id)
+                        .Select(o => o.Quantity + 1)
+                        .DefaultIfEmpty(),
+                (c, q) => new { c.Name, Quantity = q }
+            )
+            .Where(x => x.Quantity != 5)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", t1."Quantity" + 1 AS "Quantity"
+                FROM "Customer" AS t0
+                LEFT JOIN "Order" AS t1 ON t1."CustomerId" = t0."Id"
+                WHERE (t1."Quantity" + 1) IS DISTINCT FROM 5
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void DropsConstantColumnOfLeftJoinedSourceFromOrderBy()
+    {
+        Expression query = Customers
+            .SelectMany(
+                c =>
+                    Orders
+                        .Where(o => o.CustomerId == c.Id)
+                        .Select(o => "order")
+                        .DefaultIfEmpty(),
+                (c, s) => new { c.Name, Kind = s }
+            )
+            .OrderBy(x => x.Kind)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", 'order' AS "Kind"
+                FROM "Customer" AS t0
+                LEFT JOIN "Order" AS t1 ON t1."CustomerId" = t0."Id"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void LeftJoinsPagedProjectionWithoutHiddenOrderingKey()
+    {
+        Expression query = Customers
+            .GroupJoin(
+                Orders
+                    .OrderBy(o => o.CreatedAt)
+                    .Select(o => new { o.CustomerId, o.Total })
+                    .Take(5),
+                c => c.Id,
+                x => x.CustomerId,
+                (c, xs) => new { c, xs }
+            )
+            .SelectMany(
+                y => y.xs.DefaultIfEmpty(),
+                (y, x) => new { y.c.Name, Total = (decimal?)x!.Total }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", t2."Total"
+                FROM "Customer" AS t0
+                LEFT JOIN (
+                    SELECT t1."CustomerId", t1."Total"
+                    FROM "Order" AS t1
+                    ORDER BY t1."CreatedAt"
+                    LIMIT 5
+                ) AS t2 ON t0."Id" = t2."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ChecksLeftJoinedEntityForNullByRequiredColumn()
+    {
+        Expression query = Customers
+            .GroupJoin(Orders, c => c.Id, o => o.CustomerId, (c, os) => new { c, os })
+            .SelectMany(x => x.os.DefaultIfEmpty(), (x, o) => new { x.c.Name, o })
+            .Where(y => y.o == null)
+            .Select(y => y.Name)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name"
+                FROM "Customer" AS t0
+                LEFT JOIN "Order" AS t1 ON t0."Id" = t1."CustomerId"
+                WHERE t1."Id" IS NULL
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void CountsMatchedLeftJoinedEntitiesPerGroup()
+    {
+        Expression query = Customers
+            .GroupJoin(Orders, c => c.Id, o => o.CustomerId, (c, os) => new { c, os })
+            .SelectMany(x => x.os.DefaultIfEmpty(), (x, o) => new { x.c.Region, o })
+            .GroupBy(y => y.Region)
+            .Select(g => new { g.Key, Orders = g.Count(y => y.o != null) })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Region" AS "Key", CAST(COUNT(*) FILTER (WHERE t1."Id" IS NOT NULL) AS integer) AS "Orders"
+                FROM "Customer" AS t0
+                LEFT JOIN "Order" AS t1 ON t0."Id" = t1."CustomerId"
+                GROUP BY t0."Region"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ChecksLeftJoinedEntityWithoutRequiredColumnByEveryColumn()
+    {
+        Expression query = Orders
+            .SelectMany(
+                o =>
+                    new CapturingQueryable<Sticker>()
+                        .Where(s => s.OrderId == o.Id)
+                        .DefaultIfEmpty(),
+                (o, s) => new { o.Number, s }
+            )
+            .Select(x => new
+            {
+                x.Number,
+                Missing = x.s == null,
+                Present = x.s != null,
+            })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Number", (t1."OrderId" IS NULL) AND (t1."Text" IS NULL) AS "Missing", (t1."OrderId" IS NOT NULL) OR (t1."Text" IS NOT NULL) AS "Present"
+                FROM "Order" AS t0
+                LEFT JOIN "Sticker" AS t1 ON t1."OrderId" = t0."Id"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KnowsAnInnerJoinedEntityIsNeverNull()
+    {
+        Expression query = Customers
+            .Join(Orders, c => c.Id, o => o.CustomerId, (c, o) => new { c, o })
+            .Select(x => new
+            {
+                x.c.Name,
+                Missing = x.o == null,
+                Present = x.o != null,
+            })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", FALSE AS "Missing", TRUE AS "Present"
+                FROM "Customer" AS t0
+                INNER JOIN "Order" AS t1 ON t0."Id" = t1."CustomerId"
                 """
             ),
             new PostgreSqlQuery(query).TextValue

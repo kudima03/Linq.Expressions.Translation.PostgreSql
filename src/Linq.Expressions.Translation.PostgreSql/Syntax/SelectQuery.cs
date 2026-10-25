@@ -8,6 +8,9 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
 
     public List<SqlJoin> Joins { get; } = [];
 
+    // Ordering keys a derived table has to expose for the outer query to keep its order.
+    public List<ProjectionColumn> Hidden { get; } = [];
+
     public SqlExpression? Where { get; set; }
 
     public IReadOnlyList<SqlExpression>? GroupBy { get; set; }
@@ -30,7 +33,7 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
     {
         _ = writer
             .Append(Distinct ? "SELECT DISTINCT " : "SELECT ")
-            .Join(Shape.Columns(), column => column.Render(writer));
+            .Join([.. Shape.Columns(), .. Hidden], column => column.Render(writer));
         if (From is not null)
         {
             _ = writer.Append(" FROM ");

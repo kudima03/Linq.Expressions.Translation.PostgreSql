@@ -110,13 +110,17 @@ internal sealed partial class Translator
         string alias = NextAlias();
         return new SelectQuery(
             new TableSource(table, alias),
-            new EntityShape([
-                .. table.Columns.Select(column => new EntityColumn(
-                    column.Member,
-                    column.Name,
-                    new SqlColumn(alias, column.Name, column.Type, column.Nullable)
-                )),
-            ])
+            new EntityShape(
+                root.ElementType,
+                [
+                    .. table.Columns.Select(column => new EntityColumn(
+                        column.Member,
+                        column.Name,
+                        new SqlColumn(alias, column.Name, column.Type, column.Nullable),
+                        !column.Nullable
+                    )),
+                ]
+            )
         );
     }
 
@@ -133,6 +137,8 @@ internal sealed partial class Translator
         {
             nameof(Queryable.Where) => Where(source, Lambda(call, 1)),
             nameof(Queryable.Select) => Select(source, Lambda(call, 1)),
+            nameof(Queryable.Order) => Order(source, false),
+            nameof(Queryable.OrderDescending) => Order(source, true),
             nameof(Queryable.OrderBy) => Order(source, Lambda(call, 1), false, false),
             nameof(Queryable.OrderByDescending) => Order(
                 source,
@@ -169,10 +175,20 @@ internal sealed partial class Translator
         };
     }
 
-    private SelectQuery Where(SqlQuery source, LambdaExpression predicate)
+    private SelectQuery Where(
+        SqlQuery source,
+        LambdaExpression predicate,
+        bool ordered = true
+    )
     {
-        SelectQuery query = Restricted(source);
-        SqlExpression condition = Scalar(Bind(predicate, query.Shape));
+        SelectQuery query = Restricted(source, ordered);
+        Restrict(query, Scalar(Bind(predicate, query.Shape)));
+        return query;
+    }
+
+    // Grouped rows are restricted after grouping, where aggregates are allowed.
+    private static void Restrict(SelectQuery query, SqlExpression condition)
+    {
         if (query.GroupBy is null)
         {
             query.Where = And(query.Where, condition);
@@ -181,12 +197,11 @@ internal sealed partial class Translator
         {
             query.Having = And(query.Having, condition);
         }
-        return query;
     }
 
-    private SelectQuery Restricted(SqlQuery source)
+    private SelectQuery Restricted(SqlQuery source, bool ordered = true)
     {
-        return Open(source, Barrier.Paging | Barrier.Distinct);
+        return Open(source, Barrier.Paging | Barrier.Distinct, ordered);
     }
 
     private SelectQuery Select(SqlQuery source, LambdaExpression selector)
@@ -204,12 +219,28 @@ internal sealed partial class Translator
     )
     {
         SelectQuery query = Open(source, Barrier.Paging | Barrier.Distinct);
+        return Ordered(query, Bind(selector, query.Shape), descending, then);
+    }
+
+    // Order() sorts the elements themselves.
+    private SelectQuery Order(SqlQuery source, bool descending)
+    {
+        SelectQuery query = Open(source, Barrier.Paging | Barrier.Distinct);
+        return Ordered(query, query.Shape, descending, false);
+    }
+
+    private static SelectQuery Ordered(
+        SelectQuery query,
+        Shape key,
+        bool descending,
+        bool then
+    )
+    {
         // A constant key orders nothing; as a bare literal in ORDER BY it would be a
         // positional reference or an error.
         List<Ordering> keys =
         [
-            .. Bind(selector, query.Shape)
-                .Columns()
+            .. key.Columns()
                 .Where(column => column.Value is not SqlConstant)
                 .Select(column => new Ordering(column.Value, descending)),
         ];
@@ -247,7 +278,8 @@ internal sealed partial class Translator
         SelectQuery counted = Unordered(
             Open(
                 Query(call.Arguments[0]),
-                Barrier.Paging | Barrier.Distinct | Barrier.Grouping
+                Barrier.Paging | Barrier.Distinct | Barrier.Grouping,
+                false
             )
         );
         counted.Shape = new ScalarShape(
@@ -270,7 +302,7 @@ internal sealed partial class Translator
 
     private SelectQuery Distinct(SqlQuery source)
     {
-        SelectQuery query = Open(source, Barrier.Paging);
+        SelectQuery query = Open(source, Barrier.Paging, false);
         HashSet<string> projected =
         [
             .. query.Shape.Columns().Select(column => SqlWriter.Text(column.Value)),
@@ -308,24 +340,38 @@ internal sealed partial class Translator
         }
         if (!ScalarTypes.IsNumber(element) || !ScalarTypes.IsNumber(target))
         {
-            return source;
+            // Cast throws for an entity of another type; translated, it would yield it.
+            return
+                source.Shape is EntityShape entity
+                && !target.IsAssignableFrom(entity.Type)
+                ? throw new NotSupportedException(
+                    $"Casting '{entity.Type.Name}' entities to '{target.Name}' is not supported."
+                )
+                : source;
         }
         SelectQuery query = Open(source, Barrier.Distinct | Barrier.Projection);
         query.Shape = new ScalarShape(Convert(Scalar(query.Shape), element, target));
         return query;
     }
 
+    // Entities are of the type of their table, whatever the sequence was cast to; a
+    // null is of no type, so OfType drops it from a nullable sequence.
     private SqlQuery OfType(SqlQuery source, Type element, Type target)
     {
-        Type value = Nullable.GetUnderlyingType(element) ?? element;
+        Type actual = source.Shape is EntityShape entity ? entity.Type : element;
+        Type value = Nullable.GetUnderlyingType(actual) ?? actual;
         bool compatible = target.IsAssignableFrom(value);
-        if (compatible && value == element)
+        if (
+            compatible
+            && value == actual
+            && source.Shape is not ScalarShape { Value.Nullable: true }
+        )
         {
             return source;
         }
         SelectQuery query = Restricted(source);
-        query.Where = And(
-            query.Where,
+        Restrict(
+            query,
             compatible
                 ? new SqlIsNull(Scalar(query.Shape), true)
                 : new SqlConstant(false, typeof(bool))
@@ -333,11 +379,13 @@ internal sealed partial class Translator
         return query;
     }
 
-    private SelectQuery Open(SqlQuery source, Barrier barriers)
+    // A caller that discards the order of the rows (an aggregate, a set operation, a
+    // join) does not need the derived table to expose hidden ordering keys.
+    private SelectQuery Open(SqlQuery source, Barrier barriers, bool ordered = true)
     {
         return source is SelectQuery query && !IsBlocked(query, barriers)
             ? query
-            : Wrap(source);
+            : Wrap(source, ordered);
     }
 
     private static bool IsBlocked(SelectQuery query, Barrier barriers)
@@ -353,7 +401,7 @@ internal sealed partial class Translator
             );
     }
 
-    private SelectQuery Wrap(SqlQuery inner)
+    private SelectQuery Wrap(SqlQuery inner, bool ordered = true)
     {
         Named(inner);
         string alias = NextAlias();
@@ -375,12 +423,12 @@ internal sealed partial class Translator
             [
                 .. query
                     .Orderings.Where(ordering =>
-                        names.ContainsKey(SqlWriter.Text(ordering.Key))
+                        ordered || names.ContainsKey(SqlWriter.Text(ordering.Key))
                     )
                     .Select(ordering => new Ordering(
                         new SqlColumn(
                             alias,
-                            names[SqlWriter.Text(ordering.Key)],
+                            Exposed(query, ordering.Key, names),
                             ordering.Key.Type,
                             ordering.Key.Nullable
                         ),
@@ -395,6 +443,24 @@ internal sealed partial class Translator
         return outer;
     }
 
+    // An ordering key the projection hides is exposed as an extra column; its name
+    // cannot clash with a member, which never starts with $.
+    private static string Exposed(
+        SelectQuery query,
+        SqlExpression key,
+        Dictionary<string, string> names
+    )
+    {
+        string text = SqlWriter.Text(key);
+        if (!names.TryGetValue(text, out string? name))
+        {
+            name = "$" + query.Hidden.Count;
+            query.Hidden.Add(new ProjectionColumn(name, key));
+            names[text] = name;
+        }
+        return name;
+    }
+
     private static void Named(SqlQuery query)
     {
         if (query is SetOperationQuery operation)
@@ -404,6 +470,15 @@ internal sealed partial class Translator
         if (query.Shape is ScalarShape scalar)
         {
             query.Shape = scalar.Named();
+        }
+        if (query.Shape is GroupingShape { Key: ScalarShape key } grouping)
+        {
+            query.Shape = new GroupingShape(
+                key.Named(),
+                grouping.Element,
+                grouping.Filter,
+                grouping.Distinct
+            );
         }
     }
 

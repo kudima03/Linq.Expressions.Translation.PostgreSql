@@ -57,7 +57,7 @@ public sealed record CollectionQuantifierTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE t0."Note" = ANY (t0."Tags")
+                WHERE (t0."Note" = ANY (t0."Tags")) OR ((t0."Note" IS NULL) AND (ARRAY_POSITION(t0."Tags", NULL) IS NOT NULL))
                 """
             ),
             new PostgreSqlQuery(query).TextValue

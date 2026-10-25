@@ -1,6 +1,7 @@
 #pragma warning disable CA1861 // constant arrays are the subject
 #pragma warning disable IDE0300 // the collection types are the subject
 #pragma warning disable IDE0028 // the collection types are the subject
+#pragma warning disable IDE0120 // the operator order is the subject
 
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Unsupported;
 
@@ -956,20 +957,6 @@ public sealed record UnsupportedOperatorTests
     }
 
     [Fact]
-    public void RejectsNullCheckOfLeftJoinedEntity()
-    {
-        Expression query = Customers
-            .GroupJoin(Orders, c => c.Id, o => o.CustomerId, (c, g) => new { c, g })
-            .SelectMany(x => x.g.DefaultIfEmpty(), (x, o) => o == null ? 0m : o.Total)
-            .Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("single value", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void RejectsExpressionThatIsNotAQuery()
     {
         Expression query = Expression.Constant(5);
@@ -1057,5 +1044,82 @@ public sealed record UnsupportedOperatorTests
             new PostgreSqlQuery(query).TextValue
         );
         Assert.Contains("IGrouping", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsCastOfEntitiesToAnotherEntityType()
+    {
+        Expression query = Customers.Cast<Employee>().Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Employee", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsMaximumOfGuid()
+    {
+        Expression query = Orders.Executed(q => q.Max(o => o.TrackingId));
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Max", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsSelectAfterDistinctOverGroupElements()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Distinct().Select(o => o.Total).Sum())
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Distinct", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsPagedGroupingsAsResult()
+    {
+        Expression query = Customers.GroupBy(c => c.Region).Take(5).Distinct().Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("GroupBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsCombinedGroupingsAsResult()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Region)
+            .Concat(Customers.GroupBy(c => c.Name))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("GroupBy", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsAggregatingElementsOfPagedGroups()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Region)
+            .Take(5)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("aggregate", exception.Message, StringComparison.Ordinal);
     }
 }
