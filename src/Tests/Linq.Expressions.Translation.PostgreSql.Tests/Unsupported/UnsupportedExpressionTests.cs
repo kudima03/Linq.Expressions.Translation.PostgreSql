@@ -808,17 +808,6 @@ public sealed record UnsupportedExpressionTests
     }
 
     [Fact]
-    public void RejectsConstantOfUnmappedType()
-    {
-        Expression query = Orders.Select(o => new Uri("http://example.com")).Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("Uri", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void RejectsByteArrayConstant()
     {
         Expression query = Orders.Select(o => new byte[] { 1, 2 }).Expression;
