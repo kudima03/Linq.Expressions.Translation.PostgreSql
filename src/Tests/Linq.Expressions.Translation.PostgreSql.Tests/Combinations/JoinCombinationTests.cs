@@ -329,10 +329,10 @@ public sealed record JoinCombinationTests
 
         Assert.Equal(
             Sql.Valid(
-                """
+                $"""
                 SELECT t0."Id", t1."Id" AS "EmployeeId"
                 FROM "Customer" AS t0
-                INNER JOIN "Employee" AS t1 ON LOWER(BTRIM(t0."Name")) = LOWER(BTRIM(t1."Name"))
+                INNER JOIN "Employee" AS t1 ON LOWER(BTRIM(t0."Name", {Sql.WhiteSpace})) = LOWER(BTRIM(t1."Name", {Sql.WhiteSpace}))
                 """
             ),
             new PostgreSqlQuery(query).TextValue

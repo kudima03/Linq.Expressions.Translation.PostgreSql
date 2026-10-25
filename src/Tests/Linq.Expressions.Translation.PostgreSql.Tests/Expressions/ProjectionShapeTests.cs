@@ -305,8 +305,8 @@ public sealed record ProjectionShapeTests
 
         Assert.Equal(
             Sql.Valid(
-                """
-                SELECT LENGTH(UPPER(BTRIM(t0."Number")))
+                $"""
+                SELECT LENGTH(UPPER(BTRIM(t0."Number", {Sql.WhiteSpace})))
                 FROM "Order" AS t0
                 """
             ),

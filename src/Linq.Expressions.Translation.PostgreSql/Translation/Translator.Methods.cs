@@ -43,6 +43,13 @@ internal sealed partial class Translator
         typeof(double),
     ];
 
+    private static readonly string WhiteSpace = string.Concat(
+        Enumerable
+            .Range(char.MinValue, char.MaxValue)
+            .Select(code => (char)code)
+            .Where(char.IsWhiteSpace)
+    );
+
     private static readonly HashSet<Type> Printable =
     [
         typeof(int),
@@ -275,24 +282,27 @@ internal sealed partial class Translator
         );
     }
 
+    // Without characters, Trim removes every white-space character, BTRIM only spaces.
     private SqlFunction Trimmed(string name, MethodCallExpression call)
     {
-        return new SqlFunction(
-            name,
-            [
-                Sql(call.Object!),
-                .. call
-                    .Arguments.Where(argument =>
-                        argument is not ConstantExpression { Value: char[] { Length: 0 } }
-                    )
-                    .Select(argument =>
-                        argument is ConstantExpression { Value: char[] characters }
-                            ? Text(new string(characters))
-                            : Sql(argument)
-                    ),
-            ],
-            call.Type
-        );
+        List<SqlExpression> arguments =
+        [
+            Sql(call.Object!),
+            .. call
+                .Arguments.Where(argument =>
+                    argument is not ConstantExpression { Value: char[] { Length: 0 } }
+                )
+                .Select(argument =>
+                    argument is ConstantExpression { Value: char[] characters }
+                        ? Text(new string(characters))
+                        : Sql(argument)
+                ),
+        ];
+        if (arguments.Count == 1)
+        {
+            arguments.Add(Text(WhiteSpace));
+        }
+        return new SqlFunction(name, arguments, call.Type);
     }
 
     private static SqlFunction Substring(

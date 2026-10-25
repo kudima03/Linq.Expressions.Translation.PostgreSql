@@ -105,8 +105,8 @@ public sealed record StringTests
 
         Assert.Equal(
             Sql.Valid(
-                """
-                SELECT BTRIM(t0."Number")
+                $"""
+                SELECT BTRIM(t0."Number", {Sql.WhiteSpace})
                 FROM "Order" AS t0
                 """
             ),
@@ -121,8 +121,8 @@ public sealed record StringTests
 
         Assert.Equal(
             Sql.Valid(
-                """
-                SELECT LTRIM(t0."Number")
+                $"""
+                SELECT LTRIM(t0."Number", {Sql.WhiteSpace})
                 FROM "Order" AS t0
                 """
             ),
@@ -137,8 +137,8 @@ public sealed record StringTests
 
         Assert.Equal(
             Sql.Valid(
-                """
-                SELECT RTRIM(t0."Number")
+                $"""
+                SELECT RTRIM(t0."Number", {Sql.WhiteSpace})
                 FROM "Order" AS t0
                 """
             ),
@@ -379,8 +379,8 @@ public sealed record StringTests
 
         Assert.Equal(
             Sql.Valid(
-                """
-                SELECT UPPER(BTRIM(t0."Number"))
+                $"""
+                SELECT UPPER(BTRIM(t0."Number", {Sql.WhiteSpace}))
                 FROM "Order" AS t0
                 """
             ),
@@ -413,8 +413,8 @@ public sealed record StringTests
 
         Assert.Equal(
             Sql.Valid(
-                """
-                SELECT LENGTH(BTRIM(t0."Number"))
+                $"""
+                SELECT LENGTH(BTRIM(t0."Number", {Sql.WhiteSpace}))
                 FROM "Order" AS t0
                 """
             ),
@@ -920,10 +920,10 @@ public sealed record StringTests
 
         Assert.Equal(
             Sql.Valid(
-                """
+                $"""
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE BTRIM(t0."Number") = 'A-1'
+                WHERE BTRIM(t0."Number", {Sql.WhiteSpace}) = 'A-1'
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -1739,8 +1739,8 @@ public sealed record StringTests
 
         Assert.Equal(
             Sql.Valid(
-                """
-                SELECT LTRIM(t0."Number")
+                $"""
+                SELECT LTRIM(t0."Number", {Sql.WhiteSpace})
                 FROM "Order" AS t0
                 """
             ),

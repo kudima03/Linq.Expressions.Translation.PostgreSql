@@ -124,8 +124,8 @@ public sealed record StringCombinationTests
 
         Assert.Equal(
             Sql.Valid(
-                """
-                SELECT BTRIM(t0."Number")
+                $"""
+                SELECT BTRIM(t0."Number", {Sql.WhiteSpace})
                 FROM "Order" AS t0
                 """
             ),
@@ -306,10 +306,10 @@ public sealed record StringCombinationTests
 
         Assert.Equal(
             Sql.Valid(
-                """
+                $"""
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE LENGTH(BTRIM(t0."Number")) > 3
+                WHERE LENGTH(BTRIM(t0."Number", {Sql.WhiteSpace})) > 3
                 """
             ),
             new PostgreSqlQuery(query).TextValue
