@@ -1,6 +1,7 @@
 #pragma warning disable CA1861 // constant arrays are the subject
 #pragma warning disable IDE0300 // the collection types are the subject
 #pragma warning disable IDE0028 // the collection types are the subject
+#pragma warning disable IDE0120 // the operator order is the subject
 
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Unsupported;
 
@@ -1079,5 +1080,19 @@ public sealed record UnsupportedOperatorTests
             new PostgreSqlQuery(query).TextValue
         );
         Assert.Contains("Max", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsSelectAfterDistinctOverGroupElements()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Distinct().Select(o => o.Total).Sum())
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Distinct", exception.Message, StringComparison.Ordinal);
     }
 }

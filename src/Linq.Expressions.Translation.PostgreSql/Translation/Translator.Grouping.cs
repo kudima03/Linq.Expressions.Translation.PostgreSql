@@ -58,6 +58,12 @@ internal sealed partial class Translator
                 Conjoined(Scalar(Bind(Lambda(call, 1), group.Element)), group.Filter),
                 group.Distinct
             ),
+            // A projection of the distinct elements is not the distinct projection,
+            // which is what the aggregate of a DISTINCT group would compute.
+            nameof(Enumerable.Select) when group.Distinct =>
+                throw new NotSupportedException(
+                    "'Select' after 'Distinct' over group elements is not supported; select the value before Distinct."
+                ),
             nameof(Enumerable.Select) => new GroupingShape(
                 group.Key,
                 Bind(Lambda(call, 1), group.Element),
