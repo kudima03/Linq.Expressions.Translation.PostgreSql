@@ -29,11 +29,14 @@ internal sealed class EntityShape(Type type, IReadOnlyList<EntityColumn> columns
                 .. columns.Select(column => new EntityColumn(
                     column.Member,
                     column.Name,
-                    map(column.Value, Path(path, column.Name))
+                    map(column.Value, Path(path, column.Name)),
+                    column.Required
                 )),
             ]
         );
     }
+
+    public IReadOnlyList<EntityColumn> Fields => columns;
 
     public ScalarShape Member(MemberInfo member)
     {

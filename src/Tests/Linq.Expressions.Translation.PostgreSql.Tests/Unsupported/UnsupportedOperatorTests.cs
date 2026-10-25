@@ -957,20 +957,6 @@ public sealed record UnsupportedOperatorTests
     }
 
     [Fact]
-    public void RejectsNullCheckOfLeftJoinedEntity()
-    {
-        Expression query = Customers
-            .GroupJoin(Orders, c => c.Id, o => o.CustomerId, (c, g) => new { c, g })
-            .SelectMany(x => x.g.DefaultIfEmpty(), (x, o) => o == null ? 0m : o.Total)
-            .Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("single value", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void RejectsExpressionThatIsNotAQuery()
     {
         Expression query = Expression.Constant(5);

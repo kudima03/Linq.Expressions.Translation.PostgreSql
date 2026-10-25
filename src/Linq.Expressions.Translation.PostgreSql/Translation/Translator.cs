@@ -116,7 +116,8 @@ internal sealed partial class Translator
                     .. table.Columns.Select(column => new EntityColumn(
                         column.Member,
                         column.Name,
-                        new SqlColumn(alias, column.Name, column.Type, column.Nullable)
+                        new SqlColumn(alias, column.Name, column.Type, column.Nullable),
+                        !column.Nullable
                     )),
                 ]
             )
