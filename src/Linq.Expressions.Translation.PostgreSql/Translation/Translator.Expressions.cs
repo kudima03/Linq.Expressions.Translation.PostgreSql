@@ -332,9 +332,12 @@ internal sealed partial class Translator
         }
         SqlExpression one = Scalar(first);
         SqlExpression other = Scalar(second);
+        // A correlation key equal to NULL is false in both languages, but not equal
+        // to it is true in C# and NULL in SQL.
         bool nullable = one.Nullable || other.Nullable;
         bool distinct =
-            (one.Nullable && other.Nullable) || (nullable && !IsCorrelation(left, right));
+            (one.Nullable && other.Nullable)
+            || (nullable && (negated || !IsCorrelation(left, right)));
         string symbol =
             distinct ? (negated ? "IS DISTINCT FROM" : "IS NOT DISTINCT FROM")
             : negated ? "<>"
