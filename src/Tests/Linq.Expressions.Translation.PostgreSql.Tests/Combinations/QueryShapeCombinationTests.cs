@@ -175,7 +175,7 @@ public sealed record QueryShapeCombinationTests
     }
 
     [Fact]
-    public void RejectsTakeLastWhenOrderingKeyIsProjectedAway()
+    public void TakesLastRowsByHiddenOrderingKey()
     {
         Expression query = Customers
             .Where(c => c.IsActive)
@@ -184,10 +184,22 @@ public sealed record QueryShapeCombinationTests
             .TakeLast(2)
             .Expression;
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Name"
+                FROM (
+                    SELECT t0."Name", t0."Id" AS "$0"
+                    FROM "Customer" AS t0
+                    WHERE t0."IsActive"
+                    ORDER BY t0."Id" DESC
+                    LIMIT 2
+                ) AS t1
+                ORDER BY t1."$0"
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("TakeLast", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

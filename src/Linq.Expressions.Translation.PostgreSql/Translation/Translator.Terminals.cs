@@ -128,7 +128,7 @@ internal sealed partial class Translator
         return call.Method.Name switch
         {
             nameof(Queryable.Count) or nameof(Queryable.LongCount) => Counted(
-                filtered ? Where(source, Lambda(call, 1)) : source,
+                filtered ? Where(source, Lambda(call, 1), false) : source,
                 call.Method.Name,
                 call.Type
             ),
@@ -138,7 +138,9 @@ internal sealed partial class Translator
             or nameof(Queryable.Max) => Aggregated(source, call),
             nameof(Queryable.Any) => new SqlExists(
                 Existing(
-                    filtered ? Where(source, Lambda(call, 1)) : Open(source, Barrier.None)
+                    filtered
+                        ? Where(source, Lambda(call, 1), false)
+                        : Open(source, Barrier.None)
                 )
             ),
             nameof(Queryable.All) => new SqlUnary(
@@ -175,7 +177,7 @@ internal sealed partial class Translator
     private SqlScalarSubquery Counted(SqlQuery source, string name, Type type)
     {
         SelectQuery query = Unordered(
-            Open(source, Barrier.Paging | Barrier.Distinct | Barrier.Grouping)
+            Open(source, Barrier.Paging | Barrier.Distinct | Barrier.Grouping, false)
         );
         query.Shape = new ScalarShape(Counting(name, null, null));
         return new SqlScalarSubquery(query, type);
@@ -184,7 +186,7 @@ internal sealed partial class Translator
     private SqlScalarSubquery Aggregated(SqlQuery source, MethodCallExpression call)
     {
         SelectQuery query = Unordered(
-            Open(source, Barrier.Paging | Barrier.Distinct | Barrier.Grouping)
+            Open(source, Barrier.Paging | Barrier.Distinct | Barrier.Grouping, false)
         );
         SqlExpression value =
             call.Arguments.Count > 1
@@ -288,7 +290,7 @@ internal sealed partial class Translator
 
     private SelectQuery Unmatched(SqlQuery source, MethodCallExpression call)
     {
-        SelectQuery query = Restricted(source);
+        SelectQuery query = Restricted(source, false);
         Restrict(
             query,
             new SqlUnary("NOT ", Scalar(Bind(Lambda(call, 1), query.Shape)), typeof(bool))

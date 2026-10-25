@@ -424,4 +424,59 @@ public sealed record DistinctReverseTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void ReversesPagedRowsByEveryOrderingKey()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Region)
+            .ThenBy(c => c.Name)
+            .Skip(1)
+            .Take(2)
+            .Select(c => c.Name)
+            .Reverse()
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Name"
+                FROM (
+                    SELECT t0."Name", t0."Region" AS "$0"
+                    FROM "Customer" AS t0
+                    ORDER BY t0."Region", t0."Name"
+                    LIMIT 2 OFFSET 1
+                ) AS t1
+                ORDER BY t1."$0" DESC, t1."Name" DESC
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void DropsHiddenOrderingKeyOfDistinctPagedRows()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Id)
+            .Select(c => c.Region)
+            .Take(5)
+            .Distinct()
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT DISTINCT t1."Region"
+                FROM (
+                    SELECT t0."Region"
+                    FROM "Customer" AS t0
+                    ORDER BY t0."Id"
+                    LIMIT 5
+                ) AS t1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

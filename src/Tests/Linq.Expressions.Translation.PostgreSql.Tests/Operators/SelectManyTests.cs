@@ -358,4 +358,37 @@ public sealed record SelectManyTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void JoinsLateralPagedProjectionWithoutHiddenOrderingKey()
+    {
+        Expression query = Customers
+            .SelectMany(
+                c =>
+                    Orders
+                        .Where(o => o.CustomerId == c.Id)
+                        .OrderByDescending(o => o.CreatedAt)
+                        .Take(1)
+                        .Select(o => o.Total),
+                (c, t) => new { c.Name, Total = t }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", t2."Total"
+                FROM "Customer" AS t0
+                CROSS JOIN LATERAL (
+                    SELECT t1."Total"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                    ORDER BY t1."CreatedAt" DESC
+                    LIMIT 1
+                ) AS t2
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

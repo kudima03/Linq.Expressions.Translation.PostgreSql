@@ -172,9 +172,13 @@ internal sealed partial class Translator
         };
     }
 
-    private SelectQuery Where(SqlQuery source, LambdaExpression predicate)
+    private SelectQuery Where(
+        SqlQuery source,
+        LambdaExpression predicate,
+        bool ordered = true
+    )
     {
-        SelectQuery query = Restricted(source);
+        SelectQuery query = Restricted(source, ordered);
         Restrict(query, Scalar(Bind(predicate, query.Shape)));
         return query;
     }
@@ -192,9 +196,9 @@ internal sealed partial class Translator
         }
     }
 
-    private SelectQuery Restricted(SqlQuery source)
+    private SelectQuery Restricted(SqlQuery source, bool ordered = true)
     {
-        return Open(source, Barrier.Paging | Barrier.Distinct);
+        return Open(source, Barrier.Paging | Barrier.Distinct, ordered);
     }
 
     private SelectQuery Select(SqlQuery source, LambdaExpression selector)
@@ -255,7 +259,8 @@ internal sealed partial class Translator
         SelectQuery counted = Unordered(
             Open(
                 Query(call.Arguments[0]),
-                Barrier.Paging | Barrier.Distinct | Barrier.Grouping
+                Barrier.Paging | Barrier.Distinct | Barrier.Grouping,
+                false
             )
         );
         counted.Shape = new ScalarShape(
@@ -278,7 +283,7 @@ internal sealed partial class Translator
 
     private SelectQuery Distinct(SqlQuery source)
     {
-        SelectQuery query = Open(source, Barrier.Paging);
+        SelectQuery query = Open(source, Barrier.Paging, false);
         HashSet<string> projected =
         [
             .. query.Shape.Columns().Select(column => SqlWriter.Text(column.Value)),
@@ -355,11 +360,13 @@ internal sealed partial class Translator
         return query;
     }
 
-    private SelectQuery Open(SqlQuery source, Barrier barriers)
+    // A caller that discards the order of the rows (an aggregate, a set operation, a
+    // join) does not need the derived table to expose hidden ordering keys.
+    private SelectQuery Open(SqlQuery source, Barrier barriers, bool ordered = true)
     {
         return source is SelectQuery query && !IsBlocked(query, barriers)
             ? query
-            : Wrap(source);
+            : Wrap(source, ordered);
     }
 
     private static bool IsBlocked(SelectQuery query, Barrier barriers)
@@ -375,7 +382,7 @@ internal sealed partial class Translator
             );
     }
 
-    private SelectQuery Wrap(SqlQuery inner)
+    private SelectQuery Wrap(SqlQuery inner, bool ordered = true)
     {
         Named(inner);
         string alias = NextAlias();
@@ -397,12 +404,12 @@ internal sealed partial class Translator
             [
                 .. query
                     .Orderings.Where(ordering =>
-                        names.ContainsKey(SqlWriter.Text(ordering.Key))
+                        ordered || names.ContainsKey(SqlWriter.Text(ordering.Key))
                     )
                     .Select(ordering => new Ordering(
                         new SqlColumn(
                             alias,
-                            names[SqlWriter.Text(ordering.Key)],
+                            Exposed(query, ordering.Key, names),
                             ordering.Key.Type,
                             ordering.Key.Nullable
                         ),
@@ -415,6 +422,24 @@ internal sealed partial class Translator
             }
         }
         return outer;
+    }
+
+    // An ordering key the projection hides is exposed as an extra column; its name
+    // cannot clash with a member, which never starts with $.
+    private static string Exposed(
+        SelectQuery query,
+        SqlExpression key,
+        Dictionary<string, string> names
+    )
+    {
+        string text = SqlWriter.Text(key);
+        if (!names.TryGetValue(text, out string? name))
+        {
+            name = "$" + query.Hidden.Count;
+            query.Hidden.Add(new ProjectionColumn(name, key));
+            names[text] = name;
+        }
+        return name;
     }
 
     private static void Named(SqlQuery query)

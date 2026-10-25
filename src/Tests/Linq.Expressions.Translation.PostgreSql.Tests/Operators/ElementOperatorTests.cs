@@ -784,6 +784,62 @@ public sealed record ElementOperatorTests
     }
 
     [Fact]
+    public void TakesLastPagedRowByEveryOrderingKey()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Region)
+            .ThenBy(c => c.Name)
+            .Select(c => c.Name)
+            .Take(2)
+            .Executed(q => q.Last());
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Name"
+                FROM (
+                    SELECT t0."Name", t0."Region" AS "$0"
+                    FROM "Customer" AS t0
+                    ORDER BY t0."Region", t0."Name"
+                    LIMIT 2
+                ) AS t1
+                ORDER BY t1."$0" DESC, t1."Name" DESC
+                LIMIT 1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void TakesFirstFilteredPagedRowByHiddenOrderingKey()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Region)
+            .Select(c => c.Name)
+            .Take(5)
+            .Executed(q => q.First(n => n != "a"));
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Name"
+                FROM (
+                    SELECT t0."Name", t0."Region" AS "$0"
+                    FROM "Customer" AS t0
+                    ORDER BY t0."Region"
+                    LIMIT 5
+                ) AS t1
+                WHERE t1."Name" <> 'a'
+                ORDER BY t1."$0"
+                LIMIT 1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
     public void YieldsNoRowForNegativeElementIndex()
     {
         Expression query = Customers

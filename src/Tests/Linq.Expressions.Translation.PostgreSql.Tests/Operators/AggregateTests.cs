@@ -753,4 +753,55 @@ public sealed record AggregateTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void CountsFilteredPagedRowsWithoutHiddenOrderingKey()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Region)
+            .Select(c => c.Name)
+            .Take(5)
+            .Executed(q => q.Count(n => n != "a"));
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(COUNT(*) AS integer)
+                FROM (
+                    SELECT t0."Name"
+                    FROM "Customer" AS t0
+                    ORDER BY t0."Region"
+                    LIMIT 5
+                ) AS t1
+                WHERE t1."Name" <> 'a'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void CountsPagedRowsWithoutHiddenOrderingKey()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Region)
+            .Select(c => c.Name)
+            .Take(5)
+            .Executed(q => q.Count());
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(COUNT(*) AS integer)
+                FROM (
+                    SELECT t0."Name"
+                    FROM "Customer" AS t0
+                    ORDER BY t0."Region"
+                    LIMIT 5
+                ) AS t1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

@@ -506,4 +506,40 @@ public sealed record LeftJoinTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void LeftJoinsPagedProjectionWithoutHiddenOrderingKey()
+    {
+        Expression query = Customers
+            .GroupJoin(
+                Orders
+                    .OrderBy(o => o.CreatedAt)
+                    .Select(o => new { o.CustomerId, o.Total })
+                    .Take(5),
+                c => c.Id,
+                x => x.CustomerId,
+                (c, xs) => new { c, xs }
+            )
+            .SelectMany(
+                y => y.xs.DefaultIfEmpty(),
+                (y, x) => new { y.c.Name, Total = (decimal?)x!.Total }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", t2."Total"
+                FROM "Customer" AS t0
+                LEFT JOIN (
+                    SELECT t1."CustomerId", t1."Total"
+                    FROM "Order" AS t1
+                    ORDER BY t1."CreatedAt"
+                    LIMIT 5
+                ) AS t2 ON t0."Id" = t2."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

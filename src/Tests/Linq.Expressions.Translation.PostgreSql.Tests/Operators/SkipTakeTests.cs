@@ -514,4 +514,99 @@ public sealed record SkipTakeTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void KeepsHiddenOrderingKeyWhenFilteringTakenRows()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Region)
+            .Select(c => c.Name)
+            .Take(5)
+            .Where(n => n != "a")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Name"
+                FROM (
+                    SELECT t0."Name", t0."Region" AS "$0"
+                    FROM "Customer" AS t0
+                    ORDER BY t0."Region"
+                    LIMIT 5
+                ) AS t1
+                WHERE t1."Name" <> 'a'
+                ORDER BY t1."$0"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ExposesEachHiddenOrderingKeyOnce()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Region)
+            .ThenByDescending(c => c.Id)
+            .Select(c => c.Name)
+            .Take(5)
+            .Where(n => n != "a")
+            .Skip(1)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Name"
+                FROM (
+                    SELECT t0."Name", t0."Region" AS "$0", t0."Id" AS "$1"
+                    FROM "Customer" AS t0
+                    ORDER BY t0."Region", t0."Id" DESC
+                    LIMIT 5
+                ) AS t1
+                WHERE t1."Name" <> 'a'
+                ORDER BY t1."$0", t1."$1" DESC
+                OFFSET 1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void CountsSkippedLastRowsWithoutHiddenOrderingKey()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Region)
+            .Select(c => c.Name)
+            .Take(5)
+            .SkipLast(1)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Name"
+                FROM (
+                    SELECT t0."Name", t0."Region" AS "$0"
+                    FROM "Customer" AS t0
+                    ORDER BY t0."Region"
+                    LIMIT 5
+                ) AS t1
+                ORDER BY t1."$0"
+                LIMIT (
+                    SELECT GREATEST(COUNT(*) - 1, 0)
+                    FROM (
+                        SELECT t2."Name"
+                        FROM "Customer" AS t2
+                        ORDER BY t2."Region"
+                        LIMIT 5
+                    ) AS t3
+                )
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }
