@@ -26,6 +26,20 @@ public sealed record UnsupportedExpressionTests
         public Customer Customer { get; init; } = new();
     }
 
+    public sealed class Parcel
+    {
+        public int Id { get; set; }
+
+        public Dimensions Size { get; } = new();
+
+        public List<string> Labels { get; } = [];
+    }
+
+    public sealed class Dimensions
+    {
+        public int Width { get; set; }
+    }
+
     [Fact]
     public void RejectsUserDefinedMethodInFilter()
     {
@@ -945,5 +959,31 @@ public sealed record UnsupportedExpressionTests
             new PostgreSqlQuery(query).TextValue
         );
         Assert.Contains("Title", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsNestedObjectInitializer()
+    {
+        Expression query = Orders
+            .Select(o => new Parcel { Id = o.Id, Size = { Width = o.Quantity } })
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Parcel.Size", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsCollectionInitializerOfMember()
+    {
+        Expression query = Orders
+            .Select(o => new Parcel { Id = o.Id, Labels = { o.Number } })
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Parcel.Labels", exception.Message, StringComparison.Ordinal);
     }
 }

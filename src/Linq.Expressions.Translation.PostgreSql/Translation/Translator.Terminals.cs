@@ -40,10 +40,17 @@ internal sealed partial class Translator
 
     private SqlExpression Subquery(MethodCallExpression call)
     {
-        SqlExpression result = Single(Terminal(call));
+        return Valued(Terminal(call), call);
+    }
+
+    // In a value position, an ...OrDefault of a non-nullable value falls back to its
+    // default where the subquery yields no row.
+    private static SqlExpression Valued(SqlExpression result, MethodCallExpression call)
+    {
+        SqlExpression value = Single(result);
         return call.Method.Name.EndsWith("OrDefault", StringComparison.Ordinal)
-            ? Substituted(result, call.Type)
-            : result;
+            ? Substituted(value, call.Type)
+            : value;
     }
 
     // A subquery in a value position must produce one column; the shape of an element

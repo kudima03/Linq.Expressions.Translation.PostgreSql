@@ -19,6 +19,13 @@ internal static class Unsupported
         );
     }
 
+    public static NotSupportedException Binding(MemberBinding binding)
+    {
+        return new NotSupportedException(
+            $"Nested object and collection initializers are not supported; assign '{binding.Member.DeclaringType!.Name}.{binding.Member.Name}' a value instead."
+        );
+    }
+
     public static NotSupportedException Node(Expression expression)
     {
         return new NotSupportedException(

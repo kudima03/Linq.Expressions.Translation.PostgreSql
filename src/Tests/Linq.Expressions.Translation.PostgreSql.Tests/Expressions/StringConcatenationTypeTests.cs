@@ -145,4 +145,54 @@ public sealed record StringConcatenationTypeTests
         );
         Assert.Contains("'String[]'", exception.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void CastsFirstOfTwoLeadingNumbers()
+    {
+        Expression query = Orders.Select(o => $"{o.Id}{o.Quantity}").Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(t0."Id" AS text) || t0."Quantity"
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void CastsFirstOfConcatenatedNumbers()
+    {
+        Expression query = Orders
+            .Select(o => string.Concat(o.TrackingId, o.Quantity, o.Number))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(t0."TrackingId" AS text) || t0."Quantity" || t0."Number"
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ConcatenatesNumberBeforeText()
+    {
+        Expression query = Orders.Select(o => $"{o.Id}{o.Number}").Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id" || t0."Number"
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

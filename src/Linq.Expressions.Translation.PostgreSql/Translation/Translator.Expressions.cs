@@ -142,22 +142,34 @@ internal sealed partial class Translator
                 (argument, index) =>
                     new ObjectMember(
                         creation.Constructor!.GetParameters()[index].Name!,
-                        Shape(argument)
+                        Ungrouped(Shape(argument))
                     )
             ),
         ]);
+    }
+
+    // A nested group has no SQL value; projected, it would silently become its key.
+    private static Shape Ungrouped(Shape shape)
+    {
+        return shape is GroupingShape
+            ? throw new NotSupportedException(
+                "Returning or projecting IGrouping results of GroupBy is not supported; aggregate the groups or select their keys."
+            )
+            : shape;
     }
 
     private ObjectShape Initialization(MemberInitExpression initialization)
     {
         List<ObjectMember> assigned =
         [
-            .. initialization
-                .Bindings.Cast<MemberAssignment>()
-                .Select(binding => new ObjectMember(
-                    binding.Member.Name,
-                    Shape(binding.Expression)
-                )),
+            .. initialization.Bindings.Select(binding =>
+                binding is MemberAssignment assignment
+                    ? new ObjectMember(
+                        assignment.Member.Name,
+                        Ungrouped(Shape(assignment.Expression))
+                    )
+                    : throw Unsupported.Binding(binding)
+            ),
         ];
         // An initializer runs after the constructor, so it replaces the argument.
         return new ObjectShape([
@@ -232,14 +244,16 @@ internal sealed partial class Translator
                 or ExpressionType.RightShift
             ? Masked(binary)
             : Sql(binary.Right);
-        return new SqlBinary(
-            symbol,
-            kind,
-            left,
-            right,
-            binary.Type,
-            left.Nullable || right.Nullable
-        );
+        return binary.NodeType == ExpressionType.Modulo && IsFloating(binary.Type)
+            ? Remainder(left, right, binary.Type)
+            : new SqlBinary(
+                symbol,
+                kind,
+                left,
+                right,
+                binary.Type,
+                left.Nullable || right.Nullable
+            );
     }
 
     private static (string Symbol, SqlBinaryKind Kind) Operator(BinaryExpression binary)
@@ -255,6 +269,38 @@ internal sealed partial class Translator
             : Arithmetic.TryGetValue(binary.NodeType, out string? arithmetic)
                 ? (arithmetic, SqlBinaryKind.Arithmetic)
             : throw Unsupported.Node(binary);
+    }
+
+    private static bool IsFloating(Type type)
+    {
+        Type value = ScalarTypes.Underlying(type);
+        return value == typeof(float) || value == typeof(double);
+    }
+
+    // PostgreSQL has no % for real or double precision: the remainder is taken as
+    // numeric and converted back. A literal is already numeric.
+    private static SqlCast Remainder(SqlExpression left, SqlExpression right, Type type)
+    {
+        SqlBinary remainder = new(
+            "%",
+            SqlBinaryKind.Arithmetic,
+            Exact(left),
+            Exact(right),
+            typeof(decimal),
+            left.Nullable || right.Nullable
+        );
+        return new SqlCast(
+            remainder,
+            ScalarTypes.Number(ScalarTypes.Underlying(type)),
+            type
+        );
+    }
+
+    private static SqlExpression Exact(SqlExpression operand)
+    {
+        return operand is SqlConstant
+            ? operand
+            : new SqlCast(operand, "numeric", typeof(decimal));
     }
 
     private SqlExpression Masked(BinaryExpression shift)
@@ -323,20 +369,34 @@ internal sealed partial class Translator
 
     private static SqlExpression Joined(List<SqlExpression> parts)
     {
-        return parts.Count == 0 ? Text(string.Empty)
-            : parts is [{ Type: Type type } part] && type != typeof(string)
-                ? new SqlCast(part, "text", typeof(string))
-            : parts.Aggregate(
-                (left, right) =>
-                    new SqlBinary(
-                        "||",
-                        SqlBinaryKind.Concatenation,
-                        left,
-                        right,
-                        typeof(string),
-                        false
-                    )
-            );
+        return parts.Count == 0
+            ? Text(string.Empty)
+            : Textual(parts)
+                .Aggregate(
+                    (left, right) =>
+                        new SqlBinary(
+                            "||",
+                            SqlBinaryKind.Concatenation,
+                            left,
+                            right,
+                            typeof(string),
+                            false
+                        )
+                );
+    }
+
+    // || needs a text operand: a lone value is cast, and so is the first of two leading
+    // values that are not text; from then on the left operand is text.
+    private static IEnumerable<SqlExpression> Textual(List<SqlExpression> parts)
+    {
+        return !IsText(parts[0]) && (parts.Count == 1 || !IsText(parts[1]))
+            ? parts.Skip(1).Prepend(new SqlCast(parts[0], "text", typeof(string)))
+            : parts;
+    }
+
+    private static bool IsText(SqlExpression part)
+    {
+        return part.Type == typeof(string);
     }
 
     private void Concatenated(Expression expression, List<SqlExpression> parts)

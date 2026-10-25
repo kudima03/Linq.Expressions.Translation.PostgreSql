@@ -11,6 +11,13 @@ public sealed record UnsupportedOperatorTests
         return value;
     }
 
+    public sealed class Bucket
+    {
+        public int Key { get; init; }
+
+        public IEnumerable<Order> Items { get; init; } = [];
+    }
+
     [Fact]
     public void RejectsGroupByReturningGroupings()
     {
@@ -1008,5 +1015,47 @@ public sealed record UnsupportedOperatorTests
             new PostgreSqlQuery(query).TextValue
         );
         Assert.Contains("GroupJoin", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsGroupNestedInProjection()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => new { g.Key, Items = g })
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("IGrouping", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsGroupElementsNestedInProjection()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => new { g.Key, Totals = g.Select(o => o.Total) })
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("IGrouping", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsGroupAssignedInInitializer()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g => new Bucket { Key = g.Key, Items = g })
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("IGrouping", exception.Message, StringComparison.Ordinal);
     }
 }
