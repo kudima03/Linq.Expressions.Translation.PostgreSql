@@ -1058,4 +1058,15 @@ public sealed record UnsupportedOperatorTests
         );
         Assert.Contains("IGrouping", exception.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void RejectsCastOfEntitiesToAnotherEntityType()
+    {
+        Expression query = Customers.Cast<Employee>().Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Employee", exception.Message, StringComparison.Ordinal);
+    }
 }

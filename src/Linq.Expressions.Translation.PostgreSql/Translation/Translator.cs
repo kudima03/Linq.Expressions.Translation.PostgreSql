@@ -110,13 +110,16 @@ internal sealed partial class Translator
         string alias = NextAlias();
         return new SelectQuery(
             new TableSource(table, alias),
-            new EntityShape([
-                .. table.Columns.Select(column => new EntityColumn(
-                    column.Member,
-                    column.Name,
-                    new SqlColumn(alias, column.Name, column.Type, column.Nullable)
-                )),
-            ])
+            new EntityShape(
+                root.ElementType,
+                [
+                    .. table.Columns.Select(column => new EntityColumn(
+                        column.Member,
+                        column.Name,
+                        new SqlColumn(alias, column.Name, column.Type, column.Nullable)
+                    )),
+                ]
+            )
         );
     }
 
@@ -172,7 +175,13 @@ internal sealed partial class Translator
     private SelectQuery Where(SqlQuery source, LambdaExpression predicate)
     {
         SelectQuery query = Restricted(source);
-        SqlExpression condition = Scalar(Bind(predicate, query.Shape));
+        Restrict(query, Scalar(Bind(predicate, query.Shape)));
+        return query;
+    }
+
+    // Grouped rows are restricted after grouping, where aggregates are allowed.
+    private static void Restrict(SelectQuery query, SqlExpression condition)
+    {
         if (query.GroupBy is null)
         {
             query.Where = And(query.Where, condition);
@@ -181,7 +190,6 @@ internal sealed partial class Translator
         {
             query.Having = And(query.Having, condition);
         }
-        return query;
     }
 
     private SelectQuery Restricted(SqlQuery source)
@@ -308,24 +316,38 @@ internal sealed partial class Translator
         }
         if (!ScalarTypes.IsNumber(element) || !ScalarTypes.IsNumber(target))
         {
-            return source;
+            // Cast throws for an entity of another type; translated, it would yield it.
+            return
+                source.Shape is EntityShape entity
+                && !target.IsAssignableFrom(entity.Type)
+                ? throw new NotSupportedException(
+                    $"Casting '{entity.Type.Name}' entities to '{target.Name}' is not supported."
+                )
+                : source;
         }
         SelectQuery query = Open(source, Barrier.Distinct | Barrier.Projection);
         query.Shape = new ScalarShape(Convert(Scalar(query.Shape), element, target));
         return query;
     }
 
+    // Entities are of the type of their table, whatever the sequence was cast to; a
+    // null is of no type, so OfType drops it from a nullable sequence.
     private SqlQuery OfType(SqlQuery source, Type element, Type target)
     {
-        Type value = Nullable.GetUnderlyingType(element) ?? element;
+        Type actual = source.Shape is EntityShape entity ? entity.Type : element;
+        Type value = Nullable.GetUnderlyingType(actual) ?? actual;
         bool compatible = target.IsAssignableFrom(value);
-        if (compatible && value == element)
+        if (
+            compatible
+            && value == actual
+            && source.Shape is not ScalarShape { Value.Nullable: true }
+        )
         {
             return source;
         }
         SelectQuery query = Restricted(source);
-        query.Where = And(
-            query.Where,
+        Restrict(
+            query,
             compatible
                 ? new SqlIsNull(Scalar(query.Shape), true)
                 : new SqlConstant(false, typeof(bool))

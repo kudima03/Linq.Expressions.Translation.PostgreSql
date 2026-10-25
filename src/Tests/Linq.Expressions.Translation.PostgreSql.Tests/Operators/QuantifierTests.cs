@@ -427,4 +427,27 @@ public sealed record QuantifierTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void ChecksAllGroupsInHaving()
+    {
+        Expression query = Customers
+            .GroupBy(c => c.Region)
+            .Select(g => g.Count())
+            .Executed(q => q.All(n => n > 1));
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT NOT EXISTS (
+                    SELECT 1
+                    FROM "Customer" AS t0
+                    GROUP BY t0."Region"
+                    HAVING NOT (CAST(COUNT(*) AS integer) > 1)
+                )
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

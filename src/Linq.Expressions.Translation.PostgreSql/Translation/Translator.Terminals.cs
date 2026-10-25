@@ -261,8 +261,8 @@ internal sealed partial class Translator
     private SelectQuery Unmatched(SqlQuery source, MethodCallExpression call)
     {
         SelectQuery query = Restricted(source);
-        query.Where = And(
-            query.Where,
+        Restrict(
+            query,
             new SqlUnary("NOT ", Scalar(Bind(Lambda(call, 1), query.Shape)), typeof(bool))
         );
         return Existing(query);
