@@ -232,14 +232,16 @@ internal sealed partial class Translator
                 or ExpressionType.RightShift
             ? Masked(binary)
             : Sql(binary.Right);
-        return new SqlBinary(
-            symbol,
-            kind,
-            left,
-            right,
-            binary.Type,
-            left.Nullable || right.Nullable
-        );
+        return binary.NodeType == ExpressionType.Modulo && IsFloating(binary.Type)
+            ? Remainder(left, right, binary.Type)
+            : new SqlBinary(
+                symbol,
+                kind,
+                left,
+                right,
+                binary.Type,
+                left.Nullable || right.Nullable
+            );
     }
 
     private static (string Symbol, SqlBinaryKind Kind) Operator(BinaryExpression binary)
@@ -255,6 +257,38 @@ internal sealed partial class Translator
             : Arithmetic.TryGetValue(binary.NodeType, out string? arithmetic)
                 ? (arithmetic, SqlBinaryKind.Arithmetic)
             : throw Unsupported.Node(binary);
+    }
+
+    private static bool IsFloating(Type type)
+    {
+        Type value = ScalarTypes.Underlying(type);
+        return value == typeof(float) || value == typeof(double);
+    }
+
+    // PostgreSQL has no % for real or double precision: the remainder is taken as
+    // numeric and converted back. A literal is already numeric.
+    private static SqlCast Remainder(SqlExpression left, SqlExpression right, Type type)
+    {
+        SqlBinary remainder = new(
+            "%",
+            SqlBinaryKind.Arithmetic,
+            Exact(left),
+            Exact(right),
+            typeof(decimal),
+            left.Nullable || right.Nullable
+        );
+        return new SqlCast(
+            remainder,
+            ScalarTypes.Number(ScalarTypes.Underlying(type)),
+            type
+        );
+    }
+
+    private static SqlExpression Exact(SqlExpression operand)
+    {
+        return operand is SqlConstant
+            ? operand
+            : new SqlCast(operand, "numeric", typeof(decimal));
     }
 
     private SqlExpression Masked(BinaryExpression shift)

@@ -729,4 +729,96 @@ public sealed record ArithmeticTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void TakesRemainderOfDoubleAsNumeric()
+    {
+        Expression query = Orders.Select(o => o.Weight % 2).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(CAST(t0."Weight" AS numeric) % 2 AS double precision)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void TakesRemainderOfDoubleByDouble()
+    {
+        Expression query = Orders.Select(o => o.Weight % (o.Weight + 1)).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(
+                    CAST(t0."Weight" AS numeric) % CAST(t0."Weight" + 1 AS numeric)
+                AS double precision)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void TakesRemainderOfFloatAsNumeric()
+    {
+        Expression query = Orders.Select(o => (float)o.Weight % 2).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(CAST(CAST(t0."Weight" AS real) AS numeric) % 2 AS real)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void FiltersByDoubleRemainder()
+    {
+        Expression query = Orders
+            .Where(o => o.Weight % 2.5 == 0)
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE CAST(CAST(t0."Weight" AS numeric) % 2.5 AS double precision) = 0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OrdersByNullableDoubleRemainder()
+    {
+        Expression query = Orders
+            .OrderBy(o => (double?)o.Priority % 2)
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                ORDER BY CAST(
+                    CAST(CAST(t0."Priority" AS double precision) AS numeric) % 2
+                AS double precision) NULLS FIRST
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }
