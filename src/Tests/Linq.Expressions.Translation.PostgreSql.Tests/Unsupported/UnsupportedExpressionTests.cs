@@ -555,17 +555,6 @@ public sealed record UnsupportedExpressionTests
     }
 
     [Fact]
-    public void RejectsToday()
-    {
-        Expression query = Orders.Select(o => DateTime.Today).Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("Today", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void RejectsDateTimeConstructionFromColumns()
     {
         Expression query = Orders.Select(o => new DateTime(o.Quantity, 1, 1)).Expression;

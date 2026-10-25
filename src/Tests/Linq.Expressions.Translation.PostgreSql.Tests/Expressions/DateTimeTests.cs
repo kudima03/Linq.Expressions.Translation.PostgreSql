@@ -1489,4 +1489,24 @@ public sealed record DateTimeTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void TranslatesTodayAsStartOfLocalDay()
+    {
+        Expression query = Orders
+            .Where(o => o.CreatedAt >= DateTime.Today)
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE t0."CreatedAt" >= DATE_TRUNC('day', LOCALTIMESTAMP)
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

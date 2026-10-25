@@ -90,14 +90,27 @@ internal sealed partial class Translator
             : extract;
     }
 
+    // Only the clocks reach here; everything else static is evaluated.
     private static SqlExpression StaticMember(MemberInfo member)
     {
-        return member.Name == nameof(DateTime.Now)
-            && member.DeclaringType == typeof(DateTime)
-                ? new SqlFragment("LOCALTIMESTAMP", typeof(DateTime))
-            : member.Name != nameof(DateTime.Today)
-                ? new SqlFunction("NOW", [], ((PropertyInfo)member).PropertyType)
-            : throw Unsupported.Member(member);
+        SqlFragment local = new("LOCALTIMESTAMP", typeof(DateTime));
+        return member.DeclaringType != typeof(DateTime)
+            ? Now(member)
+            : member.Name switch
+            {
+                nameof(DateTime.Now) => local,
+                nameof(DateTime.Today) => new SqlFunction(
+                    "DATE_TRUNC",
+                    [Text("day"), local],
+                    typeof(DateTime)
+                ),
+                _ => Now(member),
+            };
+    }
+
+    private static SqlFunction Now(MemberInfo member)
+    {
+        return new SqlFunction("NOW", [], ((PropertyInfo)member).PropertyType);
     }
 
     private static SqlConstant Text(string text)
