@@ -357,20 +357,34 @@ internal sealed partial class Translator
 
     private static SqlExpression Joined(List<SqlExpression> parts)
     {
-        return parts.Count == 0 ? Text(string.Empty)
-            : parts is [{ Type: Type type } part] && type != typeof(string)
-                ? new SqlCast(part, "text", typeof(string))
-            : parts.Aggregate(
-                (left, right) =>
-                    new SqlBinary(
-                        "||",
-                        SqlBinaryKind.Concatenation,
-                        left,
-                        right,
-                        typeof(string),
-                        false
-                    )
-            );
+        return parts.Count == 0
+            ? Text(string.Empty)
+            : Textual(parts)
+                .Aggregate(
+                    (left, right) =>
+                        new SqlBinary(
+                            "||",
+                            SqlBinaryKind.Concatenation,
+                            left,
+                            right,
+                            typeof(string),
+                            false
+                        )
+                );
+    }
+
+    // || needs a text operand: a lone value is cast, and so is the first of two leading
+    // values that are not text; from then on the left operand is text.
+    private static IEnumerable<SqlExpression> Textual(List<SqlExpression> parts)
+    {
+        return !IsText(parts[0]) && (parts.Count == 1 || !IsText(parts[1]))
+            ? parts.Skip(1).Prepend(new SqlCast(parts[0], "text", typeof(string)))
+            : parts;
+    }
+
+    private static bool IsText(SqlExpression part)
+    {
+        return part.Type == typeof(string);
     }
 
     private void Concatenated(Expression expression, List<SqlExpression> parts)
