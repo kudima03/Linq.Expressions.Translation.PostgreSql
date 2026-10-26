@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Translation of `Math.Round` (and `decimal.Round`/`double.Round`) half to even, .NET's default, of decimals and doubles, with or without digits, and of `Math.Round` of doubles away from zero. The half-way case is decided explicitly, as PostgreSQL rounds a numeric half away from zero and a double by the platform's rule.
+
 ## [0.1.0-preview.0.3.0] - 2026-10-25
 
 ### Added
