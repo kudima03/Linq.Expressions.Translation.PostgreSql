@@ -228,65 +228,6 @@ public sealed record UnsupportedExpressionTests
     }
 
     [Fact]
-    public void RejectsRoundingOfDouble()
-    {
-        Expression query = Orders.Select(o => Math.Round(o.Weight)).Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("Round", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsRoundingOfDoubleAwayFromZero()
-    {
-        Expression query = Orders
-            .Select(o => Math.Round(o.Weight, MidpointRounding.AwayFromZero))
-            .Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("Round", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsBankersRoundingOfDecimal()
-    {
-        Expression query = Orders.Select(o => Math.Round(o.Total)).Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("Round", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsBankersRoundingOfDecimalToDigits()
-    {
-        Expression query = Orders.Select(o => Math.Round(o.Total, 2)).Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("Round", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsRoundingToEven()
-    {
-        Expression query = Orders
-            .Select(o => Math.Round(o.Total, 2, MidpointRounding.ToEven))
-            .Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("Round", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void RejectsSine()
     {
         Expression query = Orders.Select(o => Math.Sin(o.Weight)).Expression;

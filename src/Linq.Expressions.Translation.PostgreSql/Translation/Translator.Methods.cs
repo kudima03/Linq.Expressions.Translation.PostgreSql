@@ -618,6 +618,7 @@ internal sealed partial class Translator
                     && call.Arguments[^1]
                         is ConstantExpression { Value: MidpointRounding.AwayFromZero } =>
                 new SqlFunction("ROUND", arguments[..^1], call.Type),
+            nameof(Math.Round) => Rounded(call, arguments[0]),
             _ when MathFunctions.TryGetValue(name, out string? function) =>
                 new SqlFunction(function, arguments, call.Type),
             _ => throw Unsupported.Method(call.Method),
