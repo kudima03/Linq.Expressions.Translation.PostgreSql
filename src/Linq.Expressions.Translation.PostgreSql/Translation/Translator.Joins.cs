@@ -187,24 +187,37 @@ internal sealed partial class Translator
         return shape.Map((value, name) => value.AsNullable(), null);
     }
 
+    // Join never matches a null key, as = does not; a composite key is an object that
+    // is never null itself and compares its members with the default comparer, where
+    // null equals null.
     private static SqlExpression Matching(Shape left, Shape right)
     {
         return left is ObjectShape composite
-            ? composite
-                .Members.Zip(
-                    ((ObjectShape)right).Members,
-                    (first, second) => Matching(first.Shape, second.Shape)
-                )
-                .Aggregate((first, second) => Logical("AND", first, second))
-            : Keyed(Scalar(left), Scalar(right));
+            ? Members(composite, (ObjectShape)right)
+            : Compare("=", Scalar(left), Scalar(right));
     }
 
-    // Join matches null keys with each other, which = never does.
-    private static SqlBinary Keyed(SqlExpression left, SqlExpression right)
+    private static SqlExpression Members(ObjectShape left, ObjectShape right)
     {
-        return left.Nullable && right.Nullable
-            ? Distinct(left, right, false)
-            : Compare("=", left, right);
+        return left
+            .Members.Zip(
+                right.Members,
+                (first, second) => Keyed(first.Shape, second.Shape)
+            )
+            .Aggregate((first, second) => Logical("AND", first, second));
+    }
+
+    private static SqlExpression Keyed(Shape left, Shape right)
+    {
+        if (left is ObjectShape composite)
+        {
+            return Members(composite, (ObjectShape)right);
+        }
+        SqlExpression first = Scalar(left);
+        SqlExpression second = Scalar(right);
+        return first.Nullable && second.Nullable
+            ? Distinct(first, second, false)
+            : Compare("=", first, second);
     }
 
     private static SqlExpression Conjoined(SqlExpression first, SqlExpression? second)

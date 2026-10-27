@@ -237,7 +237,81 @@ public sealed record JoinTests
                 """
                 SELECT t0."Id", t1."Id" AS "ManagerOf"
                 FROM "Employee" AS t0
-                INNER JOIN "Employee" AS t1 ON t0."ManagerId" IS NOT DISTINCT FROM t1."ManagerId"
+                INNER JOIN "Employee" AS t1 ON t0."ManagerId" = t1."ManagerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // An anonymous key is never null itself; its members compare with the default
+    // comparer, where null equals null.
+    [Fact]
+    public void JoinsOnCompositeKeyWithTwoNullableMembers()
+    {
+        Expression query = Employees
+            .Join(
+                Employees,
+                e => new { e.ManagerId, e.Name },
+                m => new { m.ManagerId, m.Name },
+                (e, m) => new { Employee = e.Id, Peer = m.Id }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id" AS "Employee", t1."Id" AS "Peer"
+                FROM "Employee" AS t0
+                INNER JOIN "Employee" AS t1 ON (t0."ManagerId" IS NOT DISTINCT FROM t1."ManagerId") AND (t0."Name" = t1."Name")
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void JoinsOnCompositeKeyWithOneNullableMember()
+    {
+        Expression query = Employees
+            .Join(
+                Employees,
+                e => new { Key = e.ManagerId, e.Name },
+                m => new { Key = (int?)m.Id, m.Name },
+                (e, m) => new { Employee = e.Id, Manager = m.Id }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id" AS "Employee", t1."Id" AS "Manager"
+                FROM "Employee" AS t0
+                INNER JOIN "Employee" AS t1 ON (t0."ManagerId" = t1."Id") AND (t0."Name" = t1."Name")
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void JoinsOnNestedCompositeKeyWithNullableMembers()
+    {
+        Expression query = Employees
+            .Join(
+                Employees,
+                e => new { Manager = new { e.ManagerId }, e.Name },
+                m => new { Manager = new { m.ManagerId }, m.Name },
+                (e, m) => new { Employee = e.Id, Peer = m.Id }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id" AS "Employee", t1."Id" AS "Peer"
+                FROM "Employee" AS t0
+                INNER JOIN "Employee" AS t1 ON (t0."ManagerId" IS NOT DISTINCT FROM t1."ManagerId") AND (t0."Name" = t1."Name")
                 """
             ),
             new PostgreSqlQuery(query).TextValue

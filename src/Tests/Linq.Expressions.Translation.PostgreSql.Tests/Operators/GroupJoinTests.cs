@@ -30,6 +30,33 @@ public sealed record GroupJoinTests
     }
 
     [Fact]
+    public void CountsGroupedRowsOnTwoNullableKeysWithPlainEquality()
+    {
+        Expression query = Employees
+            .GroupJoin(
+                Employees,
+                e => e.ManagerId,
+                m => m.ManagerId,
+                (e, ms) => new { e.Id, Peers = ms.Count() }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", (
+                    SELECT CAST(COUNT(*) AS integer)
+                    FROM "Employee" AS t1
+                    WHERE t1."ManagerId" = t0."ManagerId"
+                ) AS "Peers"
+                FROM "Employee" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
     public void CountsGroupedRowsWithPredicate()
     {
         Expression query = Customers

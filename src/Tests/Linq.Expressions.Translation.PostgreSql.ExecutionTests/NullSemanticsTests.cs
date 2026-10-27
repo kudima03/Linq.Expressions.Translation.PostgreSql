@@ -112,13 +112,28 @@ public sealed class NullSemanticsTests(Database database)
         );
     }
 
-    [Fact(
-        Skip = "#60: item = ANY (array) is NULL, not FALSE, when the array holds a NULL"
-    )]
+    [Fact]
     public void MissesItemInArrayColumnHoldingNull()
     {
         database.AssertSameRows(
             Orders.Where(o => !o.Tags.Contains("gift")).Select(o => o.Id)
+        );
+    }
+
+    [Fact]
+    public void ProjectsArrayMembershipAsFalse()
+    {
+        database.AssertSameSequence(
+            Orders
+                .OrderBy(o => o.Id)
+                .Select(o => new
+                {
+                    o.Id,
+                    Gift = o.Tags.Contains("gift"),
+                    NotGift = !o.Tags.Contains("gift"),
+                    Numbered = o.Tags.Contains(o.Number),
+                    Express = o.Tags.Any(t => t == "express"),
+                })
         );
     }
 
@@ -229,7 +244,7 @@ public sealed class NullSemanticsTests(Database database)
         database.AssertSameRows(Customers.Select(c => c.Email).OfType<string>());
     }
 
-    [Fact(Skip = "#59: IS NOT DISTINCT FROM pairs NULL keys, LINQ to Objects does not")]
+    [Fact]
     public void JoinsOnNullableKeys()
     {
         database.AssertSameRows(
@@ -239,6 +254,50 @@ public sealed class NullSemanticsTests(Database database)
                 m => m.ManagerId,
                 (e, m) => new { Employee = e.Id, Peer = m.Id }
             )
+        );
+    }
+
+    [Fact]
+    public void JoinsOnCompositeKeysWithNullableMembers()
+    {
+        database.AssertSameRows(
+            Employees.Join(
+                Employees,
+                e => new { e.ManagerId, e.Name },
+                m => new { m.ManagerId, m.Name },
+                (e, m) => new { Employee = e.Id, Peer = m.Id }
+            )
+        );
+    }
+
+    [Fact]
+    public void GroupJoinsOnNullableKeys()
+    {
+        database.AssertSameRows(
+            Employees.GroupJoin(
+                Employees,
+                e => e.ManagerId,
+                m => m.ManagerId,
+                (e, ms) => new { e.Id, Peers = ms.Count() }
+            )
+        );
+    }
+
+    [Fact]
+    public void LeftJoinsOnNullableKeys()
+    {
+        database.AssertSameRows(
+            Employees
+                .GroupJoin(
+                    Employees,
+                    e => e.ManagerId,
+                    m => m.ManagerId,
+                    (e, ms) => new { e, ms }
+                )
+                .SelectMany(
+                    x => x.ms.DefaultIfEmpty(),
+                    (x, m) => new { x.e.Id, Peer = m == null ? 0 : m.Id }
+                )
         );
     }
 }

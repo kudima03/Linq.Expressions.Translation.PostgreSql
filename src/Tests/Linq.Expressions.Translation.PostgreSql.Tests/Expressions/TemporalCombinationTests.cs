@@ -140,6 +140,9 @@ public sealed record TemporalCombinationTests
         );
     }
 
+    // C# compares DateTime values by their ticks whatever their kind, so a Utc constant
+    // is a timestamp like the column; a timestamptz would convert the column through
+    // the session time zone.
     [Fact]
     public void ComparesWithCapturedUtcMoment()
     {
@@ -154,7 +157,29 @@ public sealed record TemporalCombinationTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE t0."CreatedAt" >= TIMESTAMPTZ '2024-05-06 07:08:09+00'
+                WHERE t0."CreatedAt" >= TIMESTAMP '2024-05-06 07:08:09'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // Converted to a DateTimeOffset, a Utc constant takes the zero offset, as in C#.
+    [Fact]
+    public void ComparesDateTimeOffsetWithCapturedUtcMoment()
+    {
+        DateTime cutoff = new(2024, 5, 6, 7, 8, 9, DateTimeKind.Utc);
+        Expression query = Orders
+            .Where(o => o.PaidAt >= cutoff)
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE t0."PaidAt" >= TIMESTAMPTZ '2024-05-06 07:08:09+00'
                 """
             ),
             new PostgreSqlQuery(query).TextValue

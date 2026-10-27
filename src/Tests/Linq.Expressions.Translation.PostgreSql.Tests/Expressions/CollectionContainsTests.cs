@@ -838,7 +838,27 @@ public sealed record CollectionContainsTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE NOT ('vip' = ANY (t0."Tags"))
+                WHERE NOT COALESCE('vip' = ANY (t0."Tags"), FALSE)
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void FiltersByArrayColumnNotContainsColumn()
+    {
+        Expression query = Orders
+            .Where(o => !o.Tags.Contains(o.Number))
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE NOT COALESCE(t0."Number" = ANY (t0."Tags"), FALSE)
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -945,7 +965,40 @@ public sealed record CollectionContainsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT 'vip' = ANY (t0."Tags")
+                SELECT COALESCE('vip' = ANY (t0."Tags"), FALSE)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SelectsArrayAnyEqualityAsBooleanValue()
+    {
+        Expression query = Orders.Select(o => o.Tags.Any(t => t == "vip")).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT COALESCE('vip' = ANY (t0."Tags"), FALSE)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // A condition is a predicate position, where NULL already counts as false.
+    [Fact]
+    public void SelectsArrayContainsInConditionWithoutCoalesce()
+    {
+        Expression query = Orders.Select(o => o.Tags.Contains("vip") ? 1 : 0).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CASE WHEN 'vip' = ANY (t0."Tags") THEN 1 ELSE 0 END
                 FROM "Order" AS t0
                 """
             ),
