@@ -78,21 +78,27 @@ public sealed class StringSemanticsTests(Database database)
         );
     }
 
-    [Fact(
-        Skip = "#62: LENGTH and STRPOS count code points, .NET counts UTF-16 code units"
-    )]
-    public void CountsUtf16CodeUnits()
+    // Lengths and positions count code points in PostgreSQL and UTF-16 code units in
+    // .NET, as the README notes: a character outside the Basic Multilingual Plane counts
+    // once in SQL and twice in memory, so the two sides are asserted separately.
+    [Fact]
+    public void CountsCodePointsNotUtf16CodeUnits()
     {
-        database.AssertSameSequence(
-            Customers
-                .OrderBy(c => c.Id)
-                .Select(c => new
-                {
-                    c.Id,
-                    c.Name.Length,
-                    Space = c.Name.IndexOf(' '),
-                })
+        IQueryable<ValueTuple<int, int>> query = Customers
+            .Where(c => c.Name == "\U0001F600 smile")
+            .Select(c => new ValueTuple<int, int>(c.Name.Length, c.Name.IndexOf(' ')));
+
+        (int Length, int Space) memory = new EnumerableQuery<ValueTuple<int, int>>(
+            InMemory.Rewrite(query.Expression)
+        )
+            .AsEnumerable()
+            .Single();
+        object?[] sql = Assert.Single(
+            database.Query(new PostgreSqlQuery(query.Expression).TextValue).Rows
         );
+
+        Assert.Equal((8, 2), memory);
+        Assert.Equal([7, 1], sql);
     }
 
     [Fact]
