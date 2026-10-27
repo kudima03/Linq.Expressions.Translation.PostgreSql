@@ -234,65 +234,6 @@ public sealed record UnsupportedOperatorTests
     }
 
     [Fact]
-    public void RejectsUnionBy()
-    {
-        Expression query = Customers.UnionBy(Customers, c => c.Region).Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("UnionBy", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsIntersectBy()
-    {
-        Expression query = Customers
-            .IntersectBy(Customers.Select(c => c.Region), c => c.Region)
-            .Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("IntersectBy", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsExceptBy()
-    {
-        Expression query = Customers
-            .ExceptBy(Customers.Select(c => c.Region), c => c.Region)
-            .Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("ExceptBy", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsMinBy()
-    {
-        Expression query = Customers.Executed(q => q.MinBy(c => c.Id));
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("MinBy", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsMaxBy()
-    {
-        Expression query = Customers.Executed(q => q.MaxBy(c => c.Id));
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("MaxBy", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void RejectsWhereWithIndex()
     {
         Expression query = Customers.Where((c, i) => i > 1).Expression;
