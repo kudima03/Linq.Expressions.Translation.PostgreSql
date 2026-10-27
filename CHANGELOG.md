@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-preview.0.5.1] - 2026-10-27
+
+### Fixed
+
+- `Join` and `GroupJoin` keys compare with `=`, so null keys never match, as in LINQ to Objects; the members of a composite key (an anonymous type or a tuple) still match with `IS NOT DISTINCT FROM` when both are nullable.
+- `Contains` on an array column (`= ANY (...)`) of a non-null item is `COALESCE(..., FALSE)` as a value or under `NOT`, as an array may hold `NULL` elements.
+- A `Utc` `DateTime` constant renders as a `TIMESTAMP` instead of a `TIMESTAMPTZ`, as C# compares `DateTime` values by their ticks whatever their kind; it becomes a `TIMESTAMPTZ` only once converted to a `DateTimeOffset`.
+
+### Changed
+
+- String lengths and positions are documented to count code points, as PostgreSQL does, not UTF-16 code units.
+
 ## [0.1.0-preview.0.5.0] - 2026-10-27
 
 ### Added
