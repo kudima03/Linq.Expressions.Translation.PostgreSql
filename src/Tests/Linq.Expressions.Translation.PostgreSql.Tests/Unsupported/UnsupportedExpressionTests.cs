@@ -448,17 +448,6 @@ public sealed record UnsupportedExpressionTests
     }
 
     [Fact]
-    public void RejectsGuidParsingOfColumn()
-    {
-        Expression query = Orders.Select(o => Guid.Parse(o.Number)).Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("Parse", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void RejectsConvertToInteger()
     {
         Expression query = Orders.Select(o => Convert.ToInt32(o.Number)).Expression;
@@ -759,17 +748,6 @@ public sealed record UnsupportedExpressionTests
             new PostgreSqlQuery(query).TextValue
         );
         Assert.Contains("IndexOfAny", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsTicksFromColumn()
-    {
-        Expression query = Orders.Select(o => o.CreatedAt.AddTicks(o.Points)).Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("AddTicks", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -1,12 +1,10 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
-
 using System.Globalization;
 
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record ParseSemanticsTests
 {
-    [Fact(Skip = "long.Parse is not translated (#44).")]
+    [Fact]
     public void ParsesTextAsLong()
     {
         Expression query = Orders
@@ -26,7 +24,7 @@ public sealed record ParseSemanticsTests
         );
     }
 
-    [Fact(Skip = "decimal.Parse is not translated (#44).")]
+    [Fact]
     public void ParsesTextAsDecimal()
     {
         Expression query = Orders
@@ -46,7 +44,7 @@ public sealed record ParseSemanticsTests
         );
     }
 
-    [Fact(Skip = "bool.Parse is not translated (#44).")]
+    [Fact]
     public void ParsesTextAsBoolean()
     {
         Expression query = Orders.Select(o => bool.Parse(o.Number)).Expression;
@@ -62,7 +60,7 @@ public sealed record ParseSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateOnly.Parse is not translated (#44).")]
+    [Fact]
     public void ParsesTextAsDateOnly()
     {
         Expression query = Orders
@@ -80,7 +78,7 @@ public sealed record ParseSemanticsTests
         );
     }
 
-    [Fact(Skip = "TimeOnly.Parse is not translated (#44).")]
+    [Fact]
     public void ParsesTextAsTimeOnly()
     {
         Expression query = Orders
@@ -98,7 +96,7 @@ public sealed record ParseSemanticsTests
         );
     }
 
-    [Fact(Skip = "DateTime.Parse is not translated (#44).")]
+    [Fact]
     public void ParsesTextAsUniversalDateTime()
     {
         Expression query = Orders
@@ -122,7 +120,7 @@ public sealed record ParseSemanticsTests
         );
     }
 
-    [Fact(Skip = "Guid.Parse is not translated (#44).")]
+    [Fact]
     public void ParsesTextAsGuid()
     {
         Expression query = Orders.Select(o => Guid.Parse(o.Number)).Expression;
@@ -138,7 +136,7 @@ public sealed record ParseSemanticsTests
         );
     }
 
-    [Fact(Skip = "long.Parse is not translated (#44).")]
+    [Fact]
     public void ParsesEmptyTextAsNull()
     {
         Expression query = Orders
@@ -164,7 +162,7 @@ public sealed record ParseSemanticsTests
         );
     }
 
-    [Fact(Skip = "long.Parse is not translated (#44).")]
+    [Fact]
     public void FiltersByParsedLong()
     {
         Expression query = Orders
@@ -187,7 +185,7 @@ public sealed record ParseSemanticsTests
         );
     }
 
-    [Fact(Skip = "Guid.Parse is not translated (#44).")]
+    [Fact]
     public void ComparesParsedGuidWithColumn()
     {
         Expression query = Orders
@@ -205,5 +203,152 @@ public sealed record ParseSemanticsTests
             ),
             new PostgreSqlQuery(query).TextValue
         );
+    }
+
+    [Fact]
+    public void ParsesTextAsInteger()
+    {
+        Expression query = Orders
+            .Select(o =>
+                int.Parse(o.Number, NumberStyles.Integer, CultureInfo.InvariantCulture)
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(t0."Number" AS integer)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ParsesTextAsDouble()
+    {
+        Expression query = Orders
+            .Select(o => double.Parse(o.Number, CultureInfo.InvariantCulture))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(t0."Number" AS double precision)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ParsesTextAsDateTimeWithoutStyles()
+    {
+        Expression query = Orders
+            .Select(o => DateTime.Parse(o.Number, CultureInfo.InvariantCulture))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(t0."Number" AS timestamp)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ParsesTextAsGuidWithProvider()
+    {
+        Expression query = Orders
+            .Select(o => Guid.Parse(o.Number, CultureInfo.InvariantCulture))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(t0."Number" AS uuid)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void RejectsParsingWithCurrentCulture()
+    {
+        Expression query = Orders.Select(o => long.Parse(o.Number)).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Parse", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsParsingDateWithCurrentCulture()
+    {
+        Expression query = Orders.Select(o => DateOnly.Parse(o.Number)).Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Parse", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsParsingWithSpecificCulture()
+    {
+        Expression query = Orders
+            .Select(o =>
+                long.Parse(
+                    o.Number,
+                    NumberStyles.Integer,
+                    CultureInfo.GetCultureInfo("de-DE")
+                )
+            )
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Parse", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsParsingWithComputedCulture()
+    {
+        Expression query = Orders
+            .Select(o =>
+                long.Parse(
+                    o.Number,
+                    NumberStyles.Integer,
+                    o.IsPaid ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture
+                )
+            )
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Parse", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsParsingIntoDuration()
+    {
+        Expression query = Orders
+            .Select(o => TimeSpan.Parse(o.Number, CultureInfo.InvariantCulture))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Parse", exception.Message, StringComparison.Ordinal);
     }
 }

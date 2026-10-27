@@ -26,7 +26,7 @@ internal sealed class SetOperationQuery(
 
     private static void Operand(SqlWriter writer, SqlQuery query, bool nested)
     {
-        bool parenthesized = nested || query is SelectQuery { IsPaged: true };
+        bool parenthesized = nested || query is SelectQuery { KeepsOrder: true };
         _ = writer.Append(parenthesized ? "(" : string.Empty);
         query.Render(writer);
         _ = writer.Append(parenthesized ? ")" : string.Empty);

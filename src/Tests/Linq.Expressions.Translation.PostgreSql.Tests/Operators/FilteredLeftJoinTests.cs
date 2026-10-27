@@ -1,11 +1,10 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
 #pragma warning disable IDE0100 // the comparison with a boolean literal is under test
 
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record FilteredLeftJoinTests
 {
-    [Fact(Skip = "A filter on the GroupJoin matches is not moved into ON (#48).")]
+    [Fact]
     public void LeftJoinsWithFilterOnMatches()
     {
         Expression query = Orders
@@ -28,7 +27,7 @@ public sealed record FilteredLeftJoinTests
         );
     }
 
-    [Fact(Skip = "Chained filters on the GroupJoin matches are not moved into ON (#48).")]
+    [Fact]
     public void LeftJoinsWithChainedFiltersOnMatches()
     {
         Expression query = Customers
@@ -51,7 +50,7 @@ public sealed record FilteredLeftJoinTests
         );
     }
 
-    [Fact(Skip = "A filter on the join into group is not moved into ON (#48).")]
+    [Fact]
     public void LeftJoinsWithFilterOnMatchesInQuerySyntax()
     {
         Expression query = (
@@ -73,7 +72,7 @@ public sealed record FilteredLeftJoinTests
         );
     }
 
-    [Fact(Skip = "A correlated filter on the matches is not moved into ON (#48).")]
+    [Fact]
     public void LeftJoinsWithFilterCorrelatedToOuterRow()
     {
         Expression query = (
@@ -95,7 +94,7 @@ public sealed record FilteredLeftJoinTests
         );
     }
 
-    [Fact(Skip = "A nullable equality on the matches is not moved into ON (#48).")]
+    [Fact]
     public void LeftJoinsWithNullableEqualityFilterOnMatches()
     {
         Expression query = Customers
@@ -118,7 +117,7 @@ public sealed record FilteredLeftJoinTests
         );
     }
 
-    [Fact(Skip = "A nullable inequality on the matches is not moved into ON (#48).")]
+    [Fact]
     public void LeftJoinsWithNullableInequalityFilterOnMatches()
     {
         Expression query = Customers
@@ -139,5 +138,90 @@ public sealed record FilteredLeftJoinTests
             ),
             new PostgreSqlQuery(query).TextValue
         );
+    }
+
+    [Fact]
+    public void InnerJoinsWithFilterOnMatches()
+    {
+        Expression query = Customers
+            .GroupJoin(Orders, c => c.Id, o => o.CustomerId, (c, os) => new { c, os })
+            .SelectMany(
+                x => x.os.Where(o => o.IsPaid),
+                (x, o) => new { x.c.Name, o.Number }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", t1."Number"
+                FROM "Customer" AS t0
+                INNER JOIN "Order" AS t1 ON (t0."Id" = t1."CustomerId") AND t1."IsPaid"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void LeftJoinsWithFilterOnMatchesOfFilteredSource()
+    {
+        Expression query = Customers
+            .GroupJoin(
+                Orders.Where(o => o.IsPaid),
+                c => c.Id,
+                o => o.CustomerId,
+                (c, os) => new { c, os }
+            )
+            .SelectMany(
+                x => x.os.Where(o => o.Total > 100).DefaultIfEmpty(),
+                (x, o) => new { x.c.Name, OrderId = (int?)o!.Id }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", t1."Id" AS "OrderId"
+                FROM "Customer" AS t0
+                LEFT JOIN "Order" AS t1 ON (t0."Id" = t1."CustomerId") AND t1."IsPaid" AND (t1."Total" > 100)
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void RejectsPagedMatchesInLeftJoin()
+    {
+        Expression query = Customers
+            .GroupJoin(Orders, c => c.Id, o => o.CustomerId, (c, os) => new { c, os })
+            .SelectMany(
+                x => x.os.Take(1).DefaultIfEmpty(),
+                (x, o) => new { x.c.Name, OrderId = (int?)o!.Id }
+            )
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("SelectMany", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsIndexedFilterOnMatchesInLeftJoin()
+    {
+        Expression query = Customers
+            .GroupJoin(Orders, c => c.Id, o => o.CustomerId, (c, os) => new { c, os })
+            .SelectMany(
+                x => x.os.Where((o, index) => o.IsPaid).DefaultIfEmpty(),
+                (x, o) => new { x.c.Name, OrderId = (int?)o!.Id }
+            )
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Where", exception.Message, StringComparison.Ordinal);
     }
 }

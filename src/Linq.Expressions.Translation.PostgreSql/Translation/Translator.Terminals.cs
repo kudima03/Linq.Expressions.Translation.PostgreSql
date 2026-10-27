@@ -117,7 +117,7 @@ internal sealed partial class Translator
 
     private SqlQuery Operand(MethodCallExpression call)
     {
-        return call.Method.GetParameters().Any(IsRejected)
+        return call.Method.GetParameters().Any(IsRejected) && !IsOrdinal(call)
             ? throw Unsupported.Method(call.Method)
             : Query(call.Arguments[0]);
     }
@@ -325,7 +325,7 @@ internal sealed partial class Translator
 
     private static SelectQuery Unordered(SelectQuery query)
     {
-        if (!query.IsPaged)
+        if (!query.KeepsOrder)
         {
             query.Orderings = [];
         }

@@ -102,9 +102,7 @@ internal sealed partial class Translator
     {
         if (root is EnumerableQuery)
         {
-            throw new NotSupportedException(
-                $"The in-memory source '{root.GetType().Name}' cannot be translated into SQL."
-            );
+            return OneRow(root);
         }
         TableMapping table = new(root.ElementType);
         string alias = NextAlias();
@@ -124,6 +122,18 @@ internal sealed partial class Translator
         );
     }
 
+    // A one-element in-memory root selects one row without FROM: a row of aggregates
+    // over tables. Any other in-memory sequence has no table to read.
+    private static SelectQuery OneRow(IQueryable root)
+    {
+        string source = root.GetType().Name;
+        return Enumerable.Cast<object?>(root).Take(2).Count() == 1
+            ? new SelectQuery(null, new RowShape(source))
+            : throw new NotSupportedException(
+                $"The in-memory source '{source}' cannot be translated into SQL."
+            );
+    }
+
     private SqlQuery Operator(MethodCallExpression call)
     {
         return Terminals.Contains(call.Method.Name)
@@ -137,21 +147,35 @@ internal sealed partial class Translator
         {
             nameof(Queryable.Where) => Where(source, Lambda(call, 1)),
             nameof(Queryable.Select) => Select(source, Lambda(call, 1)),
-            nameof(Queryable.Order) => Order(source, false),
-            nameof(Queryable.OrderDescending) => Order(source, true),
-            nameof(Queryable.OrderBy) => Order(source, Lambda(call, 1), false, false),
+            nameof(Queryable.Order) => Order(source, false, IsOrdinal(call)),
+            nameof(Queryable.OrderDescending) => Order(source, true, IsOrdinal(call)),
+            nameof(Queryable.OrderBy) => Order(
+                source,
+                Lambda(call, 1),
+                false,
+                false,
+                IsOrdinal(call)
+            ),
             nameof(Queryable.OrderByDescending) => Order(
                 source,
                 Lambda(call, 1),
                 true,
-                false
+                false,
+                IsOrdinal(call)
             ),
-            nameof(Queryable.ThenBy) => Order(source, Lambda(call, 1), false, true),
+            nameof(Queryable.ThenBy) => Order(
+                source,
+                Lambda(call, 1),
+                false,
+                true,
+                IsOrdinal(call)
+            ),
             nameof(Queryable.ThenByDescending) => Order(
                 source,
                 Lambda(call, 1),
                 true,
-                true
+                true,
+                IsOrdinal(call)
             ),
             nameof(Queryable.Skip) => Skip(source, Count(call.Arguments[1])),
             nameof(Queryable.Take) => Take(source, Count(call.Arguments[1])),
@@ -161,6 +185,7 @@ internal sealed partial class Translator
             ),
             nameof(Queryable.SkipLast) => SkipLast(source, call),
             nameof(Queryable.Distinct) => Distinct(source),
+            nameof(Queryable.DistinctBy) => DistinctBy(source, call),
             nameof(Queryable.Reverse) => Reverse(source, call.Method),
             nameof(Queryable.Cast) or nameof(Queryable.OfType) => Cast(source, call),
             nameof(Queryable.GroupBy) => GroupBy(source, call),
@@ -215,25 +240,27 @@ internal sealed partial class Translator
         SqlQuery source,
         LambdaExpression selector,
         bool descending,
-        bool then
+        bool then,
+        bool ordinal
     )
     {
         SelectQuery query = Open(source, Barrier.Paging | Barrier.Distinct);
-        return Ordered(query, Bind(selector, query.Shape), descending, then);
+        return Ordered(query, Bind(selector, query.Shape), descending, then, ordinal);
     }
 
     // Order() sorts the elements themselves.
-    private SelectQuery Order(SqlQuery source, bool descending)
+    private SelectQuery Order(SqlQuery source, bool descending, bool ordinal)
     {
         SelectQuery query = Open(source, Barrier.Paging | Barrier.Distinct);
-        return Ordered(query, query.Shape, descending, false);
+        return Ordered(query, query.Shape, descending, false, ordinal);
     }
 
     private static SelectQuery Ordered(
         SelectQuery query,
         Shape key,
         bool descending,
-        bool then
+        bool then,
+        bool ordinal
     )
     {
         // A constant key orders nothing; as a bare literal in ORDER BY it would be a
@@ -242,7 +269,10 @@ internal sealed partial class Translator
         [
             .. key.Columns()
                 .Where(column => column.Value is not SqlConstant)
-                .Select(column => new Ordering(column.Value, descending)),
+                .Select(column => new Ordering(
+                    ordinal ? new SqlCollation(column.Value) : column.Value,
+                    descending
+                )),
         ];
         query.Orderings = then
             ? [.. query.Orderings, .. keys]
@@ -317,6 +347,32 @@ internal sealed partial class Translator
         ];
         query.Distinct = true;
         return query;
+    }
+
+    // DISTINCT ON keeps the first row of each key in ORDER BY order, which has to start
+    // with the keys. An order of the source that does not is restored outside.
+    private SelectQuery DistinctBy(SqlQuery source, MethodCallExpression call)
+    {
+        SelectQuery query = Open(source, Barrier.Paging | Barrier.Distinct);
+        List<SqlExpression> keys = Partitioned(Bind(Lambda(call, 1), query.Shape));
+        query.DistinctOn = keys;
+        HashSet<string> leading =
+        [
+            .. query
+                .Orderings.Take(keys.Count)
+                .Select(ordering => SqlWriter.Text(ordering.Key)),
+        ];
+        if (
+            query.Orderings.Count == 0
+            || keys.All(key => leading.Contains(SqlWriter.Text(key)))
+        )
+        {
+            return query;
+        }
+        List<Ordering> order = query.Orderings;
+        SelectQuery outer = Wrap(query);
+        query.Orderings = [.. keys.Select(key => new Ordering(key, false)), .. order];
+        return outer;
     }
 
     private SelectQuery Reverse(SqlQuery source, MethodInfo method)
@@ -398,6 +454,13 @@ internal sealed partial class Translator
                 (barriers & Barrier.Projection) != 0
                 && query.GroupBy is not null
                 && query.Shape is not GroupingShape
+            )
+            // DISTINCT ON keeps its rows last, after WHERE, GROUP BY and joins, so only
+            // a projection, paging or a plain use of the rows extends its SELECT.
+            || (
+                query.DistinctOn is not null
+                && barriers != Barrier.None
+                && (barriers & (Barrier.Projection | Barrier.Bound)) == 0
             );
     }
 
@@ -435,7 +498,7 @@ internal sealed partial class Translator
                         ordering.Descending
                     )),
             ];
-            if (!query.IsPaged)
+            if (!query.KeepsOrder)
             {
                 query.Orderings = [];
             }
