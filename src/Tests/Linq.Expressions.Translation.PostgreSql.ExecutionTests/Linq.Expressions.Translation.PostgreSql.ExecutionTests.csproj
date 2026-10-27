@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <!-- xUnit1004: a translation that disagrees with LINQ to Objects is a skipped test
+         naming its issue. CA2100: the tests run the SQL the translator generates. -->
+    <NoWarn>$(NoWarn);xUnit1004;xUnit1044;CA1304;CA1307;CA1309;CA1310;CA1311;CA1847;CA1862;CA1865;CA1866;CA2100;CA2249</NoWarn>
+    <RunSettingsFilePath>$(MSBuildProjectDirectory)/execution.runsettings</RunSettingsFilePath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="10.1.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.16.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Linq.Expressions.Translation.PostgreSql.Tests\Linq.Expressions.Translation.PostgreSql.Tests.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="System.Linq.Expressions" />
+    <Using Include="Linq.Expressions.Translation.PostgreSql.ExecutionTests.Infrastructure" />
+    <Using Include="Linq.Expressions.Translation.PostgreSql.ExecutionTests.Model" />
+    <Using Include="Linq.Expressions.Translation.PostgreSql.Tests.Infrastructure" />
+    <Using
+      Include="Linq.Expressions.Translation.PostgreSql.Tests.Infrastructure.Tables"
+      Static="true"
+    />
+    <Using Include="Linq.Expressions.Translation.PostgreSql.Tests.Model" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

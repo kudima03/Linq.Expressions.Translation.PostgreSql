@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <EnvironmentVariables>
+      <!-- A zone with an offset and daylight saving time: DateTime converts to
+           DateTimeOffset through it in .NET and through the session zone in SQL. -->
+      <TZ>America/New_York</TZ>
+    </EnvironmentVariables>
+  </RunConfiguration>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <!-- Only the library counts; the referenced test project is not under test. -->
+          <Exclude>[Linq.Expressions.Translation.PostgreSql.Tests]*</Exclude>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
