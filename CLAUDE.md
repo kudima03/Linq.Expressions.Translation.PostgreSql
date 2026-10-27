@@ -50,6 +50,13 @@ The repository is not part of the Pure ecosystem: do not reference `Pure.*` pack
 - The `Translation time` workflow (`.github/workflows/translation-time.yml`) runs it in `Release` on PRs to `main`: `dotnet test Tests/Linq.Expressions.Translation.PostgreSql.PerformanceTests --configuration Release`.
 - `stryker-config.json` filters these tests out of mutation testing (Stryker runs in solution mode, which ignores `test-projects`), since timing must not decide whether a mutant is killed.
 
+**Execution test project:** `Linq.Expressions.Translation.PostgreSql.ExecutionTests` references the test project for its tables and model and runs translated SQL against PostgreSQL (Testcontainers, `postgres:18`; Docker is required, as on `ubuntu-latest`).
+- It covers only semantics that SQL text cannot show (null semantics, rounding, trimming, `LIKE` escaping, string positions, `DateTime`/`DateTimeOffset` comparison, left joins, aggregates over empty or all-NULL input, integer division, literal escaping), not every operator again.
+- Each test is differential: `database.AssertSameRows(query)` (any order), `AssertSameSequence(query)` (totally ordered queries) or `AssertSameResult(source, q => q.Count())` runs the query with LINQ to Objects over `Infrastructure/Seed` (`InMemory` swaps the capturing tables for the seed rows) and as SQL over the same rows, materializes the SQL columns into the element type by their member paths (`Materializer`) and compares both as text (`Canonical`).
+- `Database` is one container per run (collection `SharedDatabase`), with tables created from the model the way the translator maps it (`TableDefinition`) and the builtin `C.UTF-8` locale (code point order). `execution.runsettings` sets `TZ=America/New_York`, and the session time zone follows the local one.
+- A disagreement with LINQ to Objects is kept as `[Fact(Skip = "#<issue>: ...")]` (`xUnit1004` is suppressed for that).
+- `stryker-config.json` filters these tests out of mutation testing, like the performance tests.
+
 **Multi-targeting:** net8.0, net9.0, net10.0.
 
 **Publishing:** triggered by pushing a semver tag (pattern `*.*.*`). The tag becomes the `PackageVersion`. The workflow publishes to both GitHub Packages and NuGet.org. `dotnet pack` validates the public API against `PackageValidationBaselineVersion` (the latest released tag, from `git describe --tags --abbrev=0`); move it to the new tag after a release.
