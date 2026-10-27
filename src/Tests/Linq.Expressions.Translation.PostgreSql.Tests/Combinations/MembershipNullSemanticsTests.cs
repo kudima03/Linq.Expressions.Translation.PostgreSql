@@ -26,7 +26,7 @@ public sealed record MembershipNullSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Number" = ANY (t0."Tags")
+                SELECT COALESCE(t0."Number" = ANY (t0."Tags"), FALSE)
                 FROM "Order" AS t0
                 """
             ),

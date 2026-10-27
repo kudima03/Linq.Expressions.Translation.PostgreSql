@@ -112,13 +112,28 @@ public sealed class NullSemanticsTests(Database database)
         );
     }
 
-    [Fact(
-        Skip = "#60: item = ANY (array) is NULL, not FALSE, when the array holds a NULL"
-    )]
+    [Fact]
     public void MissesItemInArrayColumnHoldingNull()
     {
         database.AssertSameRows(
             Orders.Where(o => !o.Tags.Contains("gift")).Select(o => o.Id)
+        );
+    }
+
+    [Fact]
+    public void ProjectsArrayMembershipAsFalse()
+    {
+        database.AssertSameSequence(
+            Orders
+                .OrderBy(o => o.Id)
+                .Select(o => new
+                {
+                    o.Id,
+                    Gift = o.Tags.Contains("gift"),
+                    NotGift = !o.Tags.Contains("gift"),
+                    Numbered = o.Tags.Contains(o.Number),
+                    Express = o.Tags.Any(t => t == "express"),
+                })
         );
     }
 
