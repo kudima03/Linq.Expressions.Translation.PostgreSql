@@ -35,7 +35,7 @@ The repository is not part of the Pure ecosystem: do not reference `Pure.*` pack
 - `Syntax/` is the SQL tree and renderer; `SqlMode` distinguishes predicate from value positions (a nullable comparison used as a value renders as `COALESCE(..., FALSE)`), and operands are parenthesized when compound.
 - `Mapping/` derives table and column names (`[Table]`, `[Column]`, `[NotMapped]`) and nullability.
 - The library is `IsAotCompatible` and must build without trimming/AOT warnings and without suppressions. Reflection over element types is confined to `TableMapping`, annotated `[RequiresUnreferencedCode]` and surfaced on `Translator` and `PostgreSqlQuery.TextValue`; everything else must stay analyzer-clean (no `Activator.CreateInstance`, `GetInterface`, `MetadataToken` or other reflection that needs `DynamicallyAccessedMembers` or fails under Native AOT).
-- CI also enforces 98% line coverage and a 98% Stryker mutation score: avoid code paths no test exercises.
+- CI enforces 98% line coverage; the Stryker mutation step (98% score) is disabled in CI but still runs locally with `dotnet stryker`. Avoid code paths no test exercises.
 
 **Test project:** `Linq.Expressions.Translation.PostgreSql.Tests` targets `net10.0` and uses xunit.
 - Every test is the same three steps: build a LINQ query, translate it with `new PostgreSqlQuery(expression).TextValue`, `Assert.Equal` it with the expected SQL. The expected SQL is the specification of the translation.
