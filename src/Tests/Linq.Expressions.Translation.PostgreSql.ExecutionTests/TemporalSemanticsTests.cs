@@ -39,7 +39,7 @@ public sealed class TemporalSemanticsTests(Database database)
         );
     }
 
-    [Fact(Skip = "#61: a Utc DateTime constant compares through the session time zone")]
+    [Fact]
     public void ComparesDateTimeWithUtcDateTimeConstant()
     {
         DateTime noon = new(2024, 1, 15, 12, 0, 0, DateTimeKind.Utc);
@@ -48,6 +48,16 @@ public sealed class TemporalSemanticsTests(Database database)
             Orders
                 .OrderBy(o => o.Id)
                 .Select(o => new { o.Id, Later = o.CreatedAt > noon })
+        );
+    }
+
+    [Fact]
+    public void ComparesDateTimeOffsetWithUtcDateTimeConstant()
+    {
+        DateTime noon = new(2024, 1, 15, 12, 0, 0, DateTimeKind.Utc);
+
+        database.AssertSameSequence(
+            Orders.OrderBy(o => o.Id).Select(o => new { o.Id, Later = o.PaidAt > noon })
         );
     }
 }

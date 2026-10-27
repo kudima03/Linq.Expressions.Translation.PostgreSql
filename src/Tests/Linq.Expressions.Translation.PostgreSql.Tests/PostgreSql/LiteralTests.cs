@@ -589,8 +589,9 @@ public sealed record LiteralTests
         );
     }
 
+    // A DateTime is a timestamp whatever its kind; only a DateTimeOffset is a timestamptz.
     [Fact]
-    public void RendersUtcDateTime()
+    public void RendersUtcDateTimeAsTimestamp()
     {
         Expression query = Orders
             .Select(o => new DateTime(2024, 1, 31, 12, 30, 0, DateTimeKind.Utc))
@@ -599,7 +600,7 @@ public sealed record LiteralTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT TIMESTAMPTZ '2024-01-31 12:30:00+00'
+                SELECT TIMESTAMP '2024-01-31 12:30:00'
                 FROM "Order" AS t0
                 """
             ),
