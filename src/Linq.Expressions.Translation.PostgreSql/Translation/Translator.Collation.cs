@@ -13,6 +13,8 @@ internal sealed partial class Translator
         nameof(Queryable.OrderByDescending),
         nameof(Queryable.ThenBy),
         nameof(Queryable.ThenByDescending),
+        nameof(Queryable.MinBy),
+        nameof(Queryable.MaxBy),
     ];
 
     // StringComparer.Ordinal asks for the byte-wise order, which the "C" collation

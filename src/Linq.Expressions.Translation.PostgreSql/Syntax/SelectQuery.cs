@@ -30,6 +30,10 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
     // The keys of DISTINCT ON, which keeps the first row of each key in ORDER BY order.
     public IReadOnlyList<SqlExpression>? DistinctOn { get; set; }
 
+    // Whether ORDER BY orders the result, rather than only choosing the rows DISTINCT ON
+    // keeps, as for UnionBy, whose result has no order.
+    public bool IsOrdered { get; set; } = true;
+
     public bool IsPaged => Limit is not null || Offset is not null || Bound is not null;
 
     // The order is part of the result: it decides which rows are paged or kept per key.
