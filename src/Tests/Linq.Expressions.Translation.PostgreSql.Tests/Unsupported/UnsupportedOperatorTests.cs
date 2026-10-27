@@ -549,6 +549,34 @@ public sealed record UnsupportedOperatorTests
     }
 
     [Fact]
+    public void RejectsOneElementInMemoryRootWhoseSelectorReadsTheElement()
+    {
+        Expression query = new[] { 0 }
+            .AsQueryable()
+            .Select(x => x + Orders.Count())
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsMultiElementInMemoryRootOfAggregates()
+    {
+        Expression query = new[] { 0, 1 }
+            .AsQueryable()
+            .Select(_ => Orders.Count())
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void RejectsUnionWithInMemoryCollection()
     {
         Expression query = Customers.Select(c => c.Id).Union(new[] { 1, 2 }).Expression;
