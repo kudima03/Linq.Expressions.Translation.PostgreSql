@@ -191,7 +191,7 @@ public sealed record GroupJoinOperatorTests
     }
 
     [Fact]
-    public void RejectsFlatteningFilteredGroup()
+    public void FlattensFilteredGroupWithFilterInJoinCondition()
     {
         Expression query = Customers
             .GroupJoin(
@@ -203,10 +203,16 @@ public sealed record GroupJoinOperatorTests
             .SelectMany(x => x.Paid, (x, o) => new { x.c.Name, o.Number })
             .Expression;
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", t1."Number"
+                FROM "Customer" AS t0
+                INNER JOIN "Order" AS t1 ON (t0."Id" = t1."CustomerId") AND t1."IsPaid"
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("SelectMany", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

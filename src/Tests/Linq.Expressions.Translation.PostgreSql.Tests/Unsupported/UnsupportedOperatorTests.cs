@@ -234,17 +234,6 @@ public sealed record UnsupportedOperatorTests
     }
 
     [Fact]
-    public void RejectsDistinctBy()
-    {
-        Expression query = Customers.DistinctBy(c => c.Region).Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("DistinctBy", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void RejectsUnionBy()
     {
         Expression query = Customers.UnionBy(Customers, c => c.Region).Expression;
@@ -523,7 +512,7 @@ public sealed record UnsupportedOperatorTests
         NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("SelectMany", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Select", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

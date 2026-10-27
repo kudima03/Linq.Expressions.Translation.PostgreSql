@@ -1,11 +1,10 @@
 #pragma warning disable CA1861 // the one-element array is the root under test
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
 
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 
 public sealed record OneRowAggregateTests
 {
-    [Fact(Skip = "A one-row in-memory root is not translated (#50).")]
+    [Fact]
     public void SelectsCountAndSumAsOneRow()
     {
         Expression query = new[] { 0 }
@@ -32,7 +31,7 @@ public sealed record OneRowAggregateTests
         );
     }
 
-    [Fact(Skip = "A one-row in-memory root is not translated (#50).")]
+    [Fact]
     public void SelectsAggregatesOfDifferentTablesAsOneRow()
     {
         Expression query = new[] { 0 }
@@ -64,7 +63,7 @@ public sealed record OneRowAggregateTests
         );
     }
 
-    [Fact(Skip = "A one-row in-memory root is not translated (#50).")]
+    [Fact]
     public void SelectsAnonymousRowOfAggregates()
     {
         Expression query = new[] { 0 }
@@ -96,7 +95,7 @@ public sealed record OneRowAggregateTests
         );
     }
 
-    [Fact(Skip = "A one-row in-memory root is not translated (#50).")]
+    [Fact]
     public void SelectsFilteredAggregatesAsOneRow()
     {
         Expression query = new[] { 0 }
@@ -126,7 +125,7 @@ public sealed record OneRowAggregateTests
         );
     }
 
-    [Fact(Skip = "A one-row in-memory root is not translated (#50).")]
+    [Fact]
     public void SelectsQuantifiersAsOneRow()
     {
         Expression query = new[] { 0 }
@@ -160,7 +159,7 @@ public sealed record OneRowAggregateTests
         );
     }
 
-    [Fact(Skip = "A one-row in-memory root is not translated (#50).")]
+    [Fact]
     public void NumbersAliasesAcrossNestedSubqueriesOfOneRow()
     {
         Expression query = new[] { 0 }
@@ -193,7 +192,7 @@ public sealed record OneRowAggregateTests
         );
     }
 
-    [Fact(Skip = "A one-row in-memory root is not translated (#50).")]
+    [Fact]
     public void SelectsSingleAggregateAsOneRow()
     {
         Expression query = new[] { 0 }
@@ -212,5 +211,84 @@ public sealed record OneRowAggregateTests
             ),
             new PostgreSqlQuery(query).TextValue
         );
+    }
+
+    [Fact]
+    public void FiltersOneRowOfAggregates()
+    {
+        Expression query = new[] { 0 }
+            .AsQueryable()
+            .Where(_ => Orders.Any())
+            .Select(_ => Orders.Count())
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT (
+                    SELECT CAST(COUNT(*) AS integer)
+                    FROM "Order" AS t1
+                )
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM "Order" AS t0
+                )
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void RejectsBareOneElementInMemoryRoot()
+    {
+        Expression query = new[] { 0 }.AsQueryable().Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsOrderedOneElementInMemoryRoot()
+    {
+        Expression query = new[] { 0 }
+            .AsQueryable()
+            .Order()
+            .Select(_ => Orders.Count())
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsOneElementInMemoryRootInSetOperation()
+    {
+        Expression query = new[] { 0 }
+            .AsQueryable()
+            .Concat(Orders.Select(o => o.Id))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RejectsOneElementInMemoryRootAsSubquerySource()
+    {
+        Expression query = Customers
+            .Where(c => new[] { 1 }.AsQueryable().Any(i => i == c.Id))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
     }
 }

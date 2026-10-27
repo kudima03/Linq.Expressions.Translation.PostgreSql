@@ -1,10 +1,8 @@
-#pragma warning disable xUnit1004 // skipped tests record SQL the translator does not produce yet
-
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 public sealed record DefaultValueTupleProjectionTests
 {
-    [Fact(Skip = "A default value tuple cannot be projected (#49).")]
+    [Fact]
     public void ProjectsDefaultValueTupleNestedInConstructedTuple()
     {
         Expression query = Orders
@@ -22,7 +20,7 @@ public sealed record DefaultValueTupleProjectionTests
         );
     }
 
-    [Fact(Skip = "A default value tuple cannot be projected (#49).")]
+    [Fact]
     public void ProjectsDefaultValueTupleAsAnonymousMember()
     {
         Expression query = Orders
@@ -40,7 +38,7 @@ public sealed record DefaultValueTupleProjectionTests
         );
     }
 
-    [Fact(Skip = "A default value tuple cannot be projected (#49).")]
+    [Fact]
     public void ProjectsDefaultValueTupleAsResult()
     {
         Expression query = Orders
@@ -58,7 +56,7 @@ public sealed record DefaultValueTupleProjectionTests
         );
     }
 
-    [Fact(Skip = "A captured value tuple cannot be projected (#49).")]
+    [Fact]
     public void ProjectsCapturedDefaultValueTuple()
     {
         ValueTuple<int?, string?> empty = default;
@@ -75,7 +73,7 @@ public sealed record DefaultValueTupleProjectionTests
         );
     }
 
-    [Fact(Skip = "A captured value tuple cannot be projected (#49).")]
+    [Fact]
     public void ProjectsCapturedValueTupleOfValuesAsLiterals()
     {
         ValueTuple<int?, string?> pair = (1, "a");
@@ -92,7 +90,7 @@ public sealed record DefaultValueTupleProjectionTests
         );
     }
 
-    [Fact(Skip = "A default value tuple cannot be projected (#49).")]
+    [Fact]
     public void ConcatenatesUnmatchedRowsWithDefaultValueTupleIntoFullOuterJoin()
     {
         Expression query = (
@@ -132,6 +130,76 @@ public sealed record DefaultValueTupleProjectionTests
                         WHERE t3."CustomerId" = t2."Id"
                     )
                 ) AS t4
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ProjectsCapturedReferenceTupleAsLiterals()
+    {
+        Tuple<int?, string?> pair = Tuple.Create<int?, string?>(1, "a");
+        Expression query = Orders.Select(o => new { Pair = pair, o.Id }).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT 1 AS "Pair.item1", 'a' AS "Pair.item2", t0."Id"
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ProjectsCapturedNestedValueTupleAsLiterals()
+    {
+        ValueTuple<ValueTuple<int?>, string?> pair = (new ValueTuple<int?>(2), "b");
+        Expression query = Orders.Select(o => new { Pair = pair, o.Id }).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT 2 AS "Pair.item1.item1", 'b' AS "Pair.item2", t0."Id"
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void RejectsDefaultValueTupleOfEightElements()
+    {
+        Expression query = Orders
+            .Select(o => new
+            {
+                Wide = default((int, int, int, int, int, int, int, int)),
+                o.Id,
+            })
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("seven", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ProjectsDefaultValueTupleOfSevenElements()
+    {
+        Expression query = Orders
+            .Select(o => default((int?, int?, int?, int?, int?, int?, int?)))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT NULL AS "item1", NULL AS "item2", NULL AS "item3", NULL AS "item4",
+                NULL AS "item5", NULL AS "item6", NULL AS "item7"
+                FROM "Order" AS t0
                 """
             ),
             new PostgreSqlQuery(query).TextValue

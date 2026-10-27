@@ -69,6 +69,9 @@ internal sealed partial class Translator
             : name == nameof(ToString) && call.Arguments.Count == 0 ? Stringified(call)
             : name == nameof(Enumerable.Contains) && owner != typeof(string)
                 ? Membership(call)
+            : name == nameof(long.Parse) && call.Object is null ? Parsed(call)
+            : name == nameof(TimeSpan.FromTicks) && owner == typeof(TimeSpan)
+                ? Microseconds(Sql(call.Arguments[0]))
             : owner == typeof(string) ? StringMethod(call)
             : owner == typeof(Math) || Numeric.Contains(owner) ? MathMethod(call)
             : Temporal.Contains(owner) ? TemporalMethod(call)
@@ -650,16 +653,18 @@ internal sealed partial class Translator
             : throw Unsupported.Method(call.Method);
     }
 
+    // A constant count of ticks below a microsecond is seen to be lost; a computed one
+    // is truncated to the microsecond.
     private SqlExpression Ticked(MethodCallExpression call)
     {
-        return
-            call.Arguments[0] is ConstantExpression { Value: long ticks }
-            && ticks % TimeSpan.TicksPerMicrosecond == 0
-            ? Shifted(
-                Sql(call.Object!),
-                new SqlConstant(ticks / TimeSpan.TicksPerMicrosecond, typeof(long)),
-                "microsecond"
-            )
+        return call.Arguments[0] is not ConstantExpression { Value: long ticks }
+                ? Calculate("+", Sql(call.Object!), Microseconds(Sql(call.Arguments[0])))
+            : ticks % TimeSpan.TicksPerMicrosecond == 0
+                ? Shifted(
+                    Sql(call.Object!),
+                    new SqlConstant(ticks / TimeSpan.TicksPerMicrosecond, typeof(long)),
+                    "microsecond"
+                )
             : throw Unsupported.Method(call.Method);
     }
 
@@ -669,15 +674,7 @@ internal sealed partial class Translator
         string unit
     )
     {
-        return Calculate(
-            "+",
-            moment,
-            Calculate(
-                "*",
-                amount,
-                new SqlFragment($"INTERVAL '1 {unit}'", typeof(TimeSpan))
-            )
-        );
+        return Calculate("+", moment, Interval(amount, unit));
     }
 
     private static SqlExpression Dated(SqlExpression moment, bool day, Type type)
@@ -689,6 +686,45 @@ internal sealed partial class Translator
     {
         SqlExpression flag = Sql(call.Arguments[0]);
         return Compare("=", Calculate("&", Sql(call.Object!), flag), flag);
+    }
+
+    private static readonly Dictionary<Type, string> Parsable = new()
+    {
+        [typeof(bool)] = "boolean",
+        [typeof(DateOnly)] = "date",
+        [typeof(TimeOnly)] = "time",
+        [typeof(DateTime)] = "timestamp",
+        [typeof(Guid)] = "uuid",
+    };
+
+    private static readonly HashSet<Type> CultureFree = [typeof(bool), typeof(Guid)];
+
+    // Parsing is a cast from text in PostgreSQL's input syntax, which the invariant
+    // culture reads as well; the current culture may not.
+    private SqlExpression Parsed(MethodCallExpression call)
+    {
+        Type type = call.Type;
+        string? target =
+            ScalarTypes.IsNumber(type) && !type.IsEnum
+                ? ScalarTypes.Number(type)
+                : Parsable.GetValueOrDefault(type);
+        IEnumerable<Expression> options = call.Arguments.Skip(1);
+        bool cultured =
+            CultureFree.Contains(type)
+            || options.Any(option => option is ConstantExpression { Value: CultureInfo });
+        return target is not null && cultured && options.All(IsInvariant)
+            ? new SqlCast(Sql(call.Arguments[0]), target, type)
+            : throw Unsupported.Method(call.Method);
+    }
+
+    // A style is a constant set of flags; a culture has to be the invariant one.
+    private static bool IsInvariant(Expression option)
+    {
+        return option is ConstantExpression { Value: object value }
+            && (
+                value is NumberStyles or DateTimeStyles
+                || value.Equals(CultureInfo.InvariantCulture)
+            );
     }
 
     private SqlExpression Membership(MethodCallExpression call)

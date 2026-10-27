@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using Linq.Expressions.Translation.PostgreSql.Mapping;
 using Linq.Expressions.Translation.PostgreSql.Shapes;
 using Linq.Expressions.Translation.PostgreSql.Syntax;
@@ -76,7 +77,8 @@ internal sealed partial class Translator
         {
             ParameterExpression parameter => Resolved(parameter),
             MemberExpression member => Member(member),
-            NewExpression creation => New(creation),
+            ConstantExpression { Value: ITuple tuple } => Tupled(tuple, expression.Type),
+            NewExpression creation => Created(creation),
             MemberInitExpression initialization => Initialization(initialization),
             MethodCallExpression call
                 when call.Method.DeclaringType == typeof(Enumerable)
@@ -95,7 +97,40 @@ internal sealed partial class Translator
     {
         Binding binding = _bindings[parameter];
         binding.Uses++;
-        return binding.Shape;
+        return binding.Shape is RowShape row ? throw row.Rejected() : binding.Shape;
+    }
+
+    // A constant tuple is projected member by member, as a constructed one is: each
+    // element is a literal, NULL for a default. The eighth and later elements live
+    // in a nested tuple, which ITuple flattens away.
+    private static ObjectShape Tupled(ITuple tuple, Type type)
+    {
+        Type[] elements = type.GetGenericArguments();
+        if (elements.Length > 7)
+        {
+            throw new NotSupportedException(
+                $"Constants of type '{type.Name}' cannot be rendered as SQL literals: tuples of more than seven elements are not supported."
+            );
+        }
+        List<ObjectMember> members = [];
+        for (int index = 0; index < elements.Length; index++)
+        {
+            Shape element = tuple[index] is ITuple nested
+                ? Tupled(nested, elements[index])
+                : new ScalarShape(new SqlConstant(tuple[index], elements[index]));
+            members.Add(new ObjectMember("item" + (index + 1), element));
+        }
+        return new ObjectShape(members);
+    }
+
+    private Shape Created(NewExpression creation)
+    {
+        return
+            creation.Type == typeof(DateTime)
+            && creation.Arguments is [Expression { Type: Type first }, ..]
+            && first == typeof(long)
+            ? new ScalarShape(Moment(creation))
+            : New(creation);
     }
 
     private SqlExpression Node(Expression expression)
@@ -243,6 +278,13 @@ internal sealed partial class Translator
         {
             return Concatenation(binary);
         }
+        if (
+            Ordinal(binary.Left, binary.Right) is MethodCallExpression ordinal
+            && Comparisons.TryGetValue(binary.NodeType, out string? ranking)
+        )
+        {
+            return Ranked(ordinal, ranking);
+        }
         (string symbol, SqlBinaryKind kind) = Operator(binary);
         SqlExpression left = Sql(binary.Left);
         SqlExpression right = binary.NodeType
@@ -328,22 +370,36 @@ internal sealed partial class Translator
         {
             return Nullity(left, negated);
         }
-        Shape first = Shape(left);
-        Shape second = Shape(right);
-        if (first is not ScalarShape || second is not ScalarShape)
+        if (Ordinal(left, right) is MethodCallExpression ordinal)
         {
-            throw new NotSupportedException(
-                "Comparing entities or projections for equality is not supported."
+            return Equated(
+                new SqlCollation(Sql(ordinal.Arguments[0])),
+                Sql(ordinal.Arguments[1]),
+                negated,
+                IsCorrelation(ordinal.Arguments[0], ordinal.Arguments[1])
             );
         }
-        SqlExpression one = Scalar(first);
-        SqlExpression other = Scalar(second);
-        // A correlation key equal to NULL is false in both languages, but not equal
-        // to it is true in C# and NULL in SQL.
+        Shape first = Shape(left);
+        Shape second = Shape(right);
+        return first is not ScalarShape || second is not ScalarShape
+            ? throw new NotSupportedException(
+                "Comparing entities or projections for equality is not supported."
+            )
+            : Equated(Scalar(first), Scalar(second), negated, IsCorrelation(left, right));
+    }
+
+    // A correlation key equal to NULL is false in both languages, but not equal to it
+    // is true in C# and NULL in SQL.
+    private static SqlExpression Equated(
+        SqlExpression one,
+        SqlExpression other,
+        bool negated,
+        bool correlation
+    )
+    {
         bool nullable = one.Nullable || other.Nullable;
         bool distinct =
-            (one.Nullable && other.Nullable)
-            || (nullable && (negated || !IsCorrelation(left, right)));
+            (one.Nullable && other.Nullable) || (nullable && (negated || !correlation));
         return distinct
             ? Distinct(one, other, negated)
             : new SqlBinary(

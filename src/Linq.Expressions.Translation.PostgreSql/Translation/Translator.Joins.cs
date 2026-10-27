@@ -47,12 +47,9 @@ internal sealed partial class Translator
                 Method.Name: nameof(Queryable.DefaultIfEmpty)
             };
         Expression items = left ? ((MethodCallExpression)body).Arguments[0] : body;
-        Shape inner =
-            items is MemberExpression or ParameterExpression
-                ? Flattened(outer, Shape(items), left, call)
-            : items.Type.IsAssignableTo(typeof(IQueryable))
-                ? Flattened(outer, items, binding, left)
-            : throw Unsupported.Method(call.Method);
+        Shape inner = items.Type.IsAssignableTo(typeof(IQueryable))
+            ? Flattened(outer, items, binding, left)
+            : Flattened(outer, Shape(items), left, call);
         outer.Shape =
             call.Arguments.Count > 2
                 ? Bind(Lambda(call, 2, 2), outer.Shape, inner)
@@ -60,6 +57,8 @@ internal sealed partial class Translator
         return outer;
     }
 
+    // The matches of a GroupJoin are filtered in the join condition: filtered after the
+    // join, an outer row whose matches all fail the filter would be dropped.
     private Shape Flattened(
         SelectQuery outer,
         Shape items,
@@ -67,7 +66,7 @@ internal sealed partial class Translator
         MethodCallExpression call
     )
     {
-        if (items is not GroupJoinShape { Operators.Count: 0 } group)
+        if (items is not GroupJoinShape group || group.Operators.Any(IsNotFilter))
         {
             throw Unsupported.Method(call.Method);
         }
@@ -76,7 +75,20 @@ internal sealed partial class Translator
             Matching(group.OuterKey, Bind(group.InnerKey, inner.Shape)),
             inner.Where
         );
+        foreach (MethodCallExpression filter in group.Operators)
+        {
+            condition = Logical(
+                "AND",
+                condition,
+                Scalar(Bind(Lambda(filter, 1), inner.Shape))
+            );
+        }
         return Attached(outer, left ? "LEFT JOIN" : "INNER JOIN", inner, condition, left);
+    }
+
+    private static bool IsNotFilter(MethodCallExpression call)
+    {
+        return call.Method.Name != nameof(Enumerable.Where);
     }
 
     private Shape Flattened(
@@ -165,7 +177,7 @@ internal sealed partial class Translator
     {
         return query is SelectQuery select
             && select.Joins.Count == 0
-            && !select.IsPaged
+            && !select.KeepsOrder
             && !select.Distinct
             && select.GroupBy is null;
     }

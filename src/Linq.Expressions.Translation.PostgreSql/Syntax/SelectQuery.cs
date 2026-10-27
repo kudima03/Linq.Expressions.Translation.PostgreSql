@@ -27,13 +27,25 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
 
     public bool Distinct { get; set; }
 
+    // The keys of DISTINCT ON, which keeps the first row of each key in ORDER BY order.
+    public IReadOnlyList<SqlExpression>? DistinctOn { get; set; }
+
     public bool IsPaged => Limit is not null || Offset is not null || Bound is not null;
+
+    // The order is part of the result: it decides which rows are paged or kept per key.
+    public bool KeepsOrder => IsPaged || DistinctOn is not null;
 
     public override void Render(SqlWriter writer)
     {
-        _ = writer
-            .Append(Distinct ? "SELECT DISTINCT " : "SELECT ")
-            .Join([.. Shape.Columns(), .. Hidden], column => column.Render(writer));
+        _ = writer.Append(Distinct ? "SELECT DISTINCT " : "SELECT ");
+        if (DistinctOn is not null)
+        {
+            _ = writer
+                .Append("DISTINCT ON (")
+                .Join(DistinctOn, key => writer.Render(key, SqlMode.Value))
+                .Append(") ");
+        }
+        _ = writer.Join([.. Shape.Columns(), .. Hidden], column => column.Render(writer));
         if (From is not null)
         {
             _ = writer.Append(" FROM ");

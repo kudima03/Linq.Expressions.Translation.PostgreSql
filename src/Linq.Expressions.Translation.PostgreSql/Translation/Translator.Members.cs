@@ -84,6 +84,12 @@ internal sealed partial class Translator
                 owner,
                 new SqlConstant(DateOnly.MinValue, typeof(DateOnly))
             ),
+            { Name: nameof(DateTime.Ticks) }
+                when member.DeclaringType == typeof(DateTime) => Ticks(
+                Calculate("-", owner, Origin)
+            ),
+            { Name: nameof(TimeOnly.Ticks) }
+                when member.DeclaringType == typeof(TimeOnly) => Ticks(owner),
             _ when member.DeclaringType == typeof(TimeSpan) => Duration(
                 owner,
                 member,
@@ -125,11 +131,7 @@ internal sealed partial class Translator
                 "double precision",
                 type
             ),
-            nameof(TimeSpan.Ticks) => new SqlCast(
-                Calculate("*", seconds, Integer(10_000_000)),
-                "bigint",
-                type
-            ),
+            nameof(TimeSpan.Ticks) => Ticks(owner),
             _ when Durations.TryGetValue(member.Name, out string? field) => new SqlCast(
                 Extracted(field, justified),
                 "integer",
