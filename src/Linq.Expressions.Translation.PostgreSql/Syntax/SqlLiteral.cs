@@ -96,13 +96,15 @@ internal static class SqlLiteral
             : text;
     }
 
+    // A DateTime is a timestamp whatever its kind, as C# compares DateTime values by
+    // their ticks; converted to a DateTimeOffset, a Utc constant is evaluated with its
+    // zero offset. A Local one has no equivalent that survives a change of zone.
     private static string Timestamp(DateTime moment)
     {
         return moment.Kind == DateTimeKind.Local
-                ? throw new NotSupportedException(
-                    "DateTime constants of kind Local have no PostgreSQL equivalent."
-                )
-            : moment.Kind == DateTimeKind.Utc ? $"TIMESTAMPTZ '{Precise(moment)}+00'"
+            ? throw new NotSupportedException(
+                "DateTime constants of kind Local have no PostgreSQL equivalent."
+            )
             : $"TIMESTAMP '{Precise(moment)}'";
     }
 
