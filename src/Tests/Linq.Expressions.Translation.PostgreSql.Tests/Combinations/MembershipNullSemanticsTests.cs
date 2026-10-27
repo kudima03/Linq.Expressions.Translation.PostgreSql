@@ -259,7 +259,7 @@ public sealed record MembershipNullSemanticsTests
     }
 
     [Fact]
-    public void MatchesNullKeysOfGroupJoin()
+    public void NeverMatchesNullKeysOfGroupJoin()
     {
         Expression query = Employees
             .GroupJoin(
@@ -276,7 +276,7 @@ public sealed record MembershipNullSemanticsTests
                 SELECT (
                     SELECT CAST(COUNT(*) AS integer)
                     FROM "Employee" AS t1
-                    WHERE t1."ManagerId" IS NOT DISTINCT FROM t0."ManagerId"
+                    WHERE t1."ManagerId" = t0."ManagerId"
                 )
                 FROM "Employee" AS t0
                 """
