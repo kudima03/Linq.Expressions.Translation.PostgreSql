@@ -285,6 +285,34 @@ public sealed record LeftJoinTests
     }
 
     [Fact]
+    public void LeftJoinsOnTwoNullableKeysWithPlainEquality()
+    {
+        Expression query = Employees
+            .GroupJoin(
+                Employees,
+                e => e.ManagerId,
+                m => m.ManagerId,
+                (e, ms) => new { e, ms }
+            )
+            .SelectMany(
+                x => x.ms.DefaultIfEmpty(),
+                (x, m) => new { x.e.Name, Peer = m!.Name }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", t1."Name" AS "Peer"
+                FROM "Employee" AS t0
+                LEFT JOIN "Employee" AS t1 ON t0."ManagerId" = t1."ManagerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
     public void ChainsTwoLeftJoins()
     {
         Expression query = Customers

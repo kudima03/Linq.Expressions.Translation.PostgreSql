@@ -229,7 +229,7 @@ public sealed class NullSemanticsTests(Database database)
         database.AssertSameRows(Customers.Select(c => c.Email).OfType<string>());
     }
 
-    [Fact(Skip = "#59: IS NOT DISTINCT FROM pairs NULL keys, LINQ to Objects does not")]
+    [Fact]
     public void JoinsOnNullableKeys()
     {
         database.AssertSameRows(
@@ -239,6 +239,50 @@ public sealed class NullSemanticsTests(Database database)
                 m => m.ManagerId,
                 (e, m) => new { Employee = e.Id, Peer = m.Id }
             )
+        );
+    }
+
+    [Fact]
+    public void JoinsOnCompositeKeysWithNullableMembers()
+    {
+        database.AssertSameRows(
+            Employees.Join(
+                Employees,
+                e => new { e.ManagerId, e.Name },
+                m => new { m.ManagerId, m.Name },
+                (e, m) => new { Employee = e.Id, Peer = m.Id }
+            )
+        );
+    }
+
+    [Fact]
+    public void GroupJoinsOnNullableKeys()
+    {
+        database.AssertSameRows(
+            Employees.GroupJoin(
+                Employees,
+                e => e.ManagerId,
+                m => m.ManagerId,
+                (e, ms) => new { e.Id, Peers = ms.Count() }
+            )
+        );
+    }
+
+    [Fact]
+    public void LeftJoinsOnNullableKeys()
+    {
+        database.AssertSameRows(
+            Employees
+                .GroupJoin(
+                    Employees,
+                    e => e.ManagerId,
+                    m => m.ManagerId,
+                    (e, ms) => new { e, ms }
+                )
+                .SelectMany(
+                    x => x.ms.DefaultIfEmpty(),
+                    (x, m) => new { x.e.Id, Peer = m == null ? 0 : m.Id }
+                )
         );
     }
 }
