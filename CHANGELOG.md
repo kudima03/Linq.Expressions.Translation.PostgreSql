@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-preview.0.5.0] - 2026-10-27
+
+### Added
+
+- Translation of `Parse` of `bool` and `Guid`, and of numbers, `DateOnly`, `TimeOnly` and `DateTime` with `CultureInfo.InvariantCulture` (plus constant `NumberStyles`/`DateTimeStyles`), as a `CAST` from text. The text has to be in PostgreSQL's input syntax; the current-culture overloads are still rejected.
+- Ordinal string comparison: `string.CompareOrdinal(a, b)` compared with `0` is translated as a comparison under `COLLATE "C"`, ranking a null string below every other as .NET does, and the ordering operators accept `StringComparer.Ordinal` (`ORDER BY ... COLLATE "C"`).
+- Translation of `DistinctBy` as `SELECT DISTINCT ON (keys)`, keeping a source order that does not start with the keys (for example the latest order per user).
+- Tick-based date and time arithmetic: `DateTime.Ticks`, `TimeOnly.Ticks`, `TimeSpan.FromTicks`, `AddTicks` and `new DateTime(ticks[, kind])` of a computed count, in microseconds, the finest unit PostgreSQL keeps.
+- A `Where` on the matches of a `GroupJoin` before `DefaultIfEmpty()`, possibly chained, becomes part of the `LEFT JOIN` condition, so unmatched rows are kept.
+- Constant tuples (`default(ValueTuple<int?, string?>)` or a captured one) are projected member by member as literals.
+- One row of aggregates over tables: a constant one-element sequence as the root (`new[] { 0 }.AsQueryable().Select(_ => new { Orders = orders.Count(), ... })`) is translated as a `SELECT` of scalar subqueries without `FROM`.
+
 ## [0.1.0-preview.0.4.0] - 2026-10-26
 
 ### Added
