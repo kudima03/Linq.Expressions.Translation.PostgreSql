@@ -42,7 +42,7 @@ internal sealed partial class Translator
 
     private SqlExpression Subquery(MethodCallExpression call)
     {
-        return Valued(Terminal(call), call);
+        return Window(call) ?? Valued(Terminal(call), call);
     }
 
     // In a value position, an ...OrDefault of a non-nullable value falls back to its
@@ -235,18 +235,14 @@ internal sealed partial class Translator
 
     private SqlScalarSubquery Counted(SqlQuery source, string name, Type type)
     {
-        SelectQuery query = Unordered(
-            Open(source, Barrier.Paging | Barrier.Distinct | Barrier.Grouping, false)
-        );
+        SelectQuery query = Unordered(Open(source, Barrier.Aggregation, false));
         query.Shape = new ScalarShape(Counting(name, null, null));
         return new SqlScalarSubquery(query, type);
     }
 
     private SqlScalarSubquery Aggregated(SqlQuery source, MethodCallExpression call)
     {
-        SelectQuery query = Unordered(
-            Open(source, Barrier.Paging | Barrier.Distinct | Barrier.Grouping, false)
-        );
+        SelectQuery query = Unordered(Open(source, Barrier.Aggregation, false));
         SqlExpression value =
             call.Arguments.Count > 1
                 ? Scalar(Bind(Lambda(call, 1), query.Shape))
@@ -261,7 +257,8 @@ internal sealed partial class Translator
     private static SqlExpression Counting(
         string name,
         SqlExpression? distinct,
-        SqlExpression? filter
+        SqlExpression? filter,
+        bool windowed = false
     )
     {
         SqlExpression count = new SqlAggregate(
@@ -269,7 +266,8 @@ internal sealed partial class Translator
             distinct,
             distinct is not null,
             filter,
-            typeof(long)
+            typeof(long),
+            windowed
         );
         if (distinct is { Nullable: true })
         {
@@ -301,7 +299,8 @@ internal sealed partial class Translator
         SqlExpression value,
         Type type,
         bool distinct,
-        SqlExpression? filter
+        SqlExpression? filter,
+        bool windowed = false
     )
     {
         Type result = ScalarTypes.Underlying(type);
@@ -310,7 +309,7 @@ internal sealed partial class Translator
             SqlExpression sum = new SqlFunction(
                 "COALESCE",
                 [
-                    new SqlAggregate("SUM", value, distinct, filter, type),
+                    new SqlAggregate("SUM", value, distinct, filter, type, windowed),
                     new SqlConstant(0, typeof(int)),
                 ],
                 result
@@ -329,7 +328,8 @@ internal sealed partial class Translator
             argument,
             distinct,
             filter,
-            type
+            type,
+            windowed
         );
     }
 

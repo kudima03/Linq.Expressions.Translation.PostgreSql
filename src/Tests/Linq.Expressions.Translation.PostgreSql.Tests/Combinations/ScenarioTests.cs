@@ -280,10 +280,7 @@ public sealed record ScenarioTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Id", t0."Total" / (
-                    SELECT COALESCE(SUM(t1."Total"), 0)
-                    FROM "Order" AS t1
-                ) AS "Share"
+                SELECT t0."Id", t0."Total" / COALESCE(SUM(t0."Total") OVER (), 0) AS "Share"
                 FROM "Order" AS t0
                 """
             ),

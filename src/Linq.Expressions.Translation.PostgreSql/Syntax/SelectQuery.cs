@@ -27,6 +27,10 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
 
     public bool Distinct { get; set; }
 
+    // Whether the projection holds a window aggregate, which SQL allows only in a
+    // projection, an order or a DISTINCT over it.
+    public bool Windowed { get; set; }
+
     // The keys of DISTINCT ON, which keeps the first row of each key in ORDER BY order.
     public IReadOnlyList<SqlExpression>? DistinctOn { get; set; }
 

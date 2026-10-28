@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- An aggregate (`Count`, `LongCount`, `Sum`, `Average`, `Min`, `Max`, `Any`, `All`) in the projection of a query over the rows that projection reads — the same query, in any order, below any `Where` and `Select` of the aggregate's own — is a window aggregate over all of them, `COUNT(*) OVER ()`, `COALESCE(SUM(...) FILTER (WHERE ...) OVER (), 0)`, ..., computed in the pass that reads the rows, instead of a scalar subquery that reads the sources (and runs their joins) again: `orders.Select(o => new { o.Id, Share = o.Total / orders.Sum(x => x.Total) })` is `SELECT t0."Id", t0."Total" / COALESCE(SUM(t0."Total") OVER (), 0) AS "Share" FROM "Order" AS t0`. The rows have to be the rows the projection reads (not once they are paged or made distinct) and the aggregate's lambdas must read nothing but their own element; anything else stays a scalar subquery. A projection holding a window is extended only by a projection, an order, paging or `Distinct`, which SQL allows beside one; a filter, grouping, join or aggregate over it wraps it into a derived table.
+
+### Changed
+
+- A nullable value read as its value, `Nullable<T>.Value` or a cast `(T)nullable`, is never NULL where the C# evaluates (it would throw), so it is non-nullable to the translation: it compares and joins with `=` instead of `IS NOT DISTINCT FROM`, also as a member of a composite key, which lets PostgreSQL hash the join, and a left join of such a value reads NULL for an unmatched row as before.
+
 ## [0.1.0-preview.0.6.3] - 2026-10-28
 
 ### Changed

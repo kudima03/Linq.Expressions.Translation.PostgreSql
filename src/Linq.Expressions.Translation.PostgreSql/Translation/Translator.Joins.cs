@@ -161,7 +161,7 @@ internal sealed partial class Translator
 
     private SelectQuery Opened(SqlQuery source)
     {
-        return Open(source, Barrier.Paging | Barrier.Distinct | Barrier.Grouping);
+        return Open(source, Barrier.Aggregation);
     }
 
     private SqlQuery Joined(MethodCallExpression call)
@@ -204,12 +204,18 @@ internal sealed partial class Translator
         return IsSimple(query) && (!left || ProjectsOwnColumns((SelectQuery)query));
     }
 
+    // A value a left join may leave NULL is nullable again, required or not.
+    private static SqlExpression Own(SqlExpression value)
+    {
+        return value is SqlRequired required ? required.Operand : value;
+    }
+
     private static bool ProjectsOwnColumns(SelectQuery query)
     {
         return query
             .Shape.Columns()
             .All(column =>
-                column.Value is SqlColumn own && own.Alias == query.From!.Alias
+                Own(column.Value) is SqlColumn own && own.Alias == query.From!.Alias
             );
     }
 
@@ -221,7 +227,7 @@ internal sealed partial class Translator
     private Shape Absent(Shape shape, MethodCallExpression padding)
     {
         Shape nullified = shape.Map(
-            (value, name) => ((SqlColumn)value).AsNullable(),
+            (value, name) => ((SqlColumn)Own(value)).AsNullable(),
             null
         );
         SqlExpression? fallback =

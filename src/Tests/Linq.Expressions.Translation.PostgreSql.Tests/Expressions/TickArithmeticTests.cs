@@ -151,7 +151,8 @@ public sealed record TickArithmeticTests
     private const string NullableMoment =
         "(TIMESTAMP '0001-01-01 00:00:00' + ((CAST(t0.\"Priority\" AS bigint) / 864000000000) * INTERVAL '1 day')) + (((CAST(t0.\"Priority\" AS bigint) % 864000000000) / 10) * INTERVAL '1 microsecond')";
 
-    // The timestamp is as nullable as its ticks, with and without a kind.
+    // The ticks of a nullable column read as its value are never null where the
+    // C# evaluates, so the timestamp compares with =, with and without a kind.
     public static TheoryData<Expression<Func<Order, bool>>, string> Constructed =>
         new()
         {
@@ -161,7 +162,7 @@ public sealed record TickArithmeticTests
             },
             {
                 o => new DateTime(o.Priority!.Value) == o.CreatedAt,
-                $"({NullableMoment}) IS NOT DISTINCT FROM t0.\"CreatedAt\""
+                $"({NullableMoment}) = t0.\"CreatedAt\""
             },
             {
                 o => new DateTime(o.Points, DateTimeKind.Utc) == o.CreatedAt,
@@ -169,7 +170,7 @@ public sealed record TickArithmeticTests
             },
             {
                 o => new DateTime(o.Priority!.Value, DateTimeKind.Utc) == o.CreatedAt,
-                $"(({NullableMoment}) AT TIME ZONE 'UTC') IS NOT DISTINCT FROM t0.\"CreatedAt\""
+                $"(({NullableMoment}) AT TIME ZONE 'UTC') = t0.\"CreatedAt\""
             },
             {
                 o => TimeSpan.FromTicks(o.Points) == TimeSpan.Zero,
@@ -177,7 +178,7 @@ public sealed record TickArithmeticTests
             },
             {
                 o => TimeSpan.FromTicks(o.Priority!.Value) == TimeSpan.Zero,
-                "((CAST(t0.\"Priority\" AS bigint) / 10) * INTERVAL '1 microsecond') IS NOT DISTINCT FROM INTERVAL 'PT0S'"
+                "((CAST(t0.\"Priority\" AS bigint) / 10) * INTERVAL '1 microsecond') = INTERVAL 'PT0S'"
             },
         };
 

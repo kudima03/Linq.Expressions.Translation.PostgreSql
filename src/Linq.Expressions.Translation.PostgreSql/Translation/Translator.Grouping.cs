@@ -8,11 +8,7 @@ internal sealed partial class Translator
 {
     private SelectQuery GroupBy(SqlQuery source, MethodCallExpression call)
     {
-        SelectQuery query = Open(
-            source,
-            Barrier.Paging | Barrier.Distinct | Barrier.Grouping,
-            false
-        );
+        SelectQuery query = Open(source, Barrier.Aggregation, false);
         Shape key = Bind(Lambda(call, 1), query.Shape);
         bool selected =
             call.Arguments.Count > 2 && ParameterCount(call.Arguments[2]) == 1;
