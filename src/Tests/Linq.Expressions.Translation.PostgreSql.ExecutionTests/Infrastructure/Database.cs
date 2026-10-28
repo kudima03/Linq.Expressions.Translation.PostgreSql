@@ -29,6 +29,9 @@ public sealed class Database : IAsyncLifetime
             // A DateTime converts to a DateTimeOffset through the local zone in .NET and
             // a timestamp to a timestamptz through the session zone in PostgreSQL.
             Timezone = LocalZone(),
+            // Not the default MDY, so a translation that reads text in the server's
+            // DateStyle disagrees with the invariant culture.
+            Options = "-c DateStyle=ISO,DMY",
         };
         _source = NpgsqlDataSource.Create(connection.ConnectionString);
         await using NpgsqlConnection open = await _source
