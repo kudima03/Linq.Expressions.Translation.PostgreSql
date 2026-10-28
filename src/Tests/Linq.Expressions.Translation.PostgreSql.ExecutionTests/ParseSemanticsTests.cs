@@ -44,7 +44,7 @@ public sealed class ParseSemanticsTests(Database database)
     }
 
     [Fact]
-    public void ParsesIsoDateWhateverDateStyle()
+    public void ParsesInvariantShortDateWithSingleDigits()
     {
         database.AssertSameSequence(
             Orders
@@ -54,7 +54,45 @@ public sealed class ParseSemanticsTests(Database database)
                 {
                     o.Id,
                     Date = DateOnly.Parse(
-                        "2024-02-0" + o.Quantity,
+                        o.Quantity + "/2/2024",
+                        CultureInfo.InvariantCulture
+                    ),
+                })
+        );
+    }
+
+    [Fact]
+    public void ParsesInvariantShortDateWithoutTimeAsMidnight()
+    {
+        database.AssertSameSequence(
+            Orders
+                .Where(o => o.Quantity > 0 && o.Quantity < 10)
+                .OrderBy(o => o.Id)
+                .Select(o => new
+                {
+                    o.Id,
+                    Time = DateTime.Parse(
+                        "0" + o.Quantity + "/02/2024",
+                        CultureInfo.InvariantCulture
+                    ),
+                })
+        );
+    }
+
+    // The session zone is America/New_York (execution.runsettings), where the hour
+    // from 02:00 on 2024-03-10 does not exist; the time is still read as written.
+    [Fact]
+    public void ParsesInvariantTimeInDaylightSavingGapAsWritten()
+    {
+        database.AssertSameSequence(
+            Orders
+                .Where(o => o.Quantity > 0 && o.Quantity < 10)
+                .OrderBy(o => o.Id)
+                .Select(o => new
+                {
+                    o.Id,
+                    Time = DateTime.Parse(
+                        "03/10/2024 02:3" + o.Quantity + ":00",
                         CultureInfo.InvariantCulture
                     ),
                 })
