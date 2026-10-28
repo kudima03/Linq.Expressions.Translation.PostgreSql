@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-preview.0.6.3] - 2026-10-28
+
+### Changed
+
+- `DateOnly.Parse` and `DateTime.Parse` with the invariant culture are `TO_DATE(..., 'MM/DD/YYYY')` and `TO_TIMESTAMP('+00 ' || ..., 'TZH MM/DD/YYYY HH24:MI:SS') AT TIME ZONE 'UTC'` instead of a cast of the text rewritten by `REGEXP_REPLACE`, which ran the regular expression for every value read (about twenty times the cost of the cast, so that a date range join over a few thousand rows a side took minutes instead of seconds). They still read the invariant short date month first whatever the server's `DateStyle`: a month and a day of one or two digits, a four-digit year, any single separator, leading spaces and a 24-hour time that may be missing or lack its seconds. ISO 8601 and a month name, which were left to the server's `DateStyle`, now fail on the server, and a two-digit year is the year itself. The text is read at a fixed `+00` offset and taken back as UTC, which keeps a `DateTime` as written even in a daylight-saving gap of the session's time zone.
+
 ## [0.1.0-preview.0.6.2] - 2026-10-28
 
 ### Fixed
