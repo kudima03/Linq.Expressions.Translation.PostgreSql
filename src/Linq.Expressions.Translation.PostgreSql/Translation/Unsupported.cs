@@ -26,6 +26,13 @@ internal static class Unsupported
         );
     }
 
+    public static NotSupportedException Uuids(string method)
+    {
+        return new NotSupportedException(
+            $"'{method}' of Guid values is not supported: PostgreSQL orders uuids differently from .NET."
+        );
+    }
+
     public static NotSupportedException Node(Expression expression)
     {
         return new NotSupportedException(

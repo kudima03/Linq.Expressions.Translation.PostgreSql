@@ -16,6 +16,8 @@ internal sealed partial class Translator
         nameof(Queryable.Average),
         nameof(Queryable.Min),
         nameof(Queryable.Max),
+        nameof(Queryable.MinBy),
+        nameof(Queryable.MaxBy),
         nameof(Queryable.Any),
         nameof(Queryable.All),
         nameof(Queryable.Contains),
@@ -166,14 +168,51 @@ internal sealed partial class Translator
                 2,
                 call
             ),
+            nameof(Queryable.MinBy) or nameof(Queryable.MaxBy) => Element(
+                Extremal(source, call),
+                1,
+                call
+            ),
             _ => throw Unsupported.Method(call.Method),
         };
     }
 
-    // Contains matches a null item with a NULL of the sequence, which IN never does.
+    // MinBy and MaxBy take the first element in the order of the key, then of the
+    // source: an element whose key is null is skipped unless every key is null (nulls
+    // last), while a tuple key is never null itself and orders its members as .NET does.
+    private SelectQuery Extremal(SqlQuery source, MethodCallExpression call)
+    {
+        SelectQuery query = Open(source, Barrier.Paging | Barrier.Distinct);
+        Shape key = Bind(Lambda(call, 1), query.Shape);
+        return key.Columns().Any(column => IsUuid(column.Value.Type))
+            ? throw Unsupported.Uuids(call.Method.Name)
+            : Ordered(
+                query,
+                key,
+                call.Method.Name == nameof(Queryable.MaxBy),
+                false,
+                IsOrdinal(call),
+                key is ScalarShape
+            );
+    }
+
+    private static bool IsUuid(Type type)
+    {
+        return ScalarTypes.Underlying(type) == typeof(Guid);
+    }
+
     private SqlExpression Membership(SqlQuery source, MethodCallExpression call)
     {
-        SqlExpression item = Sql(call.Arguments[1]);
+        return Membership(source, call.Arguments[0], Sql(call.Arguments[1]));
+    }
+
+    // Contains matches a null item with a NULL of the sequence, which IN never does.
+    private SqlExpression Membership(
+        SqlQuery source,
+        Expression sequence,
+        SqlExpression item
+    )
+    {
         bool nullable = Scalar(source.Shape).Nullable;
         SqlExpression membership = new SqlInQuery(
             item,
@@ -184,7 +223,7 @@ internal sealed partial class Translator
         {
             return membership;
         }
-        SelectQuery nulls = Restricted(Query(call.Arguments[0]), false);
+        SelectQuery nulls = Restricted(Query(sequence), false);
         Restrict(nulls, new SqlIsNull(Scalar(nulls.Shape), false));
         return Logical(
             "OR",
@@ -297,13 +336,9 @@ internal sealed partial class Translator
     // BOOL_OR, and uuids order differently in .NET.
     private static string Extreme(string name, Type type)
     {
-        Type value = ScalarTypes.Underlying(type);
-        return value == typeof(bool)
+        return ScalarTypes.Underlying(type) == typeof(bool)
                 ? (name == nameof(Queryable.Max) ? "BOOL_OR" : "BOOL_AND")
-            : value == typeof(Guid)
-                ? throw new NotSupportedException(
-                    $"'{name}' of Guid values is not supported: PostgreSQL orders uuids differently from .NET."
-                )
+            : IsUuid(type) ? throw Unsupported.Uuids(name)
             : name.ToUpperInvariant();
     }
 

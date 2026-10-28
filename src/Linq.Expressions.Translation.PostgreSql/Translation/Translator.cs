@@ -193,6 +193,11 @@ internal sealed partial class Translator
             or nameof(Queryable.Union)
             or nameof(Queryable.Intersect)
             or nameof(Queryable.Except) => Combined(source, call),
+            nameof(Queryable.UnionBy) => UnionBy(source, call),
+            nameof(Queryable.IntersectBy) or nameof(Queryable.ExceptBy) => Retained(
+                source,
+                call
+            ),
             nameof(Queryable.Join) => Join(source, call),
             nameof(Queryable.GroupJoin) => GroupJoin(source, call),
             nameof(Queryable.SelectMany) => SelectMany(source, call),
@@ -260,7 +265,8 @@ internal sealed partial class Translator
         Shape key,
         bool descending,
         bool then,
-        bool ordinal
+        bool ordinal,
+        bool nullsLast = false
     )
     {
         // A constant key orders nothing; as a bare literal in ORDER BY it would be a
@@ -271,7 +277,8 @@ internal sealed partial class Translator
                 .Where(column => column.Value is not SqlConstant)
                 .Select(column => new Ordering(
                     ordinal ? new SqlCollation(column.Value) : column.Value,
-                    descending
+                    descending,
+                    descending || nullsLast
                 )),
         ];
         query.Orderings = then
@@ -349,12 +356,17 @@ internal sealed partial class Translator
         return query;
     }
 
-    // DISTINCT ON keeps the first row of each key in ORDER BY order, which has to start
-    // with the keys. An order of the source that does not is restored outside.
     private SelectQuery DistinctBy(SqlQuery source, MethodCallExpression call)
     {
         SelectQuery query = Open(source, Barrier.Paging | Barrier.Distinct);
-        List<SqlExpression> keys = Partitioned(Bind(Lambda(call, 1), query.Shape));
+        return Distinguished(query, Bind(Lambda(call, 1), query.Shape));
+    }
+
+    // DISTINCT ON keeps the first row of each key in ORDER BY order, which has to start
+    // with the keys. An order of the source that does not is restored outside.
+    private SelectQuery Distinguished(SelectQuery query, Shape key)
+    {
+        List<SqlExpression> keys = Partitioned(key);
         query.DistinctOn = keys;
         HashSet<string> leading =
         [
@@ -486,7 +498,8 @@ internal sealed partial class Translator
             [
                 .. query
                     .Orderings.Where(ordering =>
-                        ordered || names.ContainsKey(SqlWriter.Text(ordering.Key))
+                        query.IsOrdered
+                        && (ordered || names.ContainsKey(SqlWriter.Text(ordering.Key)))
                     )
                     .Select(ordering => new Ordering(
                         new SqlColumn(
@@ -495,7 +508,8 @@ internal sealed partial class Translator
                             ordering.Key.Type,
                             ordering.Key.Nullable
                         ),
-                        ordering.Descending
+                        ordering.Descending,
+                        ordering.NullsLast
                     )),
             ];
             if (!query.KeepsOrder)

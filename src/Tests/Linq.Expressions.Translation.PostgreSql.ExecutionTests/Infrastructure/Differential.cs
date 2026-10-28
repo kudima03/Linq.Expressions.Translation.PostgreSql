@@ -18,6 +18,8 @@ public static class Differential
         nameof(Queryable.LastOrDefault),
         nameof(Queryable.ElementAt),
         nameof(Queryable.ElementAtOrDefault),
+        nameof(Queryable.MinBy),
+        nameof(Queryable.MaxBy),
     ];
 
     // The same rows in any order.
@@ -106,10 +108,7 @@ public static class Differential
         {
             object?[] row = Assert.Single(result.Rows);
             _ = Assert.Single(result.Columns);
-            return
-                row[0] is null
-                && typeof(TResult).IsValueType
-                && Nullable.GetUnderlyingType(typeof(TResult)) is null
+            return row[0] is null && IsRequired<TResult>()
                 ? Throws
                 : Canonical.Describe(Materializer.Element(typeof(TResult), result, row));
         }
@@ -122,9 +121,24 @@ public static class Differential
                 ? Canonical.Describe(
                     Materializer.Element(typeof(TResult), result, result.Rows[0])
                 )
-            : name.EndsWith("OrDefault", StringComparison.Ordinal)
-                ? Canonical.Describe(default(TResult))
+            : HasDefault<TResult>(name) ? Canonical.Describe(default(TResult))
             : Throws;
+    }
+
+    private static bool IsRequired<TResult>()
+    {
+        return typeof(TResult).IsValueType
+            && Nullable.GetUnderlyingType(typeof(TResult)) is null;
+    }
+
+    // MinBy and MaxBy of no element are the default of a reference or nullable type.
+    private static bool HasDefault<TResult>(string name)
+    {
+        return name.EndsWith("OrDefault", StringComparison.Ordinal)
+            || (
+                name is nameof(Queryable.MinBy) or nameof(Queryable.MaxBy)
+                && !IsRequired<TResult>()
+            );
     }
 
     private static string Report(
