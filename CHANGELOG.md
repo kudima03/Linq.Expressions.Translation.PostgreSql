@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A left-joined source (`GroupJoin` or a correlated `SelectMany` with `DefaultIfEmpty()`) that projects anything other than its own columns (a `COALESCE`, a constant, a column of the outer element, ...) is joined as a derived table, so that an unmatched row reads `NULL` for it, as the default element is in LINQ to Objects, instead of evaluating it on the `NULL`s of the missing row or failing the statement.
+- A constant column of `Concat`/`Union`/`Intersect`/`Except` is nullable when the column of the other side is, so that a comparison with it uses `IS DISTINCT FROM` and keeps the rows C# keeps.
+- A left-joined element of a value type (`Select(o => o.Quantity).DefaultIfEmpty()`, a value tuple) is its default for an outer row without a match (`COALESCE(..., 0)`, member by member down to a reference or nullable member, which stays `NULL`), as `DefaultIfEmpty()` yields it, instead of `NULL`.
+- A left-joined projection compared with `null` tests a column that is never `NULL` in a match, or every column when there is none, instead of being rejected; a projection that is not left-joined compares as never null.
+- The explicit default of `DefaultIfEmpty(value)` under `SelectMany` is `COALESCE(..., value)` for a single value that is never `NULL` in a matching row, instead of being ignored; a nullable value or a projection is rejected, as `NULL` cannot be told from the absence of a row.
+
 ## [0.1.0-preview.0.6.0] - 2026-10-28
 
 ### Added

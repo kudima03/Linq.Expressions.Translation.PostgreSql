@@ -5,15 +5,17 @@ internal sealed class SqlColumn(string alias, string name, Type type, bool nulla
 {
     public override bool Nullable => nullable;
 
+    public string Alias { get; } = alias;
+
     public string Name { get; } = name;
 
-    public override SqlExpression AsNullable()
+    public SqlColumn AsNullable()
     {
-        return new SqlColumn(alias, Name, Type, true);
+        return new SqlColumn(Alias, Name, Type, true);
     }
 
     public override void Render(SqlWriter writer, SqlMode mode)
     {
-        _ = writer.Append(alias + ".").Identifier(Name);
+        _ = writer.Append(Alias + ".").Identifier(Name);
     }
 }

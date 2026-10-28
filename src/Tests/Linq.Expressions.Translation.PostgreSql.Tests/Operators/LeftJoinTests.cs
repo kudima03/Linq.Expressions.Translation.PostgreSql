@@ -478,9 +478,13 @@ public sealed record LeftJoinTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Name", t1."Total" * 2 AS "Total"
+                SELECT t0."Name", COALESCE(t2."Value", 0) AS "Total"
                 FROM "Customer" AS t0
-                LEFT JOIN "Order" AS t1 ON t1."CustomerId" = t0."Id"
+                LEFT JOIN LATERAL (
+                    SELECT t1."Total" * 2 AS "Value"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                ) AS t2 ON TRUE
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -488,7 +492,7 @@ public sealed record LeftJoinTests
     }
 
     [Fact]
-    public void ComparesComputedColumnOfLeftJoinedSourceNullSafe()
+    public void ComparesDefaultedComputedColumnOfLeftJoinedSource()
     {
         Expression query = Customers
             .SelectMany(
@@ -505,10 +509,14 @@ public sealed record LeftJoinTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Name", t1."Quantity" + 1 AS "Quantity"
+                SELECT t0."Name", COALESCE(t2."Value", 0) AS "Quantity"
                 FROM "Customer" AS t0
-                LEFT JOIN "Order" AS t1 ON t1."CustomerId" = t0."Id"
-                WHERE (t1."Quantity" + 1) IS DISTINCT FROM 5
+                LEFT JOIN LATERAL (
+                    SELECT t1."Quantity" + 1 AS "Value"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                ) AS t2 ON TRUE
+                WHERE COALESCE(t2."Value", 0) <> 5
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -516,7 +524,7 @@ public sealed record LeftJoinTests
     }
 
     [Fact]
-    public void DropsConstantColumnOfLeftJoinedSourceFromOrderBy()
+    public void OrdersByConstantColumnOfLeftJoinedSource()
     {
         Expression query = Customers
             .SelectMany(
@@ -533,11 +541,361 @@ public sealed record LeftJoinTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Name", 'order' AS "Kind"
+                SELECT t0."Name", t2."Value" AS "Kind"
+                FROM "Customer" AS t0
+                LEFT JOIN LATERAL (
+                    SELECT 'order' AS "Value"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                ) AS t2 ON TRUE
+                ORDER BY t2."Value" NULLS FIRST
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void LeftJoinsProjectionWithComputedColumnAsDerivedTable()
+    {
+        Expression query = Customers
+            .GroupJoin(
+                Orders.Select(o => new ValueTuple<int?, string?>(
+                    o.CustomerId,
+                    o.Note ?? "none"
+                )),
+                c => c.Id,
+                o => o.Item1,
+                (c, matches) => new { c, matches }
+            )
+            .SelectMany(
+                x => x.matches.DefaultIfEmpty(),
+                (x, o) => new ValueTuple<int, int?, string?>(x.c.Id, o.Item1, o.Item2)
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id" AS "item1", t2."item1" AS "item2", t2."item2" AS "item3"
+                FROM "Customer" AS t0
+                LEFT JOIN (
+                    SELECT t1."CustomerId" AS "item1", COALESCE(t1."Note", 'none') AS "item2"
+                    FROM "Order" AS t1
+                ) AS t2 ON t0."Id" = t2."item1"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void DefaultsUnmatchedValueOfLeftJoinedScalar()
+    {
+        Expression query = Customers
+            .SelectMany(
+                c =>
+                    Orders
+                        .Where(o => o.CustomerId == c.Id)
+                        .Select(o => o.Quantity)
+                        .DefaultIfEmpty(),
+                (c, q) => new { c.Id, Quantity = q }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", COALESCE(t1."Quantity", 0) AS "Quantity"
                 FROM "Customer" AS t0
                 LEFT JOIN "Order" AS t1 ON t1."CustomerId" = t0."Id"
                 """
             ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void DefaultsUnmatchedValueMembersOfLeftJoinedTupleButNullsReferences()
+    {
+        Expression query = Customers
+            .GroupJoin(
+                Orders.Select(o => new ValueTuple<int?, ValueTuple<int>, string?>(
+                    o.CustomerId,
+                    new ValueTuple<int>(o.Quantity),
+                    o.Note
+                )),
+                c => c.Id,
+                o => o.Item1,
+                (c, matches) => new { c, matches }
+            )
+            .SelectMany(
+                x => x.matches.DefaultIfEmpty(),
+                (x, o) =>
+                    new ValueTuple<int, int, string?>(x.c.Id, o.Item2.Item1, o.Item3)
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id" AS "item1", COALESCE(t1."Quantity", 0) AS "item2", t1."Note" AS "item3"
+                FROM "Customer" AS t0
+                LEFT JOIN "Order" AS t1 ON t0."Id" = t1."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsNullableMembersOfLeftJoinedTupleNull()
+    {
+        Expression query = Customers
+            .GroupJoin(
+                Orders.Select(o => new ValueTuple<int?, int?>(
+                    o.CustomerId,
+                    o.Quantity * 10
+                )),
+                c => c.Id,
+                o => o.Item1,
+                (c, matches) => new { c, matches }
+            )
+            .SelectMany(
+                x => x.matches.DefaultIfEmpty(),
+                (x, o) => new ValueTuple<int, int?>(x.c.Id, o.Item2)
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id" AS "item1", t2."item2"
+                FROM "Customer" AS t0
+                LEFT JOIN (
+                    SELECT t1."CustomerId" AS "item1", t1."Quantity" * 10 AS "item2"
+                    FROM "Order" AS t1
+                ) AS t2 ON t0."Id" = t2."item1"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesLeftJoinedProjectionWithNullByRequiredColumn()
+    {
+        Expression query = Customers
+            .GroupJoin(
+                Orders.Select(o => new
+                {
+                    o.CustomerId,
+                    o.Quantity,
+                    Note = o.Note ?? "none",
+                }),
+                c => c.Id,
+                o => o.CustomerId,
+                (c, matches) => new { c, matches }
+            )
+            .SelectMany(
+                x => x.matches.DefaultIfEmpty(),
+                (x, o) =>
+                    new
+                    {
+                        x.c.Id,
+                        Quantity = o == null ? -1 : o.Quantity,
+                        Missing = o == null,
+                    }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", CASE WHEN t2."CustomerId" IS NULL THEN -1 ELSE t2."Quantity" END AS "Quantity", t2."CustomerId" IS NULL AS "Missing"
+                FROM "Customer" AS t0
+                LEFT JOIN (
+                    SELECT t1."CustomerId", t1."Quantity", COALESCE(t1."Note", 'none') AS "Note"
+                    FROM "Order" AS t1
+                ) AS t2 ON t0."Id" = t2."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesLeftJoinedProjectionOfNullableColumnsWithNullByEveryColumn()
+    {
+        Expression query = Customers
+            .GroupJoin(
+                Orders.Select(o => new { o.Note, o.Priority }),
+                c => c.Name,
+                o => o.Note,
+                (c, matches) => new { c, matches }
+            )
+            .SelectMany(
+                x => x.matches.DefaultIfEmpty(),
+                (x, o) => new { x.c.Id, Missing = o == null }
+            )
+            .Where(r => !r.Missing)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", (t1."Note" IS NULL) AND (t1."Priority" IS NULL) AS "Missing"
+                FROM "Customer" AS t0
+                LEFT JOIN "Order" AS t1 ON t0."Name" = t1."Note"
+                WHERE NOT ((t1."Note" IS NULL) AND (t1."Priority" IS NULL))
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesLeftJoinedProjectionOfNullableColumnsWithNotNullByAnyColumn()
+    {
+        Expression query = Customers
+            .GroupJoin(
+                Orders.Select(o => new { o.Note, o.Priority }),
+                c => c.Name,
+                o => o.Note,
+                (c, matches) => new { c, matches }
+            )
+            .SelectMany(
+                x => x.matches.DefaultIfEmpty(),
+                (x, o) => new { x.c.Id, Priority = o != null ? o.Priority : -1 }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", CASE WHEN (t1."Note" IS NOT NULL) OR (t1."Priority" IS NOT NULL) THEN t1."Priority" ELSE -1 END AS "Priority"
+                FROM "Customer" AS t0
+                LEFT JOIN "Order" AS t1 ON t0."Name" = t1."Note"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesProjectionThatIsNotLeftJoinedWithNullAsConstant()
+    {
+        Expression query = Customers
+            .Select(c => new { c.Id })
+            .Where(x => x != null)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Customer" AS t0
+                WHERE TRUE
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SubstitutesExplicitDefaultOfLeftJoinedScalar()
+    {
+        Expression query = Customers
+            .SelectMany(
+                c =>
+                    Orders
+                        .Where(o => o.CustomerId == c.Id)
+                        .Select(o => o.Quantity)
+                        .DefaultIfEmpty(c.Id * 100),
+                (c, q) => new { c.Id, Quantity = q }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", COALESCE(t1."Quantity", t0."Id" * 100) AS "Quantity"
+                FROM "Customer" AS t0
+                LEFT JOIN "Order" AS t1 ON t1."CustomerId" = t0."Id"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SubstitutesExplicitDefaultOfLeftJoinedComputedValue()
+    {
+        Expression query = Customers
+            .SelectMany(
+                c =>
+                    Orders
+                        .Where(o => o.CustomerId == c.Id)
+                        .Select(o => o.Note ?? "noted")
+                        .DefaultIfEmpty("none"),
+                (c, n) => new { c.Id, Note = n }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", COALESCE(t2."Value", 'none') AS "Note"
+                FROM "Customer" AS t0
+                LEFT JOIN LATERAL (
+                    SELECT COALESCE(t1."Note", 'noted') AS "Value"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                ) AS t2 ON TRUE
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void RejectsExplicitDefaultOfLeftJoinedNullableValue()
+    {
+        Expression query = Customers
+            .SelectMany(
+                c =>
+                    Orders
+                        .Where(o => o.CustomerId == c.Id)
+                        .Select(o => o.Note)
+                        .DefaultIfEmpty("none"),
+                (c, n) => new { c.Id, Note = n }
+            )
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Equal(
+            "A default of DefaultIfEmpty is only translated for a single value that is never NULL in a matching row, as NULL cannot be told from the absence of a row.",
+            exception.Message
+        );
+    }
+
+    [Fact]
+    public void RejectsExplicitDefaultOfLeftJoinedProjection()
+    {
+        Expression query = Customers
+            .SelectMany(
+                c =>
+                    Orders
+                        .Where(o => o.CustomerId == c.Id)
+                        .Select(o => new ValueTuple<int>(o.Quantity))
+                        .DefaultIfEmpty(new ValueTuple<int>(-1)),
+                (c, o) => new { c.Id, o.Item1 }
+            )
+            .Expression;
+
+        _ = Assert.Throws<NotSupportedException>(() =>
             new PostgreSqlQuery(query).TextValue
         );
     }

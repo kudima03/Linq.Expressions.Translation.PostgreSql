@@ -213,7 +213,8 @@ internal sealed partial class Translator
         SqlExpression item
     )
     {
-        bool nullable = Scalar(source.Shape).Nullable;
+        _ = Scalar(source.Shape);
+        bool nullable = source.Nullability()[0];
         SqlExpression membership = new SqlInQuery(
             item,
             Unordered(Open(source, Barrier.None)),

@@ -545,6 +545,131 @@ public sealed record SetOperationTests
     }
 
     [Fact]
+    public void ComparesConstantColumnOfUnionWithNullableSideNullSafe()
+    {
+        Expression query = Customers
+            .Select(c => new { c.Id, Note = (string?)"none" })
+            .Union(Orders.Select(o => new { o.Id, o.Note }))
+            .Where(x => x.Note != "x")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Id", t2."Note"
+                FROM (
+                    SELECT t0."Id", 'none' AS "Note"
+                    FROM "Customer" AS t0
+                    UNION
+                    SELECT t1."Id", t1."Note"
+                    FROM "Order" AS t1
+                ) AS t2
+                WHERE t2."Note" IS DISTINCT FROM 'x'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void ComparesColumnOfUnionWithNullableLeftSideNullSafe()
+    {
+        Expression query = Orders
+            .Select(o => o.Note)
+            .Union(Customers.Select(c => (string?)c.Name))
+            .Where(n => n != "x")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Note"
+                FROM (
+                    SELECT t0."Note"
+                    FROM "Order" AS t0
+                    UNION
+                    SELECT t1."Name"
+                    FROM "Customer" AS t1
+                ) AS t2
+                WHERE t2."Note" IS DISTINCT FROM 'x'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void DropsNullsOfUnionWithNullableRightSideForOfType()
+    {
+        Expression query = Customers
+            .Select(c => (string?)c.Name)
+            .Union(Orders.Select(o => o.Note))
+            .OfType<string>()
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Name"
+                FROM (
+                    SELECT t0."Name"
+                    FROM "Customer" AS t0
+                    UNION
+                    SELECT t1."Note"
+                    FROM "Order" AS t1
+                ) AS t2
+                WHERE t2."Name" IS NOT NULL
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void MatchesNullItemWithNullOfUnionWithNullableRightSide()
+    {
+        Expression query = Customers
+            .Where(c =>
+                Customers
+                    .Select(x => (string?)x.Name)
+                    .Union(Orders.Select(o => o.Note))
+                    .Contains(c.Email)
+            )
+            .Select(c => c.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Customer" AS t0
+                WHERE (t0."Email" IN (
+                    SELECT t3."Name"
+                    FROM (
+                        SELECT t1."Name"
+                        FROM "Customer" AS t1
+                        UNION
+                        SELECT t2."Note"
+                        FROM "Order" AS t2
+                    ) AS t3
+                )) OR ((t0."Email" IS NULL) AND EXISTS (
+                    SELECT 1
+                    FROM (
+                        SELECT t4."Name"
+                        FROM "Customer" AS t4
+                        UNION
+                        SELECT t5."Note"
+                        FROM "Order" AS t5
+                    ) AS t6
+                    WHERE t6."Name" IS NULL
+                ))
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
     public void WrapsPagingAfterConcat()
     {
         Expression query = Customers

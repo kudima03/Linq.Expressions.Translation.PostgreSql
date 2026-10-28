@@ -27,18 +27,7 @@ internal sealed partial class Translator
             SetOperations[call.Method.Name],
             left,
             right,
-            Merged(left.Shape, right.Shape)
-        );
-    }
-
-    // A column of the result is nullable when it is nullable on either side.
-    private static Shape Merged(Shape left, Shape right)
-    {
-        List<ProjectionColumn> others = right.Columns();
-        int index = 0;
-        return left.Map(
-            (value, name) => others[index++].Value.Nullable ? value.AsNullable() : value,
-            null
+            left.Shape
         );
     }
 
@@ -59,7 +48,7 @@ internal sealed partial class Translator
                 SetOperations[call.Method.Name],
                 left,
                 right,
-                Merged(left.Shape, right.Shape)
+                left.Shape
             )
         );
         List<SqlExpression> keys = Partitioned(Bind(Lambda(call, 2), query.Shape));

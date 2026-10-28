@@ -11,10 +11,5 @@ internal abstract class SqlExpression(Type type)
         return false;
     }
 
-    public virtual SqlExpression AsNullable()
-    {
-        return new SqlNullable(this);
-    }
-
     public abstract void Render(SqlWriter writer, SqlMode mode);
 }
