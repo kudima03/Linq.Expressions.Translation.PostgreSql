@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A left-joined source (`GroupJoin` or a correlated `SelectMany` with `DefaultIfEmpty()`) that projects anything other than its own columns (a `COALESCE`, a constant, a column of the outer element, ...) is joined as a derived table, so that an unmatched row reads `NULL` for it, as the default element is in LINQ to Objects, instead of evaluating it on the `NULL`s of the missing row or failing the statement.
+- A constant column of `Concat`/`Union`/`Intersect`/`Except` is nullable when the column of the other side is, so that a comparison with it uses `IS DISTINCT FROM` and keeps the rows C# keeps.
+
 ## [0.1.0-preview.0.6.0] - 2026-10-28
 
 ### Added
