@@ -206,6 +206,78 @@ public sealed class NullSemanticsTests(Database database)
     }
 
     [Fact]
+    public void NullsCoalescedColumnOfLeftJoinedProjectionForUnmatchedRows()
+    {
+        database.AssertSameRows(
+            Customers
+                .GroupJoin(
+                    Orders.Select(o => new ValueTuple<int?, string?>(
+                        o.CustomerId,
+                        o.Note ?? "none"
+                    )),
+                    c => c.Id,
+                    o => o.Item1,
+                    (c, matches) => new { c, matches }
+                )
+                .SelectMany(
+                    x => x.matches.DefaultIfEmpty(),
+                    (x, o) => new ValueTuple<int, int?, string?>(x.c.Id, o.Item1, o.Item2)
+                )
+        );
+    }
+
+    [Fact]
+    public void NullsConstantColumnOfLeftJoinedProjectionForUnmatchedRows()
+    {
+        database.AssertSameRows(
+            Customers
+                .GroupJoin(
+                    Orders.Select(o => new ValueTuple<int?, int?>(o.CustomerId, 5)),
+                    c => c.Id,
+                    o => o.Item1,
+                    (c, matches) => new { c, matches }
+                )
+                .SelectMany(
+                    x => x.matches.DefaultIfEmpty(),
+                    (x, o) => new ValueTuple<int, int?, int?>(x.c.Id, o.Item1, o.Item2)
+                )
+        );
+    }
+
+    [Fact]
+    public void NullsComputedColumnOfCorrelatedLeftJoinForUnmatchedRows()
+    {
+        database.AssertSameRows(
+            Customers.SelectMany(
+                c =>
+                    Orders
+                        .Where(o => o.CustomerId == c.Id)
+                        .Select(o => new ValueTuple<int?, string?>(
+                            o.CustomerId,
+                            o.Note ?? "none"
+                        ))
+                        .DefaultIfEmpty(),
+                (c, o) => new ValueTuple<int, int?, string?>(c.Id, o.Item1, o.Item2)
+            )
+        );
+    }
+
+    [Fact]
+    public void NullsOuterColumnOfCorrelatedLeftJoinForUnmatchedRows()
+    {
+        database.AssertSameRows(
+            Customers.SelectMany(
+                c =>
+                    Orders
+                        .Where(o => o.CustomerId == c.Id)
+                        .Select(o => new ValueTuple<int?, string?>(o.Id, c.Name))
+                        .DefaultIfEmpty(),
+                (c, o) => new ValueTuple<int, int?, string?>(c.Id, o.Item1, o.Item2)
+            )
+        );
+    }
+
+    [Fact]
     public void FindsRowsWithoutJoinPartner()
     {
         database.AssertSameRows(
