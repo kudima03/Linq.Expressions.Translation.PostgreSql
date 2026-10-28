@@ -53,7 +53,10 @@ internal sealed partial class Translator
         Type type = ((PropertyInfo)member).PropertyType;
         return member switch
         {
-            { Name: nameof(Nullable<>.Value) } when IsNullable(member) => owner,
+            { Name: nameof(Nullable<>.Value) } when IsNullable(member) => Required(
+                owner,
+                type
+            ),
             { Name: nameof(Nullable<>.HasValue) } when IsNullable(member) =>
                 new SqlIsNull(owner, true),
             { Name: nameof(string.Length) } when member.DeclaringType == typeof(string) =>

@@ -88,14 +88,21 @@ internal sealed partial class Translator
         );
     }
 
+    // A query of its own is translated with no projection around it: an aggregate
+    // in it is a window over its own rows only.
     private SqlQuery Query(Expression expression)
     {
-        return expression switch
+        SelectQuery? window = _window;
+        _window = null;
+        SqlQuery query = expression switch
         {
             ConstantExpression { Value: IQueryable root } => Root(root),
             MethodCallExpression call => Operator(call),
             _ => throw Unsupported.Node(expression),
         };
+        _window = window;
+        query.Origin = expression;
+        return query;
     }
 
     private SelectQuery Root(IQueryable root)
@@ -237,13 +244,16 @@ internal sealed partial class Translator
 
     private SelectQuery Restricted(SqlQuery source, bool ordered = true)
     {
-        return Open(source, Barrier.Paging | Barrier.Distinct, ordered);
+        return Open(source, Barrier.Paging | Barrier.Distinct | Barrier.Window, ordered);
     }
 
     private SelectQuery Select(SqlQuery source, LambdaExpression selector)
     {
         SelectQuery query = Open(source, Barrier.Distinct | Barrier.Projection);
+        SelectQuery? window = _window;
+        _window = query;
         query.Shape = Bind(selector, query.Shape);
+        _window = window;
         return query;
     }
 
@@ -321,7 +331,7 @@ internal sealed partial class Translator
         SelectQuery counted = Unordered(
             Open(
                 Query(call.Arguments[0]),
-                Barrier.Paging | Barrier.Distinct | Barrier.Grouping,
+                Barrier.Paging | Barrier.Distinct | Barrier.Grouping | Barrier.Window,
                 false
             )
         );
@@ -364,7 +374,10 @@ internal sealed partial class Translator
 
     private SelectQuery DistinctBy(SqlQuery source, MethodCallExpression call)
     {
-        SelectQuery query = Open(source, Barrier.Paging | Barrier.Distinct);
+        SelectQuery query = Open(
+            source,
+            Barrier.Paging | Barrier.Distinct | Barrier.Window
+        );
         return Distinguished(query, Bind(Lambda(call, 1), query.Shape));
     }
 
@@ -464,6 +477,7 @@ internal sealed partial class Translator
             || ((barriers & Barrier.Distinct) != 0 && query.Distinct)
             || ((barriers & Barrier.Grouping) != 0 && query.GroupBy is not null)
             || ((barriers & Barrier.Bound) != 0 && query.Bound is not null)
+            || ((barriers & Barrier.Window) != 0 && query.Windowed)
             || (
                 (barriers & Barrier.Projection) != 0
                 && query.GroupBy is not null
@@ -496,7 +510,10 @@ internal sealed partial class Translator
                     new SqlColumn(alias, name!, value.Type, nullability[index++]),
                 null
             )
-        );
+        )
+        {
+            Origin = inner.Origin,
+        };
         if (inner is SelectQuery query)
         {
             outer.Orderings =

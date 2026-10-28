@@ -235,7 +235,11 @@ internal sealed partial class Translator
         Type target = ScalarTypes.Underlying(to);
         if (source == target)
         {
-            return value;
+            return
+                Nullable.GetUnderlyingType(from) is not null
+                && Nullable.GetUnderlyingType(to) is null
+                ? Required(value, to)
+                : value;
         }
         // Only a DateTime converts to a DateTimeOffset: a timestamp compares with a
         // timestamptz through the session time zone, as the conversion uses the local one.
@@ -254,6 +258,12 @@ internal sealed partial class Translator
                 ? new SqlFunction("TRUNC", [value], value.Type)
                 : value;
         return new SqlCast(operand, ScalarTypes.Number(target), to);
+    }
+
+    // A nullable value C# reads as its value is never NULL where the C# evaluates.
+    private static SqlExpression Required(SqlExpression value, Type type)
+    {
+        return value.Nullable ? new SqlRequired(value, type) : value;
     }
 
     private SqlExpression Binary(BinaryExpression binary)
