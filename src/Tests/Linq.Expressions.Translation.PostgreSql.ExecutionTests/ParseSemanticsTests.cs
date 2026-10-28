@@ -7,10 +7,7 @@ namespace Linq.Expressions.Translation.PostgreSql.ExecutionTests;
 [Collection(SharedDatabase.Name)]
 public sealed class ParseSemanticsTests(Database database)
 {
-    private const string Skip =
-        "#85: a parsed date is a cast from text, which reads it in the server's DateStyle";
-
-    [Fact(Skip = Skip)]
+    [Fact]
     public void ParsesInvariantShortDateMonthFirst()
     {
         database.AssertSameSequence(
@@ -28,7 +25,7 @@ public sealed class ParseSemanticsTests(Database database)
         );
     }
 
-    [Fact(Skip = Skip)]
+    [Fact]
     public void ParsesInvariantShortDateAndTimeMonthFirst()
     {
         database.AssertSameSequence(

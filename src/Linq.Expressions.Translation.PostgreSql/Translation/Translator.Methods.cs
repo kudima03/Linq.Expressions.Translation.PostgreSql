@@ -699,6 +699,15 @@ internal sealed partial class Translator
 
     private static readonly HashSet<Type> CultureFree = [typeof(bool), typeof(Guid)];
 
+    private static readonly HashSet<Type> DateStyled =
+    [
+        typeof(DateOnly),
+        typeof(DateTime),
+    ];
+
+    // The invariant short date: a month, a day and a four-digit year.
+    private const string MonthFirst = @"^\s*(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})";
+
     // Parsing is a cast from text in PostgreSQL's input syntax, which the invariant
     // culture reads as well; the current culture may not.
     private SqlExpression Parsed(MethodCallExpression call)
@@ -712,9 +721,33 @@ internal sealed partial class Translator
         bool cultured =
             CultureFree.Contains(type)
             || options.Any(option => option is ConstantExpression { Value: CultureInfo });
-        return target is not null && cultured && options.All(IsInvariant)
-            ? new SqlCast(Sql(call.Arguments[0]), target, type)
-            : throw Unsupported.Method(call.Method);
+        if (target is null || !cultured || !options.All(IsInvariant))
+        {
+            throw Unsupported.Method(call.Method);
+        }
+        SqlExpression text = Sql(call.Arguments[0]);
+        return new SqlCast(
+            DateStyled.Contains(type) ? MonthFirstAsIso(text) : text,
+            target,
+            type
+        );
+    }
+
+    // The server reads a numeric date in its DateStyle, day first on a DMY server,
+    // where the invariant culture reads the month first; the date is rewritten as
+    // ISO 8601, which is read the same whatever the DateStyle.
+    private static SqlFunction MonthFirstAsIso(SqlExpression text)
+    {
+        return new SqlFunction(
+            "REGEXP_REPLACE",
+            [
+                text,
+                new SqlConstant(MonthFirst, typeof(string)),
+                new SqlConstant(@"\3-\1-\2", typeof(string)),
+            ],
+            typeof(string),
+            text.Nullable
+        );
     }
 
     // A style is a constant set of flags; a culture has to be the invariant one.
