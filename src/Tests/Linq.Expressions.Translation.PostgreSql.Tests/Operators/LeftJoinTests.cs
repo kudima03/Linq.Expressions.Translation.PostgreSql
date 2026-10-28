@@ -556,6 +556,40 @@ public sealed record LeftJoinTests
     }
 
     [Fact]
+    public void LeftJoinsProjectionWithComputedColumnAsDerivedTable()
+    {
+        Expression query = Customers
+            .GroupJoin(
+                Orders.Select(o => new ValueTuple<int?, string?>(
+                    o.CustomerId,
+                    o.Note ?? "none"
+                )),
+                c => c.Id,
+                o => o.Item1,
+                (c, matches) => new { c, matches }
+            )
+            .SelectMany(
+                x => x.matches.DefaultIfEmpty(),
+                (x, o) => new ValueTuple<int, int?, string?>(x.c.Id, o.Item1, o.Item2)
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id" AS "item1", t2."item1" AS "item2", t2."item2" AS "item3"
+                FROM "Customer" AS t0
+                LEFT JOIN (
+                    SELECT t1."CustomerId" AS "item1", COALESCE(t1."Note", 'none') AS "item2"
+                    FROM "Order" AS t1
+                ) AS t2 ON t0."Id" = t2."item1"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
     public void LeftJoinsPagedProjectionWithoutHiddenOrderingKey()
     {
         Expression query = Customers
