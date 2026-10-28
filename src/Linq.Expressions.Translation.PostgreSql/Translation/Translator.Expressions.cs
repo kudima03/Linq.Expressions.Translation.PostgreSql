@@ -138,6 +138,7 @@ internal sealed partial class Translator
         return expression switch
         {
             ConstantExpression constant => new SqlConstant(constant.Value, constant.Type),
+            DeferredConstant deferred => new SqlDeferred(Node(deferred.Operand)),
             BinaryExpression binary => Binary(binary),
             UnaryExpression { NodeType: ExpressionType.ArrayLength } length =>
                 new SqlFunction("CARDINALITY", [Sql(length.Operand)], typeof(int)),
