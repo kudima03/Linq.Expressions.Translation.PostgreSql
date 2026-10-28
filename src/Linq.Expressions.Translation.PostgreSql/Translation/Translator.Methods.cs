@@ -691,22 +691,26 @@ internal sealed partial class Translator
     private static readonly Dictionary<Type, string> Parsable = new()
     {
         [typeof(bool)] = "boolean",
-        [typeof(DateOnly)] = "date",
         [typeof(TimeOnly)] = "time",
-        [typeof(DateTime)] = "timestamp",
         [typeof(Guid)] = "uuid",
     };
 
     private static readonly HashSet<Type> CultureFree = [typeof(bool), typeof(Guid)];
 
-    private static readonly HashSet<Type> DateStyled =
-    [
-        typeof(DateOnly),
-        typeof(DateTime),
-    ];
+    // The server reads a numeric date in its DateStyle, day first on a DMY server,
+    // where the invariant culture reads the month first; a format pattern is read
+    // the same whatever the DateStyle, and costs no more than a cast.
+    private static readonly Dictionary<
+        Type,
+        Func<SqlExpression, SqlExpression>
+    > Patterned = new()
+    {
+        [typeof(DateOnly)] = ParsedDate,
+        [typeof(DateTime)] = ParsedMoment,
+    };
 
     // The invariant short date: a month, a day and a four-digit year.
-    private const string MonthFirst = @"^\s*(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})";
+    private const string DatePattern = "MM/DD/YYYY";
 
     // Parsing is a cast from text in PostgreSQL's input syntax, which the invariant
     // culture reads as well; the current culture may not.
@@ -721,31 +725,55 @@ internal sealed partial class Translator
         bool cultured =
             CultureFree.Contains(type)
             || options.Any(option => option is ConstantExpression { Value: CultureInfo });
-        if (target is null || !cultured || !options.All(IsInvariant))
+        if (
+            (target is null && !Patterned.ContainsKey(type))
+            || !cultured
+            || !options.All(IsInvariant)
+        )
         {
             throw Unsupported.Method(call.Method);
         }
         SqlExpression text = Sql(call.Arguments[0]);
-        return new SqlCast(
-            DateStyled.Contains(type) ? MonthFirstAsIso(text) : text,
-            target,
-            type
+        return target is null ? Patterned[type](text) : new SqlCast(text, target, type);
+    }
+
+    private static SqlFunction ParsedDate(SqlExpression text)
+    {
+        return new SqlFunction(
+            "TO_DATE",
+            [text, Text(DatePattern)],
+            typeof(DateOnly),
+            text.Nullable
         );
     }
 
-    // The server reads a numeric date in its DateStyle, day first on a DMY server,
-    // where the invariant culture reads the month first; the date is rewritten as
-    // ISO 8601, which is read the same whatever the DateStyle.
-    private static SqlFunction MonthFirstAsIso(SqlExpression text)
+    // to_timestamp reads the text in the session's zone, where a time in a
+    // daylight-saving gap shifts by an hour; a fixed +00 offset put before the text
+    // and taken back as UTC keeps the time as written.
+    private static SqlBinary ParsedMoment(SqlExpression text)
     {
-        return new SqlFunction(
-            "REGEXP_REPLACE",
+        SqlFunction moment = new(
+            "TO_TIMESTAMP",
             [
-                text,
-                new SqlConstant(MonthFirst, typeof(string)),
-                new SqlConstant(@"\3-\1-\2", typeof(string)),
+                new SqlBinary(
+                    "||",
+                    SqlBinaryKind.Concatenation,
+                    Text("+00 "),
+                    text,
+                    typeof(string),
+                    text.Nullable
+                ),
+                Text("TZH " + DatePattern + " HH24:MI:SS"),
             ],
-            typeof(string),
+            typeof(DateTimeOffset),
+            text.Nullable
+        );
+        return new SqlBinary(
+            "AT TIME ZONE",
+            SqlBinaryKind.Arithmetic,
+            moment,
+            Text("UTC"),
+            typeof(DateTime),
             text.Nullable
         );
     }
