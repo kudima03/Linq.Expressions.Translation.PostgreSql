@@ -82,7 +82,7 @@ internal sealed class Evaluator(HashSet<Expression> candidates) : ExpressionVisi
         }
         catch (Exception) when (_lazy)
         {
-            return Deferred(base.Visit(node)!);
+            return Deferred(base.Visit(node));
         }
         return
             value is IQueryable query
