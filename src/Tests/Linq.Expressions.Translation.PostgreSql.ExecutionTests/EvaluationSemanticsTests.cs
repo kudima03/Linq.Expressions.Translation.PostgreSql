@@ -6,10 +6,7 @@ namespace Linq.Expressions.Translation.PostgreSql.ExecutionTests;
 [Collection(SharedDatabase.Name)]
 public sealed class EvaluationSemanticsTests(Database database)
 {
-    private const string Skip =
-        "#84: the evaluator folds the unreached operand and the division by zero throws";
-
-    [Fact(Skip = Skip)]
+    [Fact]
     public void LeavesBranchThatIsNotTakenUnevaluated()
     {
         decimal one = 1m;
@@ -22,7 +19,7 @@ public sealed class EvaluationSemanticsTests(Database database)
         );
     }
 
-    [Fact(Skip = Skip)]
+    [Fact]
     public void LeavesCoalesceOperandThatIsNotReachedUnevaluated()
     {
         decimal one = 1m;
@@ -36,7 +33,7 @@ public sealed class EvaluationSemanticsTests(Database database)
         );
     }
 
-    [Fact(Skip = Skip)]
+    [Fact]
     public void LeavesConjunctionOperandThatIsNotReachedUnevaluated()
     {
         int one = 1;
@@ -49,7 +46,7 @@ public sealed class EvaluationSemanticsTests(Database database)
         );
     }
 
-    [Fact(Skip = Skip)]
+    [Fact]
     public void LeavesDisjunctionOperandThatIsNotReachedUnevaluated()
     {
         int one = 1;
