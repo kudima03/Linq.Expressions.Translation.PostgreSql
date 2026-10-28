@@ -278,6 +278,17 @@ public sealed class NullSemanticsTests(Database database)
     }
 
     [Fact]
+    public void KeepsNullsOfUnionWithConstantSideUnderInequality()
+    {
+        database.AssertSameRows(
+            Customers
+                .Select(c => new { c.Id, Note = (string?)"none" })
+                .Union(Orders.Select(o => new { o.Id, o.Note }))
+                .Where(x => x.Note != "x")
+        );
+    }
+
+    [Fact]
     public void FindsRowsWithoutJoinPartner()
     {
         database.AssertSameRows(

@@ -545,6 +545,33 @@ public sealed record SetOperationTests
     }
 
     [Fact]
+    public void ComparesConstantColumnOfUnionWithNullableSideNullSafe()
+    {
+        Expression query = Customers
+            .Select(c => new { c.Id, Note = (string?)"none" })
+            .Union(Orders.Select(o => new { o.Id, o.Note }))
+            .Where(x => x.Note != "x")
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Id", t2."Note"
+                FROM (
+                    SELECT t0."Id", 'none' AS "Note"
+                    FROM "Customer" AS t0
+                    UNION
+                    SELECT t1."Id", t1."Note"
+                    FROM "Order" AS t1
+                ) AS t2
+                WHERE t2."Note" IS DISTINCT FROM 'x'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
     public void WrapsPagingAfterConcat()
     {
         Expression query = Customers
