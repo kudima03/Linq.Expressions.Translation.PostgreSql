@@ -70,7 +70,7 @@ internal sealed partial class Translator
         {
             throw Unsupported.Method(call.Method);
         }
-        SelectQuery inner = Simple(Query(group.Inner), false);
+        SelectQuery inner = Joinable(Query(group.Inner), left);
         SqlExpression condition = Conjoined(
             Matching(group.OuterKey, Bind(group.InnerKey, inner.Shape)),
             inner.Where
@@ -101,7 +101,7 @@ internal sealed partial class Translator
         int uses = collection.Uses;
         SqlQuery query = Query(items);
         bool correlated = collection.Uses > uses;
-        bool simple = IsSimple(query);
+        bool simple = IsJoinable(query, left);
         SelectQuery inner = simple ? (SelectQuery)query : Wrap(query, false);
         if (simple && !correlated && !left)
         {
@@ -180,6 +180,29 @@ internal sealed partial class Translator
             && !select.KeepsOrder
             && !select.Distinct
             && select.GroupBy is null;
+    }
+
+    // LEFT JOIN fills an unmatched row with NULLs only for the columns of the joined
+    // source: a computed value, a constant or an outer column projected by the source
+    // would be evaluated on them instead of being NULL, as the default element is in
+    // LINQ to Objects, so such a source is joined as a derived table.
+    private SelectQuery Joinable(SqlQuery query, bool left)
+    {
+        return IsJoinable(query, left) ? (SelectQuery)query : Wrap(query, false);
+    }
+
+    private static bool IsJoinable(SqlQuery query, bool left)
+    {
+        return IsSimple(query) && (!left || ProjectsOwnColumns((SelectQuery)query));
+    }
+
+    private static bool ProjectsOwnColumns(SelectQuery query)
+    {
+        return query
+            .Shape.Columns()
+            .All(column =>
+                column.Value is SqlColumn own && own.Alias == query.From!.Alias
+            );
     }
 
     private static Shape Nullified(Shape shape)

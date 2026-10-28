@@ -478,9 +478,13 @@ public sealed record LeftJoinTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Name", t1."Total" * 2 AS "Total"
+                SELECT t0."Name", t2."Value" AS "Total"
                 FROM "Customer" AS t0
-                LEFT JOIN "Order" AS t1 ON t1."CustomerId" = t0."Id"
+                LEFT JOIN LATERAL (
+                    SELECT t1."Total" * 2 AS "Value"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                ) AS t2 ON TRUE
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -505,10 +509,14 @@ public sealed record LeftJoinTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Name", t1."Quantity" + 1 AS "Quantity"
+                SELECT t0."Name", t2."Value" AS "Quantity"
                 FROM "Customer" AS t0
-                LEFT JOIN "Order" AS t1 ON t1."CustomerId" = t0."Id"
-                WHERE (t1."Quantity" + 1) IS DISTINCT FROM 5
+                LEFT JOIN LATERAL (
+                    SELECT t1."Quantity" + 1 AS "Value"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                ) AS t2 ON TRUE
+                WHERE t2."Value" IS DISTINCT FROM 5
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -516,7 +524,7 @@ public sealed record LeftJoinTests
     }
 
     [Fact]
-    public void DropsConstantColumnOfLeftJoinedSourceFromOrderBy()
+    public void OrdersByConstantColumnOfLeftJoinedSource()
     {
         Expression query = Customers
             .SelectMany(
@@ -533,9 +541,14 @@ public sealed record LeftJoinTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Name", 'order' AS "Kind"
+                SELECT t0."Name", t2."Value" AS "Kind"
                 FROM "Customer" AS t0
-                LEFT JOIN "Order" AS t1 ON t1."CustomerId" = t0."Id"
+                LEFT JOIN LATERAL (
+                    SELECT 'order' AS "Value"
+                    FROM "Order" AS t1
+                    WHERE t1."CustomerId" = t0."Id"
+                ) AS t2 ON TRUE
+                ORDER BY t2."Value" NULLS FIRST
                 """
             ),
             new PostgreSqlQuery(query).TextValue
