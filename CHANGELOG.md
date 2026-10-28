@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-preview.0.6.2] - 2026-10-28
+
+### Fixed
+
+- An operand that throws when it is evaluated (a division by a captured zero, ...) in a branch of a conditional or on the right of `??`, `&&` or `||` no longer fails the translation, as LINQ to Objects evaluates it only for a row that reaches it: the failing operation is deferred with a scalar subquery, so that PostgreSQL neither folds it while planning the statement nor computes it for a row that does not reach it. Elsewhere the exception still propagates.
+- `DateOnly.Parse` and `DateTime.Parse` with the invariant culture read a numeric date month first (`'01/02/2024'` is the second of January), as the invariant culture does, whatever the server's `DateStyle`: the date is rewritten as ISO 8601 before the cast, instead of being read day first on a DMY server.
+
 ## [0.1.0-preview.0.6.1] - 2026-10-28
 
 ### Fixed
