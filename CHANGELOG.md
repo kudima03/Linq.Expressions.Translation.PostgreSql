@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-preview.0.6.0] - 2026-10-28
+
 ### Added
 
 - Translation of `MinBy` and `MaxBy` as the first row in the order of the key (`NULLS LAST`, so that elements with a null key are skipped unless every key is null) and then of the source, so that ties resolve as in .NET; `StringComparer.Ordinal` is accepted as `COLLATE "C"`, and a `Guid` key is rejected like `Min`/`Max` of `Guid`.
