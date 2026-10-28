@@ -118,7 +118,7 @@ internal sealed partial class Translator
             Shape element = tuple[index] is ITuple nested
                 ? Tupled(nested, elements[index])
                 : new ScalarShape(new SqlConstant(tuple[index], elements[index]));
-            members.Add(new ObjectMember("item" + (index + 1), element));
+            members.Add(new ObjectMember("item" + (index + 1), element, elements[index]));
         }
         return new ObjectShape(members);
     }
@@ -177,7 +177,8 @@ internal sealed partial class Translator
                 (argument, index) =>
                     new ObjectMember(
                         creation.Constructor!.GetParameters()[index].Name!,
-                        Ungrouped(Shape(argument))
+                        Ungrouped(Shape(argument)),
+                        argument.Type
                     )
             ),
         ]);
@@ -201,7 +202,8 @@ internal sealed partial class Translator
                 binding is MemberAssignment assignment
                     ? new ObjectMember(
                         assignment.Member.Name,
-                        Ungrouped(Shape(assignment.Expression))
+                        Ungrouped(Shape(assignment.Expression)),
+                        assignment.Expression.Type
                     )
                     : throw Unsupported.Binding(binding)
             ),
@@ -432,9 +434,25 @@ internal sealed partial class Translator
     private SqlExpression Nullity(Expression expression, bool negated)
     {
         Shape shape = Shape(expression);
-        return shape is EntityShape entity
-            ? Nullity(entity, negated)
+        return shape is EntityShape entity ? Nullity(entity, negated)
+            : shape is ObjectShape composite ? Nullity(composite, negated)
             : new SqlIsNull(Scalar(shape), negated);
+    }
+
+    // A constructed object is never null, unless a left join yields it for an outer row
+    // without a match, which leaves its columns of presence NULL.
+    private static SqlExpression Nullity(ObjectShape composite, bool negated)
+    {
+        if (composite.Presence is null)
+        {
+            return new SqlConstant(negated, typeof(bool));
+        }
+        Dictionary<string, SqlExpression> columns = composite
+            .Columns()
+            .ToDictionary(column => column.Name!, column => column.Value);
+        return composite
+            .Presence.Select(path => (SqlExpression)new SqlIsNull(columns[path], negated))
+            .Aggregate((first, second) => Logical(negated ? "OR" : "AND", first, second));
     }
 
     // An entity is null only where a left join found no row, which leaves every column
