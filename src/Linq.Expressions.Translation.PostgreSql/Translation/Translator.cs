@@ -229,6 +229,12 @@ internal sealed partial class Translator
         }
     }
 
+    // The single value of a scalar query may be NULL, on either side of a set operation.
+    private static bool IsNullable(SqlQuery query)
+    {
+        return query.Shape is ScalarShape && query.Nullability()[0];
+    }
+
     private SelectQuery Restricted(SqlQuery source, bool ordered = true)
     {
         return Open(source, Barrier.Paging | Barrier.Distinct, ordered);
@@ -429,11 +435,7 @@ internal sealed partial class Translator
         Type actual = source.Shape is EntityShape entity ? entity.Type : element;
         Type value = Nullable.GetUnderlyingType(actual) ?? actual;
         bool compatible = target.IsAssignableFrom(value);
-        if (
-            compatible
-            && value == actual
-            && source.Shape is not ScalarShape { Value.Nullable: true }
-        )
+        if (compatible && value == actual && !IsNullable(source))
         {
             return source;
         }
@@ -485,10 +487,13 @@ internal sealed partial class Translator
         {
             _ = names.TryAdd(SqlWriter.Text(column.Value), column.Name!);
         }
+        IReadOnlyList<bool> nullability = inner.Nullability();
+        int index = 0;
         SelectQuery outer = new(
             new DerivedSource(inner, alias),
             inner.Shape.Map(
-                (value, name) => new SqlColumn(alias, name!, value.Type, value.Nullable),
+                (value, name) =>
+                    new SqlColumn(alias, name!, value.Type, nullability[index++]),
                 null
             )
         );

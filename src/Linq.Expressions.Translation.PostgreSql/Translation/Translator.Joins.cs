@@ -205,9 +205,11 @@ internal sealed partial class Translator
             );
     }
 
+    // Every value of a left-joined shape is a column, of the joined table or of the
+    // derived table that a projection of anything else is wrapped into.
     private static Shape Nullified(Shape shape)
     {
-        return shape.Map((value, name) => value.AsNullable(), null);
+        return shape.Map((value, name) => ((SqlColumn)value).AsNullable(), null);
     }
 
     // Join never matches a null key, as = does not; a composite key is an object that

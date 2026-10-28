@@ -13,6 +13,18 @@ internal sealed class SetOperationQuery(
 
     public SqlQuery Left { get; } = left;
 
+    public SqlQuery Right { get; } = right;
+
+    // A column of the result is nullable when it is nullable on either side.
+    public override IReadOnlyList<bool> Nullability()
+    {
+        return
+        [
+            .. Left.Nullability()
+                .Zip(Right.Nullability(), (first, second) => first || second),
+        ];
+    }
+
     public override void Render(SqlWriter writer)
     {
         Operand(
@@ -21,7 +33,7 @@ internal sealed class SetOperationQuery(
             Left is SetOperationQuery nested && nested.Operation != Operation
         );
         _ = writer.Append(" " + Operation + " ");
-        Operand(writer, right, right is SetOperationQuery);
+        Operand(writer, Right, Right is SetOperationQuery);
     }
 
     private static void Operand(SqlWriter writer, SqlQuery query, bool nested)
