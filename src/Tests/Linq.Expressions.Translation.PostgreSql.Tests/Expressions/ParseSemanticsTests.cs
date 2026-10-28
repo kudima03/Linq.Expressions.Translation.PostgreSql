@@ -70,7 +70,7 @@ public sealed record ParseSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CAST(t0."Number" AS date)
+                SELECT CAST(REGEXP_REPLACE(t0."Number", '^\s*(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})', '\3-\1-\2') AS date)
                 FROM "Order" AS t0
                 """
             ),
@@ -112,7 +112,7 @@ public sealed record ParseSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CAST(t0."Number" AS timestamp)
+                SELECT CAST(REGEXP_REPLACE(t0."Number", '^\s*(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})', '\3-\1-\2') AS timestamp)
                 FROM "Order" AS t0
                 """
             ),
@@ -253,7 +253,7 @@ public sealed record ParseSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CAST(t0."Number" AS timestamp)
+                SELECT CAST(REGEXP_REPLACE(t0."Number", '^\s*(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})', '\3-\1-\2') AS timestamp)
                 FROM "Order" AS t0
                 """
             ),
