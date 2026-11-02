@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-preview.0.7.1] - 2026-11-02
+
+### Fixed
+
+- A one-row root of aggregates (a constant one-element sequence projected onto aggregates over tables) joined on either side of `SelectMany`, `Join` or `GroupJoin` is a derived table, which puts the totals next to every row, instead of a statement that joins a `SELECT` without `FROM`: `customers.SelectMany(c => totals, (c, t) => new { c.Name, t.Orders })` is `FROM "Customer" AS t0 CROSS JOIN (SELECT (...) AS "Orders") AS t2`.
+- A paged inner source of `SelectMany` that does not read the outer element is joined as a plain derived table; `JOIN LATERAL` is kept for one that does.
+
 ## [0.1.0-preview.0.7.0] - 2026-10-28
 
 ### Added
