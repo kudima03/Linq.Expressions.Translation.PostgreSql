@@ -493,6 +493,20 @@ public sealed record UnsupportedOperatorTests
     }
 
     [Fact]
+    public void RejectsJoiningOneElementInMemoryRootWithoutSelector()
+    {
+        IQueryable<int> element = new[] { 0 }.AsQueryable();
+        Expression query = Customers
+            .SelectMany(c => element, (c, n) => c.Name)
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void RejectsMultiElementInMemoryRootOfAggregates()
     {
         Expression query = new[] { 0, 1 }

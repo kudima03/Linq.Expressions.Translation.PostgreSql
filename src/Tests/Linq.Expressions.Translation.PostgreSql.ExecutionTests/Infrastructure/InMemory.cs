@@ -2,7 +2,8 @@ namespace Linq.Expressions.Translation.PostgreSql.ExecutionTests.Infrastructure;
 
 // Rewrites a query over the capturing tables into the same query over the Seed rows,
 // which LINQ to Objects runs: a table read as a constant, a static property or a
-// captured variable becomes its rows, and a captured composed query its own tree.
+// captured variable becomes its rows, and a captured composed query its own tree,
+// whose tables are rewritten in turn.
 public sealed class InMemory : ExpressionVisitor
 {
     public static Expression Rewrite(Expression expression)
@@ -12,8 +13,8 @@ public sealed class InMemory : ExpressionVisitor
 
     protected override Expression VisitConstant(ConstantExpression node)
     {
-        return node.Value is IQueryable query && IsCapturing(query)
-            ? Source(query)
+        return node.Value is IQueryable query
+            ? Source(query) ?? base.VisitConstant(node)
             : base.VisitConstant(node);
     }
 
@@ -24,18 +25,22 @@ public sealed class InMemory : ExpressionVisitor
             object? value = Expression
                 .Lambda<Func<object?>>(Expression.Convert(node, typeof(object)))
                 .Compile()();
-            if (value is IQueryable query && IsCapturing(query))
+            if (value is IQueryable query && Source(query) is Expression source)
             {
-                return Source(query);
+                return source;
             }
         }
         return base.VisitMember(node);
     }
 
-    private Expression Source(IQueryable query)
+    // A capturing table is its rows; a composed query, over tables or an in-memory
+    // root, is its tree; any other root stays what it is.
+    private Expression? Source(IQueryable query)
     {
         return query.Expression is ConstantExpression root && root.Value == query
-            ? Expression.Constant(Seed.Source(query.ElementType))
+            ? IsCapturing(query)
+                ? Expression.Constant(Seed.Source(query.ElementType))
+                : null
             : Visit(query.Expression);
     }
 
