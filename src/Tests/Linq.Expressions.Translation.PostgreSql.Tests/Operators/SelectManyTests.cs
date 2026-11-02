@@ -195,6 +195,33 @@ public sealed record SelectManyTests
     }
 
     [Fact]
+    public void CrossJoinsUncorrelatedPagedSourceWithoutLateral()
+    {
+        Expression query = Customers
+            .SelectMany(
+                c => Orders.OrderByDescending(o => o.Total).Take(1).Select(o => o.Total),
+                (c, t) => new { c.Name, Total = t }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name", t2."Total"
+                FROM "Customer" AS t0
+                CROSS JOIN (
+                    SELECT t1."Total"
+                    FROM "Order" AS t1
+                    ORDER BY t1."Total" DESC
+                    LIMIT 1
+                ) AS t2
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
     public void LateralJoinsCorrelatedSourceWithTake()
     {
         Expression query = Customers

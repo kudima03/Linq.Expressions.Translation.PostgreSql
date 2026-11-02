@@ -11,7 +11,7 @@ internal sealed partial class Translator
     private SelectQuery Join(SqlQuery source, MethodCallExpression call)
     {
         SelectQuery outer = Opened(source);
-        SelectQuery inner = Simple(Joined(call), false);
+        SelectQuery inner = Joinable(Joined(call), false);
         SqlExpression condition = Matching(
             Bind(Lambda(call, 2), outer.Shape),
             Bind(Lambda(call, 3), inner.Shape)
@@ -122,7 +122,7 @@ internal sealed partial class Translator
             : "CROSS JOIN";
         return Attached(
             outer,
-            simple ? join : join + " LATERAL",
+            simple || !correlated ? join : join + " LATERAL",
             inner,
             join == "CROSS JOIN" ? null : inner.Where ?? True,
             padding
@@ -159,9 +159,10 @@ internal sealed partial class Translator
         }
     }
 
+    // A join extends a source that reads a table, or a derived table of its rows.
     private SelectQuery Opened(SqlQuery source)
     {
-        return Open(source, Barrier.Aggregation);
+        return Open(source, Barrier.Aggregation | Barrier.OneRow);
     }
 
     private SqlQuery Joined(MethodCallExpression call)
@@ -190,10 +191,11 @@ internal sealed partial class Translator
             && select.GroupBy is null;
     }
 
-    // LEFT JOIN fills an unmatched row with NULLs only for the columns of the joined
-    // source: a computed value, a constant or an outer column projected by the source
-    // would be evaluated on them instead of being NULL, as the default element is in
-    // LINQ to Objects, so such a source is joined as a derived table.
+    // The one row of aggregates without FROM has no table to join: it is joined as a
+    // derived table. LEFT JOIN fills an unmatched row with NULLs only for the columns
+    // of the joined source: a computed value, a constant or an outer column projected
+    // by the source would be evaluated on them instead of being NULL, as the default
+    // element is in LINQ to Objects, so such a source is joined as a derived table too.
     private SelectQuery Joinable(SqlQuery query, bool left)
     {
         return IsJoinable(query, left) ? (SelectQuery)query : Wrap(query, false);
@@ -201,7 +203,9 @@ internal sealed partial class Translator
 
     private static bool IsJoinable(SqlQuery query, bool left)
     {
-        return IsSimple(query) && (!left || ProjectsOwnColumns((SelectQuery)query));
+        return IsSimple(query)
+            && ((SelectQuery)query).From is not null
+            && (!left || ProjectsOwnColumns((SelectQuery)query));
     }
 
     // A value a left join may leave NULL is nullable again, required or not.

@@ -478,6 +478,7 @@ internal sealed partial class Translator
             || ((barriers & Barrier.Grouping) != 0 && query.GroupBy is not null)
             || ((barriers & Barrier.Bound) != 0 && query.Bound is not null)
             || ((barriers & Barrier.Window) != 0 && query.Windowed)
+            || ((barriers & Barrier.OneRow) != 0 && query.From is null)
             || (
                 (barriers & Barrier.Projection) != 0
                 && query.GroupBy is not null
