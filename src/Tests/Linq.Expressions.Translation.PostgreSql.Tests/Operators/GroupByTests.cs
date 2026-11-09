@@ -1636,7 +1636,7 @@ public sealed record GroupByTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t1."CustomerId" AS "Key", COALESCE(SUM(t1."Quantity"), 0) AS "Quantity"
+                SELECT t1."CustomerId" AS "Key", CAST(COALESCE(SUM(t1."Quantity"), 0) AS integer) AS "Quantity"
                 FROM (
                     SELECT t0."CustomerId", t0."Quantity", t0."Id" AS "$0"
                     FROM "Order" AS t0
@@ -1667,7 +1667,7 @@ public sealed record GroupByTests
                 SELECT t0."CustomerId"
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
-                ORDER BY COUNT(*) DESC, MIN(t0."Id")
+                ORDER BY CAST(COUNT(*) AS integer) DESC, MIN(t0."Id")
                 """
             ),
             new PostgreSqlQuery(query).TextValue

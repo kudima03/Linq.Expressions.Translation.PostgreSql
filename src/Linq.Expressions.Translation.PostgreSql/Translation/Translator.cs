@@ -297,9 +297,20 @@ internal sealed partial class Translator
                     descending || nullsLast
                 )),
         ];
-        query.Orderings = then
-            ? [.. query.Orderings, .. keys]
-            : [.. keys, .. query.Orderings];
+        // A later OrderBy sorts the elements the earlier one ordered, which keep their
+        // order where its keys tie, as a stable sort does: the keys of the earlier
+        // ordering follow every key of the later one, those of its ThenBy included.
+        if (!then)
+        {
+            query.Inherited = query.Orderings.Count;
+        }
+        int own = query.Orderings.Count - query.Inherited;
+        query.Orderings =
+        [
+            .. query.Orderings.Take(own),
+            .. keys,
+            .. query.Orderings.Skip(own),
+        ];
         return query;
     }
 
@@ -353,23 +364,56 @@ internal sealed partial class Translator
         return query;
     }
 
+    // Distinct yields the first occurrence of each value in the order of the source.
+    // SELECT DISTINCT can be ordered by the selected values only, which is that order
+    // up to the first hidden key when no two distinct values are equal in the keys
+    // before it; otherwise DISTINCT ON the values keeps the first row of each in the
+    // order of the source, which is restored outside from the keys it exposes.
     private SelectQuery Distinct(SqlQuery source)
     {
-        SelectQuery query = Open(source, Barrier.Paging, false);
-        HashSet<string> projected =
-        [
-            .. query.Shape.Columns().Select(column => SqlWriter.Text(column.Value)),
-        ];
-        // SELECT DISTINCT can only be ordered by selected values; past the first hidden
-        // key the order of the distinct rows is no longer the order of the source.
-        query.Orderings =
-        [
-            .. query.Orderings.TakeWhile(ordering =>
-                projected.Contains(SqlWriter.Text(ordering.Key))
-            ),
-        ];
+        bool leading = source is not SelectQuery select || IsLeading(select);
+        SelectQuery query = Open(source, Barrier.Paging, !leading);
+        if (!leading)
+        {
+            return Distinguished(query, query.Shape);
+        }
+        query.Orderings = Leading(query);
         query.Distinct = true;
         return query;
+    }
+
+    private static List<Ordering> Leading(SelectQuery query)
+    {
+        HashSet<string> selected = [.. Selected(query)];
+        return
+        [
+            .. query.Orderings.TakeWhile(ordering =>
+                selected.Contains(SqlWriter.Text(ordering.Key))
+            ),
+        ];
+    }
+
+    private static IEnumerable<string> Selected(SelectQuery query)
+    {
+        return query
+            .Shape.Columns()
+            .Where(column => column.Value is not SqlConstant)
+            .Select(column => SqlWriter.Text(column.Value));
+    }
+
+    // Whether the order of the source up to its first hidden key is the order of the
+    // first occurrences of the distinct values: every key is selected, or every
+    // selected value is one of the leading keys, so that no two values tie in them.
+    private static bool IsLeading(SelectQuery query)
+    {
+        List<Ordering> leading = Leading(query);
+        HashSet<string> keys =
+        [
+            .. leading.Select(ordering => SqlWriter.Text(ordering.Key)),
+        ];
+        return !query.IsOrdered
+            || leading.Count == query.Orderings.Count
+            || Selected(query).All(keys.Contains);
     }
 
     private SelectQuery DistinctBy(SqlQuery source, MethodCallExpression call)

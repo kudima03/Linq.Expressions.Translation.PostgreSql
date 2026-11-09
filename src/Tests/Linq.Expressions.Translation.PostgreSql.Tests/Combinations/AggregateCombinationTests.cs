@@ -512,12 +512,13 @@ public sealed record AggregateCombinationTests
                 """
                 SELECT t1."CustomerId" AS "Key", COALESCE(SUM(t1."Total"), 0) AS "Sum"
                 FROM (
-                    SELECT t0."CustomerId", t0."Total"
+                    SELECT t0."CustomerId", t0."Total", t0."Id" AS "$0"
                     FROM "Order" AS t0
                     ORDER BY t0."Id"
                     LIMIT 100
                 ) AS t1
                 GROUP BY t1."CustomerId"
+                ORDER BY MIN(t1."$0")
                 """
             ),
             new PostgreSqlQuery(query).TextValue

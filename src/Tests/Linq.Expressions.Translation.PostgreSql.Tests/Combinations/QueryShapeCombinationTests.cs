@@ -5,7 +5,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Combinations;
 public sealed record QueryShapeCombinationTests
 {
     [Fact]
-    public void DropsOrderingWhenDistinctProjectionHidesKey()
+    public void KeepsOrderOfFirstOccurrencesWhenDistinctProjectionHidesKey()
     {
         Expression query = Customers
             .OrderBy(c => c.Id)
@@ -16,8 +16,13 @@ public sealed record QueryShapeCombinationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT DISTINCT t0."Region"
-                FROM "Customer" AS t0
+                SELECT t1."Region"
+                FROM (
+                    SELECT DISTINCT ON (t0."Region") t0."Region", t0."Id" AS "$0"
+                    FROM "Customer" AS t0
+                    ORDER BY t0."Region", t0."Id"
+                ) AS t1
+                ORDER BY t1."$0"
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -109,13 +114,18 @@ public sealed record QueryShapeCombinationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT DISTINCT t1."Name"
+                SELECT t2."Name"
                 FROM (
-                    SELECT t0."Name"
-                    FROM "Customer" AS t0
-                    ORDER BY t0."Id"
-                    OFFSET 2
-                ) AS t1
+                    SELECT DISTINCT ON (t1."Name") t1."Name", t1."$0"
+                    FROM (
+                        SELECT t0."Name", t0."Id" AS "$0"
+                        FROM "Customer" AS t0
+                        ORDER BY t0."Id"
+                        OFFSET 2
+                    ) AS t1
+                    ORDER BY t1."Name", t1."$0"
+                ) AS t2
+                ORDER BY t2."$0"
                 """
             ),
             new PostgreSqlQuery(query).TextValue

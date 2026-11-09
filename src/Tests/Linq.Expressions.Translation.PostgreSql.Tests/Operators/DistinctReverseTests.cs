@@ -364,7 +364,7 @@ public sealed record DistinctReverseTests
     }
 
     [Fact]
-    public void DropsOrderingByUnprojectedColumnBeforeDistinct()
+    public void KeepsOrderingByUnprojectedColumnBeforeDistinct()
     {
         Expression query = Orders
             .OrderBy(o => o.Id)
@@ -375,8 +375,13 @@ public sealed record DistinctReverseTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT DISTINCT t0."CustomerId"
-                FROM "Order" AS t0
+                SELECT t1."CustomerId"
+                FROM (
+                    SELECT DISTINCT ON (t0."CustomerId") t0."CustomerId", t0."Id" AS "$0"
+                    FROM "Order" AS t0
+                    ORDER BY t0."CustomerId", t0."Id"
+                ) AS t1
+                ORDER BY t1."$0"
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -455,7 +460,7 @@ public sealed record DistinctReverseTests
     }
 
     [Fact]
-    public void DropsHiddenOrderingKeyOfDistinctPagedRows()
+    public void KeepsHiddenOrderingKeyOfDistinctPagedRows()
     {
         Expression query = Customers
             .OrderBy(c => c.Id)
@@ -467,13 +472,18 @@ public sealed record DistinctReverseTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT DISTINCT t1."Region"
+                SELECT t2."Region"
                 FROM (
-                    SELECT t0."Region"
-                    FROM "Customer" AS t0
-                    ORDER BY t0."Id"
-                    LIMIT 5
-                ) AS t1
+                    SELECT DISTINCT ON (t1."Region") t1."Region", t1."$0"
+                    FROM (
+                        SELECT t0."Region", t0."Id" AS "$0"
+                        FROM "Customer" AS t0
+                        ORDER BY t0."Id"
+                        LIMIT 5
+                    ) AS t1
+                    ORDER BY t1."Region", t1."$0"
+                ) AS t2
+                ORDER BY t2."$0"
                 """
             ),
             new PostgreSqlQuery(query).TextValue

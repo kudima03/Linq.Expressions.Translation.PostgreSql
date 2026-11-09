@@ -411,7 +411,7 @@ public sealed record SetOperationTests
     }
 
     [Fact]
-    public void ParenthesizesOffsetOperandsOnBothSides()
+    public void KeepsOrderOfOffsetOperandsOnBothSides()
     {
         Expression query = Customers
             .OrderBy(c => c.Id)
@@ -423,19 +423,23 @@ public sealed record SetOperationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                (
-                    SELECT t0."Name"
-                    FROM "Customer" AS t0
-                    ORDER BY t0."Id"
-                    OFFSET 1
-                )
-                UNION ALL
-                (
-                    SELECT t1."Name"
-                    FROM "Product" AS t1
-                    ORDER BY t1."Id"
-                    OFFSET 1
-                )
+                SELECT t2."Name"
+                FROM (
+                    (
+                        SELECT t0."Name", 0 AS "$side", t0."Id" AS "$1", NULL AS "$2"
+                        FROM "Customer" AS t0
+                        ORDER BY t0."Id"
+                        OFFSET 1
+                    )
+                    UNION ALL
+                    (
+                        SELECT t1."Name", 1 AS "$side", NULL AS "$1", t1."Id" AS "$2"
+                        FROM "Product" AS t1
+                        ORDER BY t1."Id"
+                        OFFSET 1
+                    )
+                ) AS t2
+                ORDER BY t2."$side", t2."$1", t2."$2"
                 """
             ),
             new PostgreSqlQuery(query).TextValue
