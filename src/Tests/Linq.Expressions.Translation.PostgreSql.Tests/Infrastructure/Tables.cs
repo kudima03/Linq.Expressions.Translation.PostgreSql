@@ -2,6 +2,9 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Infrastructure;
 
 public static class Tables
 {
+    public static IQueryable<Attachment> Attachments =>
+        new CapturingQueryable<Attachment>();
+
     public static IQueryable<Customer> Customers => new CapturingQueryable<Customer>();
 
     public static IQueryable<Employee> Employees => new CapturingQueryable<Employee>();

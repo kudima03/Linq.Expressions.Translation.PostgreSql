@@ -109,7 +109,8 @@ public sealed class TableDefinition
     private static string SqlType(Type type)
     {
         Type value = Nullable.GetUnderlyingType(type) ?? type;
-        return value.IsArray ? SqlType(value.GetElementType()!) + "[]"
+        return value == typeof(byte[]) ? "bytea"
+            : value.IsArray ? SqlType(value.GetElementType()!) + "[]"
             : value.IsEnum ? Types[Enum.GetUnderlyingType(value)]
             : Types[value];
     }
