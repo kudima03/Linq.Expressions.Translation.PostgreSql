@@ -1358,4 +1358,36 @@ public sealed record LiteralTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    [Fact]
+    public void RendersByteArrayAsHexadecimalBytea()
+    {
+        Expression query = Orders.Select(o => new byte[] { 1, 0xab, 255 }).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT BYTEA '\x01abff'
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void RendersEmptyByteArray()
+    {
+        Expression query = Orders.Select(o => Array.Empty<byte>()).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT BYTEA '\x'
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

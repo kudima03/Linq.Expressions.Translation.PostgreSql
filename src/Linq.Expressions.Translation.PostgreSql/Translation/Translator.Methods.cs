@@ -72,6 +72,8 @@ internal sealed partial class Translator
             : name == nameof(long.Parse) && call.Object is null ? Parsed(call)
             : name == nameof(TimeSpan.FromTicks) && owner == typeof(TimeSpan)
                 ? Microseconds(Sql(call.Arguments[0]))
+            : call.Object is ConstantExpression { Value: Encoding encoding }
+                ? Encoded(encoding, call)
             : owner == typeof(string) ? StringMethod(call)
             : owner == typeof(Math) || Numeric.Contains(owner) ? MathMethod(call)
             : Temporal.Contains(owner) ? TemporalMethod(call)
@@ -80,6 +82,42 @@ internal sealed partial class Translator
             : name == nameof(Guid.NewGuid)
                 ? new SqlFunction("GEN_RANDOM_UUID", [], typeof(Guid))
             : throw Unsupported.Method(call.Method);
+    }
+
+    // The bytes of a bytea read as text, or a text written as bytes; .NET replaces
+    // bytes that are no UTF-8 where PostgreSQL fails on them. The text convert_from
+    // yields has the "C" collation of the encoding's name, under which UPPER and
+    // LOWER map only ASCII: the collation of the database makes it a text column's.
+    private SqlExpression Encoded(Encoding encoding, MethodCallExpression call)
+    {
+        if (encoding.CodePage != Encoding.UTF8.CodePage)
+        {
+            throw new NotSupportedException(
+                $"The encoding '{encoding.WebName}' is not supported; only UTF-8 is."
+            );
+        }
+        Type[] parameters =
+        [
+            .. call.Method.GetParameters().Select(parameter => parameter.ParameterType),
+        ];
+        string function = (call.Method.Name, parameters) switch
+        {
+            (nameof(Encoding.GetString), [Type bytes]) when bytes == typeof(byte[]) =>
+                "CONVERT_FROM",
+            (nameof(Encoding.GetBytes), [Type text]) when text == typeof(string) =>
+                "CONVERT_TO",
+            _ => throw Unsupported.Method(call.Method),
+        };
+        SqlExpression value = Sql(call.Arguments[0]);
+        SqlFunction converted = new(
+            function,
+            [value, Text("UTF8")],
+            call.Type,
+            value.Nullable
+        );
+        return call.Type == typeof(string)
+            ? new SqlCollation(converted, "default")
+            : converted;
     }
 
     private Shape Enumerated(MethodCallExpression call)
@@ -700,14 +738,11 @@ internal sealed partial class Translator
     // The server reads a numeric date in its DateStyle, day first on a DMY server,
     // where the invariant culture reads the month first; a format pattern is read
     // the same whatever the DateStyle, and costs no more than a cast.
-    private static readonly Dictionary<
-        Type,
-        Func<SqlExpression, SqlExpression>
-    > Patterned = new()
-    {
-        [typeof(DateOnly)] = ParsedDate,
-        [typeof(DateTime)] = ParsedMoment,
-    };
+    private static readonly HashSet<Type> Patterned =
+    [
+        typeof(DateOnly),
+        typeof(DateTime),
+    ];
 
     // The invariant short date: a month, a day and a four-digit year.
     private const string DatePattern = "MM/DD/YYYY";
@@ -726,15 +761,41 @@ internal sealed partial class Translator
             CultureFree.Contains(type)
             || options.Any(option => option is ConstantExpression { Value: CultureInfo });
         if (
-            (target is null && !Patterned.ContainsKey(type))
+            (target is null && !Patterned.Contains(type))
             || !cultured
             || !options.All(IsInvariant)
         )
         {
             throw Unsupported.Method(call.Method);
         }
+        foreach (NumberStyles styles in options.Select(Styles).OfType<NumberStyles>())
+        {
+            Castable(styles);
+        }
         SqlExpression text = Sql(call.Arguments[0]);
-        return target is null ? Patterned[type](text) : new SqlCast(text, target, type);
+        return target is not null ? new SqlCast(text, target, type)
+            : type == typeof(DateOnly) ? ParsedDate(text)
+            : ParsedMoment(
+                text,
+                options.Select(Styles).OfType<DateTimeStyles>().Any(IsUniversal)
+            );
+    }
+
+    // A text without a zone is read as UTC only when the style says so and keeps
+    // it; read as UTC and converted to the local zone, or read as local time, it
+    // depends on the zone of the client, which the server does not know.
+    private static bool IsUniversal(DateTimeStyles styles)
+    {
+        const DateTimeStyles assumed =
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AssumeLocal;
+        bool universal =
+            (styles & assumed) == DateTimeStyles.AssumeUniversal
+            && (styles & DateTimeStyles.AdjustToUniversal) != 0;
+        return universal || (styles & assumed) == 0
+            ? universal
+            : throw new NotSupportedException(
+                $"'DateTimeStyles.{styles}' is not supported: the local time zone is not known to PostgreSQL; read the text as UTC with AssumeUniversal and AdjustToUniversal together."
+            );
     }
 
     private static SqlFunction ParsedDate(SqlExpression text)
@@ -749,8 +810,9 @@ internal sealed partial class Translator
 
     // to_timestamp reads the text in the session's zone, where a time in a
     // daylight-saving gap shifts by an hour; a fixed +00 offset put before the text
-    // and taken back as UTC keeps the time as written.
-    private static SqlBinary ParsedMoment(SqlExpression text)
+    // keeps the time as written, taken back as UTC into a timestamp, or kept as
+    // the instant in UTC, a timestamptz, which is read with the kind Utc.
+    private static SqlExpression ParsedMoment(SqlExpression text, bool universal)
     {
         SqlFunction moment = new(
             "TO_TIMESTAMP",
@@ -765,17 +827,42 @@ internal sealed partial class Translator
                 ),
                 Text("TZH " + DatePattern + " HH24:MI:SS"),
             ],
-            typeof(DateTimeOffset),
-            text.Nullable
-        );
-        return new SqlBinary(
-            "AT TIME ZONE",
-            SqlBinaryKind.Arithmetic,
-            moment,
-            Text("UTC"),
             typeof(DateTime),
             text.Nullable
         );
+        return universal
+            ? moment
+            : new SqlBinary(
+                "AT TIME ZONE",
+                SqlBinaryKind.Arithmetic,
+                moment,
+                Text("UTC"),
+                typeof(DateTime),
+                text.Nullable
+            );
+    }
+
+    private static object? Styles(Expression option)
+    {
+        return (option as ConstantExpression)?.Value;
+    }
+
+    // A cast reads a decimal number with an optional sign and white space around it,
+    // whatever the style: hexadecimal or binary digits would be read as another
+    // number, and a text the style rejects for its sign or white space would be read.
+    private static void Castable(NumberStyles styles)
+    {
+        const NumberStyles digits =
+            NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier;
+        if (
+            (styles & NumberStyles.Integer) != NumberStyles.Integer
+            || (styles & digits) != 0
+        )
+        {
+            throw new NotSupportedException(
+                $"'NumberStyles.{styles}' is not supported: a cast from text reads a decimal number with an optional sign and surrounding white space, whatever the style."
+            );
+        }
     }
 
     // A style is a constant set of flags; a culture has to be the invariant one.

@@ -366,6 +366,18 @@ public static class Seed
         },
     ];
 
+    // The UTF-8 bytes of texts: order numbers, white space .NET trims (U+2029 ends
+    // in the byte of "é"), a quote, a non-BMP character, no bytes and no row.
+    public static IReadOnlyList<Attachment> Attachments { get; } =
+    [
+        Attachment(1, 1, "invoice", "A-001", null),
+        Attachment(2, 3, "label", "B-001", "\u00e9"),
+        Attachment(3, 1, "note", "  padded\t ", "O'Brien"),
+        Attachment(4, 99, "smile", "\U0001F600 smile", string.Empty),
+        Attachment(5, 2, "empty", string.Empty, null),
+        Attachment(6, 5, "paragraph", "\u2029\u00e9\u2029", "MiXeD Case"),
+    ];
+
     // Each table with its rows, in the order the tables are created.
     public static IReadOnlyList<TableDefinition> Tables { get; } =
     [
@@ -373,6 +385,7 @@ public static class Seed
         new(typeof(Employee), Employees),
         new(typeof(Order), Orders),
         new(typeof(OrderEvent), OrderEvents),
+        new(typeof(Attachment), Attachments),
     ];
 
     public static bool IsTable(Type type)
@@ -384,6 +397,26 @@ public static class Seed
     public static IQueryable Source(Type type)
     {
         return Tables.Single(table => table.Type == type).Rows.AsQueryable();
+    }
+
+    private static Attachment Attachment(
+        int id,
+        int orderId,
+        string name,
+        string content,
+        string? checksum
+    )
+    {
+        return new()
+        {
+            Id = id,
+            OrderId = orderId,
+            Name = name,
+            Content = System.Text.Encoding.UTF8.GetBytes(content),
+            Checksum = checksum is null
+                ? null
+                : System.Text.Encoding.UTF8.GetBytes(checksum),
+        };
     }
 
     private static Customer Customer(

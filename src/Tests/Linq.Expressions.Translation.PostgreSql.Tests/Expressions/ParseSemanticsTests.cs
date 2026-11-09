@@ -112,12 +112,78 @@ public sealed record ParseSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
+                SELECT TO_TIMESTAMP('+00 ' || t0."Number", 'TZH MM/DD/YYYY HH24:MI:SS')
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // Without a zone in the text, AdjustToUniversal alone converts nothing.
+    [Theory]
+    [InlineData(DateTimeStyles.None)]
+    [InlineData(DateTimeStyles.AdjustToUniversal)]
+    [InlineData(DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.RoundtripKind)]
+    public void ParsesTextAsUnspecifiedDateTime(DateTimeStyles styles)
+    {
+        Expression query = Orders
+            .Select(o => DateTime.Parse(o.Number, CultureInfo.InvariantCulture, styles))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
                 SELECT TO_TIMESTAMP('+00 ' || t0."Number", 'TZH MM/DD/YYYY HH24:MI:SS') AT TIME ZONE 'UTC'
                 FROM "Order" AS t0
                 """
             ),
             new PostgreSqlQuery(query).TextValue
         );
+    }
+
+    [Fact]
+    public void FiltersByUniversalDateTime()
+    {
+        Expression query = Orders
+            .Where(o =>
+                DateTime.Parse(
+                    o.Number,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal
+                ) > new DateTime(2024, 1, 2, 10, 30, 0, DateTimeKind.Utc)
+            )
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE TO_TIMESTAMP('+00 ' || t0."Number", 'TZH MM/DD/YYYY HH24:MI:SS') > TIMESTAMP '2024-01-02 10:30:00'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // The local zone of the client, which these styles read or convert through, is
+    // not known to the server.
+    [Theory]
+    [InlineData(DateTimeStyles.AssumeUniversal)]
+    [InlineData(DateTimeStyles.AssumeLocal)]
+    [InlineData(DateTimeStyles.AssumeLocal | DateTimeStyles.AdjustToUniversal)]
+    public void RejectsParsingDateTimeThroughLocalZone(DateTimeStyles styles)
+    {
+        Expression query = Orders
+            .Select(o => DateTime.Parse(o.Number, CultureInfo.InvariantCulture, styles))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains(styles.ToString(), exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -373,5 +439,64 @@ public sealed record ParseSemanticsTests
             new PostgreSqlQuery(query).TextValue
         );
         Assert.Contains("Parse", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(NumberStyles.Number)]
+    [InlineData(NumberStyles.Currency)]
+    [InlineData(NumberStyles.Any)]
+    public void ParsesTextAsIntegerWithStyleAllowingSignedDecimal(NumberStyles styles)
+    {
+        Expression query = Orders
+            .Select(o => int.Parse(o.Number, styles, CultureInfo.InvariantCulture))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(t0."Number" AS integer)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // A cast reads a decimal number: hexadecimal or binary digits would be read as
+    // another number.
+    [Theory]
+    [InlineData(NumberStyles.HexNumber)]
+    [InlineData(NumberStyles.AllowHexSpecifier)]
+    [InlineData(NumberStyles.BinaryNumber)]
+    [InlineData(NumberStyles.AllowBinarySpecifier)]
+    public void RejectsParsingHexadecimalOrBinaryText(NumberStyles styles)
+    {
+        Expression query = Orders
+            .Select(o => long.Parse(o.Number, styles, CultureInfo.InvariantCulture))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains(styles.ToString(), exception.Message, StringComparison.Ordinal);
+    }
+
+    // A cast accepts a sign and surrounding white space, which the parse would reject.
+    [Theory]
+    [InlineData(NumberStyles.None)]
+    [InlineData(NumberStyles.AllowLeadingSign)]
+    [InlineData(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite)]
+    [InlineData(NumberStyles.AllowTrailingSign | NumberStyles.AllowParentheses)]
+    [InlineData(NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint)]
+    public void RejectsParsingWithoutSignOrWhiteSpace(NumberStyles styles)
+    {
+        Expression query = Orders
+            .Select(o => decimal.Parse(o.Number, styles, CultureInfo.InvariantCulture))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains(styles.ToString(), exception.Message, StringComparison.Ordinal);
     }
 }

@@ -19,6 +19,10 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
 
     public List<Ordering> Orderings { get; set; } = [];
 
+    // How many of the ordering keys, the trailing ones, come from an ordering before
+    // the last OrderBy, which keeps them after its own keys and those of its ThenBy.
+    public int Inherited { get; set; }
+
     public long? Limit { get; set; }
 
     public long? Offset { get; set; }

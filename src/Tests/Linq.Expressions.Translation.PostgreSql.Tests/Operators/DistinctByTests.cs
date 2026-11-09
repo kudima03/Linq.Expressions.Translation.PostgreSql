@@ -517,7 +517,7 @@ public sealed record DistinctByTests
     }
 
     [Fact]
-    public void ParenthesizesOrderedRowsKeptPerKeyInSetOperation()
+    public void KeepsOrderOfRowsKeptPerKeyInSetOperation()
     {
         Expression query = Orders
             .OrderBy(o => o.CustomerId)
@@ -529,14 +529,18 @@ public sealed record DistinctByTests
         Assert.Equal(
             Sql.Valid(
                 """
-                (
-                    SELECT DISTINCT ON (t0."CustomerId") t0."Id"
-                    FROM "Order" AS t0
-                    ORDER BY t0."CustomerId"
-                )
-                UNION ALL
-                SELECT t1."Id"
-                FROM "Order" AS t1
+                SELECT t2."Id"
+                FROM (
+                    (
+                        SELECT DISTINCT ON (t0."CustomerId") t0."Id", 0 AS "$side", t0."CustomerId" AS "$1"
+                        FROM "Order" AS t0
+                        ORDER BY t0."CustomerId"
+                    )
+                    UNION ALL
+                    SELECT t1."Id", 1 AS "$side", NULL AS "$1"
+                    FROM "Order" AS t1
+                ) AS t2
+                ORDER BY t2."$side", t2."$1"
                 """
             ),
             new PostgreSqlQuery(query).TextValue

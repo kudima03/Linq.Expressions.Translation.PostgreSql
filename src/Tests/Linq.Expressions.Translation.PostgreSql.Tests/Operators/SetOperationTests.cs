@@ -411,7 +411,7 @@ public sealed record SetOperationTests
     }
 
     [Fact]
-    public void ParenthesizesOffsetOperandsOnBothSides()
+    public void KeepsOrderOfOffsetOperandsOnBothSides()
     {
         Expression query = Customers
             .OrderBy(c => c.Id)
@@ -423,19 +423,23 @@ public sealed record SetOperationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                (
-                    SELECT t0."Name"
-                    FROM "Customer" AS t0
-                    ORDER BY t0."Id"
-                    OFFSET 1
-                )
-                UNION ALL
-                (
-                    SELECT t1."Name"
-                    FROM "Product" AS t1
-                    ORDER BY t1."Id"
-                    OFFSET 1
-                )
+                SELECT t2."Name"
+                FROM (
+                    (
+                        SELECT t0."Name", 0 AS "$side", t0."Id" AS "$1", NULL AS "$2"
+                        FROM "Customer" AS t0
+                        ORDER BY t0."Id"
+                        OFFSET 1
+                    )
+                    UNION ALL
+                    (
+                        SELECT t1."Name", 1 AS "$side", NULL AS "$1", t1."Id" AS "$2"
+                        FROM "Product" AS t1
+                        ORDER BY t1."Id"
+                        OFFSET 1
+                    )
+                ) AS t2
+                ORDER BY t2."$side", t2."$1", t2."$2"
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -1105,6 +1109,130 @@ public sealed record SetOperationTests
                     FROM "Customer" AS t1
                 ) AS t2
                 ORDER BY t2."Name" NULLS FIRST
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // Concat yields the elements of the first sequence in their order, then those
+    // of the second in theirs: the sides are combined under a hidden side column
+    // and the ordering keys of each, exposed as hidden columns that are NULL on the
+    // other side, and read from a derived table ordered by the side and the keys.
+    [Fact]
+    public void KeepsOrderOfBothSidesOfConcat()
+    {
+        Expression query = Customers
+            .OrderByDescending(c => c.Id)
+            .Select(c => c.Id)
+            .Concat(Orders.OrderBy(o => o.Id).Select(o => o.Id))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Id"
+                FROM (
+                    SELECT t0."Id", 0 AS "$side", t0."Id" AS "$1", NULL AS "$2"
+                    FROM "Customer" AS t0
+                    UNION ALL
+                    SELECT t1."Id", 1 AS "$side", NULL AS "$1", t1."Id" AS "$2"
+                    FROM "Order" AS t1
+                ) AS t2
+                ORDER BY t2."$side", t2."$1" DESC, t2."$2"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsOrderOfSecondSideOfConcat()
+    {
+        Expression query = Customers
+            .Select(c => c.Id)
+            .Concat(
+                Orders
+                    .OrderBy(o => o.Number)
+                    .ThenByDescending(o => o.Id)
+                    .Select(o => o.Id)
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Id"
+                FROM (
+                    SELECT t0."Id", 0 AS "$side", NULL AS "$1", NULL AS "$2"
+                    FROM "Customer" AS t0
+                    UNION ALL
+                    SELECT t1."Id", 1 AS "$side", t1."Number" AS "$1", t1."Id" AS "$2"
+                    FROM "Order" AS t1
+                ) AS t2
+                ORDER BY t2."$side", t2."$1", t2."$2" DESC
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsOrderOfOrderedSideAfterUnorderedConcat()
+    {
+        Expression query = Customers
+            .Select(c => c.Id)
+            .Concat(Employees.Select(e => e.Id))
+            .Concat(Orders.OrderByDescending(o => o.Id).Select(o => o.Id))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t4."Id"
+                FROM (
+                    SELECT t3."Id", 0 AS "$side", NULL AS "$1"
+                    FROM (
+                        SELECT t0."Id"
+                        FROM "Customer" AS t0
+                        UNION ALL
+                        SELECT t1."Id"
+                        FROM "Employee" AS t1
+                    ) AS t3
+                    UNION ALL
+                    SELECT t2."Id", 1 AS "$side", t2."Id" AS "$1"
+                    FROM "Order" AS t2
+                ) AS t4
+                ORDER BY t4."$side", t4."$1" DESC
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void PagesConcatInTheOrderOfItsSides()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Name)
+            .Select(c => c.Name)
+            .Concat(Orders.Select(o => o.Number))
+            .Take(5)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t2."Name"
+                FROM (
+                    SELECT t0."Name", 0 AS "$side", t0."Name" AS "$1"
+                    FROM "Customer" AS t0
+                    UNION ALL
+                    SELECT t1."Number", 1 AS "$side", NULL AS "$1"
+                    FROM "Order" AS t1
+                ) AS t2
+                ORDER BY t2."$side", t2."$1"
+                LIMIT 5
                 """
             ),
             new PostgreSqlQuery(query).TextValue

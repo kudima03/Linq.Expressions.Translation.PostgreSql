@@ -184,9 +184,19 @@ public sealed record SetOperationAndLeftJoinCombinationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                (SELECT t0."Name" FROM "Customer" AS t0 ORDER BY t0."Id" LIMIT 2)
-                UNION ALL SELECT t1."Name"
-                FROM "Product" AS t1
+                SELECT t2."Name"
+                FROM (
+                    (
+                        SELECT t0."Name", 0 AS "$side", t0."Id" AS "$1"
+                        FROM "Customer" AS t0
+                        ORDER BY t0."Id"
+                        LIMIT 2
+                    )
+                    UNION ALL
+                    SELECT t1."Name", 1 AS "$side", NULL AS "$1"
+                    FROM "Product" AS t1
+                ) AS t2
+                ORDER BY t2."$side", t2."$1"
                 """
             ),
             new PostgreSqlQuery(query).TextValue

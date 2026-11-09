@@ -33,7 +33,8 @@ internal static class SqlLiteral
             TimeOnly time =>
                 $"TIME '{time.ToString(Seconds, CultureInfo.InvariantCulture)}'",
             TimeSpan span => $"INTERVAL '{Duration(span)}'",
-            Array items when value is not byte[] => Items(items),
+            byte[] bytes => $"BYTEA '\\x{Convert.ToHexString(bytes).ToLowerInvariant()}'",
+            Array items => Items(items),
             IFormattable number when value.GetType().IsPrimitive || value is decimal =>
                 number.ToString(null, CultureInfo.InvariantCulture),
             _ => throw new NotSupportedException(

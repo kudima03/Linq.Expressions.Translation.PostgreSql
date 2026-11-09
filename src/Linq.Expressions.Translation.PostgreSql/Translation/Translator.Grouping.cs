@@ -8,13 +8,13 @@ internal sealed partial class Translator
 {
     private SelectQuery GroupBy(SqlQuery source, MethodCallExpression call)
     {
-        SelectQuery query = Open(source, Barrier.Aggregation, false);
+        SelectQuery query = Open(source, Barrier.Aggregation);
         Shape key = Bind(Lambda(call, 1), query.Shape);
         bool selected =
             call.Arguments.Count > 2 && ParameterCount(call.Arguments[2]) == 1;
         Shape element = selected ? Bind(Lambda(call, 2), query.Shape) : query.Shape;
         query.GroupBy = Partitioned(key);
-        query.Orderings = [];
+        query.Orderings = Grouped(query.Orderings, query.GroupBy);
         query.Shape = new GroupingShape(key, element, null, false);
         if (call.Arguments.Count > (selected ? 3 : 2))
         {
@@ -39,6 +39,47 @@ internal sealed partial class Translator
                 .Where(value => value is not SqlConstant),
         ];
         return keys.Count > 0 ? keys : [new SqlCast(Integer(1), "integer", typeof(int))];
+    }
+
+    // The groups come in the order of their first elements, as in LINQ to Objects.
+    // A key the rows are grouped by orders the groups as it is. The first element of
+    // a group has the least value of the first ordering key, or the greatest when it
+    // is descending, unless the key may be NULL, which MIN and MAX skip; any other
+    // key is read from the first element in the order of the keys up to it.
+    private static List<Ordering> Grouped(
+        List<Ordering> order,
+        IReadOnlyList<SqlExpression> keys
+    )
+    {
+        HashSet<string> grouped = [.. keys.Select(SqlWriter.Text)];
+        return
+        [
+            .. order.Select(
+                (ordering, index) =>
+                    grouped.Contains(SqlWriter.Text(ordering.Key))
+                        ? ordering
+                        : new Ordering(
+                            First(order, index),
+                            ordering.Descending,
+                            ordering.NullsLast
+                        )
+            ),
+        ];
+    }
+
+    private static SqlExpression First(List<Ordering> order, int index)
+    {
+        Ordering ordering = order[index];
+        SqlExpression key = ordering.Key;
+        return index == 0 && !key.Nullable
+            ? new SqlAggregate(
+                ordering.Descending ? "MAX" : "MIN",
+                key,
+                false,
+                null,
+                key.Type
+            )
+            : new SqlFirst(key, [.. order.Take(index + 1)]);
     }
 
     private static int ParameterCount(Expression argument)

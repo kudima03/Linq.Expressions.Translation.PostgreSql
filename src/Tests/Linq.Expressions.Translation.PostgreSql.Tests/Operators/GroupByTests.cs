@@ -1503,4 +1503,174 @@ public sealed record GroupByTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    // The groups come in the order of the first element of each, as in LINQ to
+    // Objects: ordered by one key, the first element of a group has its least value
+    // ascending and its greatest descending.
+    [Fact]
+    public void OrdersGroupsByGreatestKeyOfDescendingSource()
+    {
+        Expression query = Orders
+            .OrderByDescending(o => o.Id)
+            .GroupBy(o => o.CustomerId)
+            .Select(g => new { g.Key, Count = g.Count() })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."CustomerId" AS "Key", CAST(COUNT(*) AS integer) AS "Count"
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                ORDER BY MAX(t0."Id") DESC
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OrdersGroupsByLeastKeyOfAscendingSource()
+    {
+        Expression query = Orders
+            .OrderBy(o => o.Total)
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Key)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."CustomerId"
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                ORDER BY MIN(t0."Total")
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OrdersGroupsByTheirOwnKey()
+    {
+        Expression query = Orders
+            .OrderByDescending(o => o.CustomerId)
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Key)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."CustomerId"
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                ORDER BY t0."CustomerId" DESC
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // MIN skips NULL, which sorts first; the value of the first element in the order
+    // is taken from the array of the values in that order. A later key is read the
+    // same way, as the least of them need not belong to the first element.
+    [Fact]
+    public void OrdersGroupsByFirstNullableKey()
+    {
+        Expression query = Orders
+            .OrderBy(o => o.Priority)
+            .ThenBy(o => o.Id)
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Key)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."CustomerId"
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                ORDER BY (ARRAY_AGG(t0."Priority" ORDER BY t0."Priority" NULLS FIRST))[1] NULLS FIRST, (ARRAY_AGG(t0."Id" ORDER BY t0."Priority" NULLS FIRST, t0."Id"))[1]
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OrdersGroupsByFirstElementOfSeveralKeys()
+    {
+        Expression query = Orders
+            .OrderBy(o => o.Quantity)
+            .ThenByDescending(o => o.Id)
+            .GroupBy(o => o.CustomerId)
+            .Select(g => g.Key)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."CustomerId"
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                ORDER BY MIN(t0."Quantity"), (ARRAY_AGG(t0."Id" ORDER BY t0."Quantity", t0."Id" DESC))[1] DESC
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void OrdersGroupsByFirstElementOfPagedSource()
+    {
+        Expression query = Orders
+            .OrderByDescending(o => o.Id)
+            .Select(o => new { o.CustomerId, o.Quantity })
+            .Take(6)
+            .GroupBy(x => x.CustomerId)
+            .Select(g => new { g.Key, Quantity = g.Sum(x => x.Quantity) })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."CustomerId" AS "Key", CAST(COALESCE(SUM(t1."Quantity"), 0) AS integer) AS "Quantity"
+                FROM (
+                    SELECT t0."CustomerId", t0."Quantity", t0."Id" AS "$0"
+                    FROM "Order" AS t0
+                    ORDER BY t0."Id" DESC
+                    LIMIT 6
+                ) AS t1
+                GROUP BY t1."CustomerId"
+                ORDER BY MAX(t1."$0") DESC
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void SortsGroupsBeforeTheOrderOfTheirFirstElements()
+    {
+        Expression query = Orders
+            .OrderBy(o => o.Id)
+            .GroupBy(o => o.CustomerId)
+            .OrderByDescending(g => g.Count())
+            .Select(g => g.Key)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."CustomerId"
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                ORDER BY CAST(COUNT(*) AS integer) DESC, MIN(t0."Id")
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }

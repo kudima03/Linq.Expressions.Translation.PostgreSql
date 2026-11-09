@@ -19,21 +19,90 @@ internal sealed partial class Translator
     // The side of UNION ALL a row comes from; a member never starts with $.
     private const string Side = "$side";
 
-    private SetOperationQuery Combined(SqlQuery source, MethodCallExpression call)
+    private SqlQuery Combined(SqlQuery source, MethodCallExpression call)
     {
-        SqlQuery left = Unpaged(source);
-        SqlQuery right = Unpaged(Joined(call));
-        return new SetOperationQuery(
-            SetOperations[call.Method.Name],
-            left,
-            right,
-            left.Shape
-        );
+        SqlQuery right = Joined(call);
+        return
+            call.Method.Name == nameof(Queryable.Concat)
+            && (IsOrdered(source) || IsOrdered(right))
+            ? Concatenated(source, right)
+            : new SetOperationQuery(
+                SetOperations[call.Method.Name],
+                Unpaged(source),
+                Unpaged(right),
+                source.Shape
+            );
     }
 
     private static SqlQuery Unpaged(SqlQuery query)
     {
         return query is SelectQuery select ? Unordered(select) : query;
+    }
+
+    // Whether the rows of a query come in an order, which a set operation drops.
+    private static bool IsOrdered(SqlQuery query)
+    {
+        return query is SelectQuery { IsOrdered: true, Orderings.Count: > 0 };
+    }
+
+    // Concat yields the elements of the first sequence in their order, then those of
+    // the second in theirs: each side is marked with its side and exposes its
+    // ordering keys as hidden columns, NULL on the other side, and the sides combined
+    // are read from a derived table in the order of the side and then of the keys.
+    private SelectQuery Concatenated(SqlQuery source, SqlQuery joined)
+    {
+        List<Ordering> first = Order(source);
+        List<Ordering> second = Order(joined);
+        SelectQuery left = Sided(source, 0);
+        SelectQuery right = Sided(joined, 1);
+        SelectQuery query = Wrap(
+            new SetOperationQuery(
+                SetOperations[nameof(Queryable.Concat)],
+                left,
+                right,
+                left.Shape
+            )
+        );
+        string alias = query.From!.Alias;
+        query.Orderings =
+        [
+            new Ordering(new SqlColumn(alias, Side, typeof(int), false), false),
+            .. Exposed(left, right, first, alias),
+            .. Exposed(right, left, second, alias),
+        ];
+        return query;
+    }
+
+    private static List<Ordering> Order(SqlQuery query)
+    {
+        return IsOrdered(query) ? [.. ((SelectQuery)query).Orderings] : [];
+    }
+
+    // The ordering keys of one side, as hidden columns of both sides of UNION ALL.
+    private static List<Ordering> Exposed(
+        SelectQuery own,
+        SelectQuery other,
+        List<Ordering> order,
+        string alias
+    )
+    {
+        List<Ordering> exposed = [];
+        foreach (Ordering ordering in order)
+        {
+            string name = "$" + own.Hidden.Count;
+            own.Hidden.Add(new ProjectionColumn(name, ordering.Key));
+            other.Hidden.Add(
+                new ProjectionColumn(name, new SqlConstant(null, ordering.Key.Type))
+            );
+            exposed.Add(
+                new Ordering(
+                    new SqlColumn(alias, name, ordering.Key.Type, ordering.Key.Nullable),
+                    ordering.Descending,
+                    ordering.NullsLast
+                )
+            );
+        }
+        return exposed;
     }
 
     // UnionBy keeps the first element of each key, the one of the first sequence when
