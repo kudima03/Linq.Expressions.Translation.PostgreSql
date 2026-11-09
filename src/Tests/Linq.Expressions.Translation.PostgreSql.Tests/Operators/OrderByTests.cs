@@ -574,4 +574,82 @@ public sealed record OrderByTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    // A later OrderBy sorts the elements the earlier one ordered, which keep their
+    // order where its keys tie, as a stable sort does: the keys of the earlier
+    // ordering follow every key of the later one, those of its ThenBy included.
+    [Fact]
+    public void KeepsThenByKeysBeforeKeysOfEarlierOrdering()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Region)
+            .Where(c => c.Id != 1)
+            .Select(c => c.Name)
+            .OrderBy(n => n.Length)
+            .ThenByDescending(n => n)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name"
+                FROM "Customer" AS t0
+                WHERE t0."Id" <> 1
+                ORDER BY LENGTH(t0."Name"), t0."Name" DESC, t0."Region"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsChainedThenByKeysBeforeKeysOfEarlierOrdering()
+    {
+        Expression query = Orders
+            .OrderByDescending(o => o.Total)
+            .OrderBy(o => o.CustomerId)
+            .ThenBy(o => o.Quantity)
+            .ThenByDescending(o => o.Id)
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                ORDER BY t0."CustomerId", t0."Quantity", t0."Id" DESC, t0."Total" DESC
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void KeepsThenByKeysBeforeKeysOfPagedOrdering()
+    {
+        Expression query = Orders
+            .OrderBy(o => o.Id)
+            .Select(o => new { o.Id, o.CustomerId })
+            .Take(3)
+            .OrderByDescending(x => x.CustomerId)
+            .ThenByDescending(x => x.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Id", t1."CustomerId"
+                FROM (
+                    SELECT t0."Id", t0."CustomerId"
+                    FROM "Order" AS t0
+                    ORDER BY t0."Id"
+                    LIMIT 3
+                ) AS t1
+                ORDER BY t1."CustomerId" DESC, t1."Id" DESC, t1."Id"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }
