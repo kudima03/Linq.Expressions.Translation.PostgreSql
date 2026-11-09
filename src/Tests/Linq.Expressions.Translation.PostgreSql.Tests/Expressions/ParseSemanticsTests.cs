@@ -374,4 +374,63 @@ public sealed record ParseSemanticsTests
         );
         Assert.Contains("Parse", exception.Message, StringComparison.Ordinal);
     }
+
+    [Theory]
+    [InlineData(NumberStyles.Number)]
+    [InlineData(NumberStyles.Currency)]
+    [InlineData(NumberStyles.Any)]
+    public void ParsesTextAsIntegerWithStyleAllowingSignedDecimal(NumberStyles styles)
+    {
+        Expression query = Orders
+            .Select(o => int.Parse(o.Number, styles, CultureInfo.InvariantCulture))
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(t0."Number" AS integer)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // A cast reads a decimal number: hexadecimal or binary digits would be read as
+    // another number.
+    [Theory]
+    [InlineData(NumberStyles.HexNumber)]
+    [InlineData(NumberStyles.AllowHexSpecifier)]
+    [InlineData(NumberStyles.BinaryNumber)]
+    [InlineData(NumberStyles.AllowBinarySpecifier)]
+    public void RejectsParsingHexadecimalOrBinaryText(NumberStyles styles)
+    {
+        Expression query = Orders
+            .Select(o => long.Parse(o.Number, styles, CultureInfo.InvariantCulture))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains(styles.ToString(), exception.Message, StringComparison.Ordinal);
+    }
+
+    // A cast accepts a sign and surrounding white space, which the parse would reject.
+    [Theory]
+    [InlineData(NumberStyles.None)]
+    [InlineData(NumberStyles.AllowLeadingSign)]
+    [InlineData(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite)]
+    [InlineData(NumberStyles.AllowTrailingSign | NumberStyles.AllowParentheses)]
+    [InlineData(NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint)]
+    public void RejectsParsingWithoutSignOrWhiteSpace(NumberStyles styles)
+    {
+        Expression query = Orders
+            .Select(o => decimal.Parse(o.Number, styles, CultureInfo.InvariantCulture))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains(styles.ToString(), exception.Message, StringComparison.Ordinal);
+    }
 }
