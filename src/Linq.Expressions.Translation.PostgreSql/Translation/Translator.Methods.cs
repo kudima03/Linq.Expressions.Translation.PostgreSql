@@ -700,14 +700,11 @@ internal sealed partial class Translator
     // The server reads a numeric date in its DateStyle, day first on a DMY server,
     // where the invariant culture reads the month first; a format pattern is read
     // the same whatever the DateStyle, and costs no more than a cast.
-    private static readonly Dictionary<
-        Type,
-        Func<SqlExpression, SqlExpression>
-    > Patterned = new()
-    {
-        [typeof(DateOnly)] = ParsedDate,
-        [typeof(DateTime)] = ParsedMoment,
-    };
+    private static readonly HashSet<Type> Patterned =
+    [
+        typeof(DateOnly),
+        typeof(DateTime),
+    ];
 
     // The invariant short date: a month, a day and a four-digit year.
     private const string DatePattern = "MM/DD/YYYY";
@@ -726,7 +723,7 @@ internal sealed partial class Translator
             CultureFree.Contains(type)
             || options.Any(option => option is ConstantExpression { Value: CultureInfo });
         if (
-            (target is null && !Patterned.ContainsKey(type))
+            (target is null && !Patterned.Contains(type))
             || !cultured
             || !options.All(IsInvariant)
         )
@@ -738,7 +735,29 @@ internal sealed partial class Translator
             Castable(styles);
         }
         SqlExpression text = Sql(call.Arguments[0]);
-        return target is null ? Patterned[type](text) : new SqlCast(text, target, type);
+        return target is not null ? new SqlCast(text, target, type)
+            : type == typeof(DateOnly) ? ParsedDate(text)
+            : ParsedMoment(
+                text,
+                options.Select(Styles).OfType<DateTimeStyles>().Any(IsUniversal)
+            );
+    }
+
+    // A text without a zone is read as UTC only when the style says so and keeps
+    // it; read as UTC and converted to the local zone, or read as local time, it
+    // depends on the zone of the client, which the server does not know.
+    private static bool IsUniversal(DateTimeStyles styles)
+    {
+        const DateTimeStyles assumed =
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AssumeLocal;
+        bool universal =
+            (styles & assumed) == DateTimeStyles.AssumeUniversal
+            && (styles & DateTimeStyles.AdjustToUniversal) != 0;
+        return universal || (styles & assumed) == 0
+            ? universal
+            : throw new NotSupportedException(
+                $"'DateTimeStyles.{styles}' is not supported: the local time zone is not known to PostgreSQL; read the text as UTC with AssumeUniversal and AdjustToUniversal together."
+            );
     }
 
     private static SqlFunction ParsedDate(SqlExpression text)
@@ -753,8 +772,9 @@ internal sealed partial class Translator
 
     // to_timestamp reads the text in the session's zone, where a time in a
     // daylight-saving gap shifts by an hour; a fixed +00 offset put before the text
-    // and taken back as UTC keeps the time as written.
-    private static SqlBinary ParsedMoment(SqlExpression text)
+    // keeps the time as written, taken back as UTC into a timestamp, or kept as
+    // the instant in UTC, a timestamptz, which is read with the kind Utc.
+    private static SqlExpression ParsedMoment(SqlExpression text, bool universal)
     {
         SqlFunction moment = new(
             "TO_TIMESTAMP",
@@ -769,17 +789,19 @@ internal sealed partial class Translator
                 ),
                 Text("TZH " + DatePattern + " HH24:MI:SS"),
             ],
-            typeof(DateTimeOffset),
-            text.Nullable
-        );
-        return new SqlBinary(
-            "AT TIME ZONE",
-            SqlBinaryKind.Arithmetic,
-            moment,
-            Text("UTC"),
             typeof(DateTime),
             text.Nullable
         );
+        return universal
+            ? moment
+            : new SqlBinary(
+                "AT TIME ZONE",
+                SqlBinaryKind.Arithmetic,
+                moment,
+                Text("UTC"),
+                typeof(DateTime),
+                text.Nullable
+            );
     }
 
     private static object? Styles(Expression option)
