@@ -733,6 +733,10 @@ internal sealed partial class Translator
         {
             throw Unsupported.Method(call.Method);
         }
+        foreach (NumberStyles styles in options.Select(Styles).OfType<NumberStyles>())
+        {
+            Castable(styles);
+        }
         SqlExpression text = Sql(call.Arguments[0]);
         return target is null ? Patterned[type](text) : new SqlCast(text, target, type);
     }
@@ -776,6 +780,29 @@ internal sealed partial class Translator
             typeof(DateTime),
             text.Nullable
         );
+    }
+
+    private static object? Styles(Expression option)
+    {
+        return (option as ConstantExpression)?.Value;
+    }
+
+    // A cast reads a decimal number with an optional sign and white space around it,
+    // whatever the style: hexadecimal or binary digits would be read as another
+    // number, and a text the style rejects for its sign or white space would be read.
+    private static void Castable(NumberStyles styles)
+    {
+        const NumberStyles digits =
+            NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier;
+        if (
+            (styles & NumberStyles.Integer) != NumberStyles.Integer
+            || (styles & digits) != 0
+        )
+        {
+            throw new NotSupportedException(
+                $"'NumberStyles.{styles}' is not supported: a cast from text reads a decimal number with an optional sign and surrounding white space, whatever the style."
+            );
+        }
     }
 
     // A style is a constant set of flags; a culture has to be the invariant one.
