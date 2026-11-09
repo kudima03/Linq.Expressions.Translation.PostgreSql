@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-preview.0.8.0] - 2026-11-09
+
+### Added
+
+- A `byte[]` property maps to a `bytea` column and a `byte[]` constant is a hexadecimal `BYTEA` literal; `Encoding.UTF8.GetString(bytes)` is `CONVERT_FROM(bytes, 'UTF8')` and `Encoding.UTF8.GetBytes(text)` is `CONVERT_TO(text, 'UTF8')`, so the text operations compose over the text a `bytea` holds. That text is read with the collation of the database, as a text column is. Other encodings and the partial overloads are rejected with `NotSupportedException`.
+
+### Fixed
+
+- The order of the rows is the order LINQ to Objects yields. A later `OrderBy` sorts stably: the keys of an earlier ordering follow every key of the later one, its `ThenBy` included, where they used to come between them. `Distinct` yields the first occurrence of each value in the order of the source (`DISTINCT ON` where a hidden key orders the values), `GroupBy` yields the groups in the order of their first elements, and `Concat` yields the first sequence in its order and then the second in its. `Union`, `Intersect` and `Except` still drop the order.
+- `Parse` with a `NumberStyles` a decimal cast cannot honour (a hexadecimal or binary style, or one lacking the sign or the white space of `NumberStyles.Integer`) is rejected with `NotSupportedException` instead of being rendered as the decimal cast, which read another number or accepted a text the style rejects.
+- `DateTime.Parse` honours `DateTimeStyles`: with `AssumeUniversal` and `AdjustToUniversal` the text is the instant it says in UTC, read with the kind `Utc`; `AssumeUniversal` alone and `AssumeLocal`, which need the client's time zone, are rejected; without either the text is read as before.
+
 ## [0.1.0-preview.0.7.1] - 2026-11-02
 
 ### Fixed
