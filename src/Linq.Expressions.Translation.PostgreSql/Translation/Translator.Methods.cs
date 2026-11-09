@@ -72,6 +72,8 @@ internal sealed partial class Translator
             : name == nameof(long.Parse) && call.Object is null ? Parsed(call)
             : name == nameof(TimeSpan.FromTicks) && owner == typeof(TimeSpan)
                 ? Microseconds(Sql(call.Arguments[0]))
+            : call.Object is ConstantExpression { Value: Encoding encoding }
+                ? Encoded(encoding, call)
             : owner == typeof(string) ? StringMethod(call)
             : owner == typeof(Math) || Numeric.Contains(owner) ? MathMethod(call)
             : Temporal.Contains(owner) ? TemporalMethod(call)
@@ -80,6 +82,42 @@ internal sealed partial class Translator
             : name == nameof(Guid.NewGuid)
                 ? new SqlFunction("GEN_RANDOM_UUID", [], typeof(Guid))
             : throw Unsupported.Method(call.Method);
+    }
+
+    // The bytes of a bytea read as text, or a text written as bytes; .NET replaces
+    // bytes that are no UTF-8 where PostgreSQL fails on them. The text convert_from
+    // yields has the "C" collation of the encoding's name, under which UPPER and
+    // LOWER map only ASCII: the collation of the database makes it a text column's.
+    private SqlExpression Encoded(Encoding encoding, MethodCallExpression call)
+    {
+        if (encoding.CodePage != Encoding.UTF8.CodePage)
+        {
+            throw new NotSupportedException(
+                $"The encoding '{encoding.WebName}' is not supported; only UTF-8 is."
+            );
+        }
+        Type[] parameters =
+        [
+            .. call.Method.GetParameters().Select(parameter => parameter.ParameterType),
+        ];
+        string function = (call.Method.Name, parameters) switch
+        {
+            (nameof(Encoding.GetString), [Type bytes]) when bytes == typeof(byte[]) =>
+                "CONVERT_FROM",
+            (nameof(Encoding.GetBytes), [Type text]) when text == typeof(string) =>
+                "CONVERT_TO",
+            _ => throw Unsupported.Method(call.Method),
+        };
+        SqlExpression value = Sql(call.Arguments[0]);
+        SqlFunction converted = new(
+            function,
+            [value, Text("UTF8")],
+            call.Type,
+            value.Nullable
+        );
+        return call.Type == typeof(string)
+            ? new SqlCollation(converted, "default")
+            : converted;
     }
 
     private Shape Enumerated(MethodCallExpression call)

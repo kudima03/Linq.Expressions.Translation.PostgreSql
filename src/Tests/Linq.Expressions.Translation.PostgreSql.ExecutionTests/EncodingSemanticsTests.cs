@@ -35,7 +35,8 @@ public sealed class EncodingSemanticsTests(Database database)
                     a.Id,
                     Upper = Encoding.UTF8.GetString(a.Content).ToUpperInvariant(),
                     Trimmed = Encoding.UTF8.GetString(a.Content).Trim(),
-                    Length = Encoding.UTF8.GetString(a.Content).Length,
+                    Lower = Encoding.UTF8.GetString(a.Content).ToLowerInvariant(),
+                    Dashed = Encoding.UTF8.GetString(a.Content).Contains('-'),
                     Replaced = Encoding.UTF8.GetString(a.Content).Replace("-", "/"),
                 })
         );

@@ -3,7 +3,9 @@ using System.Text;
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;
 
 // A bytea column holding the UTF-8 bytes of a text is read as that text with
-// Encoding.UTF8.GetString, over which the text operations compose.
+// Encoding.UTF8.GetString, over which the text operations compose; the text has the
+// collation of the database, as a text column has, not the "C" one convert_from
+// derives from the name of the encoding.
 public sealed record EncodingTests
 {
     [Fact]
@@ -33,7 +35,7 @@ public sealed record EncodingTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CONVERT_FROM(t0."Content", 'UTF8')
+                SELECT CONVERT_FROM(t0."Content", 'UTF8') COLLATE "default"
                 FROM "Attachment" AS t0
                 """
             ),
@@ -52,7 +54,7 @@ public sealed record EncodingTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CONVERT_FROM(t0."Content", 'UTF8')
+                SELECT CONVERT_FROM(t0."Content", 'UTF8') COLLATE "default"
                 FROM "Attachment" AS t0
                 """
             ),
@@ -74,7 +76,7 @@ public sealed record EncodingTests
         Assert.Equal(
             Sql.Valid(
                 $"""
-                SELECT UPPER(CONVERT_FROM(t0."Content", 'UTF8')) AS "Upper", BTRIM(CONVERT_FROM(t0."Content", 'UTF8'), {Sql.WhiteSpace}) AS "Trimmed"
+                SELECT UPPER(CONVERT_FROM(t0."Content", 'UTF8') COLLATE "default") AS "Upper", BTRIM(CONVERT_FROM(t0."Content", 'UTF8') COLLATE "default", {Sql.WhiteSpace}) AS "Trimmed"
                 FROM "Attachment" AS t0
                 """
             ),
@@ -95,7 +97,7 @@ public sealed record EncodingTests
                 """
                 SELECT t0."Id"
                 FROM "Attachment" AS t0
-                WHERE CONVERT_FROM(t0."Content", 'UTF8') = 'A-001'
+                WHERE CONVERT_FROM(t0."Content", 'UTF8') COLLATE "default" = 'A-001'
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -115,7 +117,7 @@ public sealed record EncodingTests
                 """
                 SELECT t0."Id"
                 FROM "Attachment" AS t0
-                WHERE CONVERT_FROM(t0."Checksum", 'UTF8') IS NOT DISTINCT FROM 'A-001'
+                WHERE CONVERT_FROM(t0."Checksum", 'UTF8') COLLATE "default" IS NOT DISTINCT FROM 'A-001'
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -139,7 +141,7 @@ public sealed record EncodingTests
                 """
                 SELECT t0."Name", t1."Total"
                 FROM "Attachment" AS t0
-                INNER JOIN "Order" AS t1 ON CONVERT_FROM(t0."Content", 'UTF8') = t1."Number"
+                INNER JOIN "Order" AS t1 ON CONVERT_FROM(t0."Content", 'UTF8') COLLATE "default" = t1."Number"
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -157,7 +159,7 @@ public sealed record EncodingTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CONVERT_FROM(t0."Content", 'UTF8') AS "Value"
+                SELECT CONVERT_FROM(t0."Content", 'UTF8') COLLATE "default"
                 FROM "Attachment" AS t0
                 UNION
                 SELECT t1."Number"

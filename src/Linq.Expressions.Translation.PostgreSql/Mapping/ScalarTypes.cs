@@ -55,10 +55,12 @@ internal static class ScalarTypes
         return value.IsEnum ? Enum.GetUnderlyingType(value) : value;
     }
 
+    // A byte[] is a bytea, not an array of a scalar.
     public static bool IsScalar(Type type)
     {
         Type value = Underlying(type);
         return Types.Contains(value)
+            || value == typeof(byte[])
             || (value.IsArray && IsScalar(value.GetElementType()!));
     }
 
