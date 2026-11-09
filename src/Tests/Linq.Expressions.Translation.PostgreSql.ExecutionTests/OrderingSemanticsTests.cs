@@ -211,4 +211,16 @@ public sealed class OrderingSemanticsTests(Database database)
                 .Concat(Orders.OrderByDescending(o => o.Id).Select(o => o.Id))
         );
     }
+
+    [Fact]
+    public void MakesValuesOfUnionByDistinct()
+    {
+        database.AssertSameRows(
+            Customers
+                .Select(c => new { c.Region, c.Id })
+                .UnionBy(Employees.Select(e => new { Region = e.Name, e.Id }), x => x.Id)
+                .Select(x => x.Region)
+                .Distinct()
+        );
+    }
 }

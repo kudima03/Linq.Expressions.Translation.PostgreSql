@@ -203,4 +203,63 @@ public sealed record DistinctOrderingTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    // The ORDER BY of UnionBy only chooses the rows DISTINCT ON keeps; the result has
+    // no order for Distinct to keep.
+    [Fact]
+    public void OrdersDistinctValuesOfUnionByByNothing()
+    {
+        Expression query = Customers
+            .Select(c => new { c.Region, c.Id })
+            .UnionBy(Employees.Select(e => new { Region = e.Name, e.Id }), x => x.Id)
+            .Select(x => x.Region)
+            .Distinct()
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT DISTINCT t3."Region"
+                FROM (
+                    SELECT DISTINCT ON (t2."Id") t2."Region"
+                    FROM (
+                        SELECT t0."Region", t0."Id", 0 AS "$side"
+                        FROM "Customer" AS t0
+                        UNION ALL
+                        SELECT t1."Name" AS "Region", t1."Id", 1 AS "$side"
+                        FROM "Employee" AS t1
+                    ) AS t2
+                    ORDER BY t2."Id", t2."$side"
+                ) AS t3
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // A derived table does not order its rows: the order moves to the outer query.
+    [Fact]
+    public void RestrictsDistinctRowsOutsideInTheirOrder()
+    {
+        Expression query = Customers
+            .OrderBy(c => c.Region)
+            .Distinct()
+            .Where(c => c.IsActive)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Id", t1."Name", t1."Email", t1."Region", t1."IsActive"
+                FROM (
+                    SELECT DISTINCT t0."Id", t0."Name", t0."Email", t0."Region", t0."IsActive"
+                    FROM "Customer" AS t0
+                ) AS t1
+                WHERE t1."IsActive"
+                ORDER BY t1."Region"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
 }
