@@ -37,7 +37,7 @@ The repository is not part of the Pure ecosystem: do not reference `Pure.*` pack
 - The library is `IsAotCompatible` and must build without trimming/AOT warnings and without suppressions. Reflection over element types is confined to `TableMapping`, annotated `[RequiresUnreferencedCode]` and surfaced on `Translator` and `PostgreSqlQuery.TextValue`; everything else must stay analyzer-clean (no `Activator.CreateInstance`, `GetInterface`, `MetadataToken` or other reflection that needs `DynamicallyAccessedMembers` or fails under Native AOT).
 - CI enforces 98% line coverage; the Stryker mutation step (98% score) is disabled in CI but still runs locally with `dotnet stryker`. Avoid code paths no test exercises.
 
-**Test project:** `Linq.Expressions.Translation.PostgreSql.Tests` targets `net10.0` and uses xunit.
+**Test project:** `Linq.Expressions.Translation.PostgreSql.Tests` targets `net11.0` and uses xunit.
 - Every test is the same three steps: build a LINQ query, translate it with `new PostgreSqlQuery(expression).TextValue`, `Assert.Equal` it with the expected SQL. The expected SQL is the specification of the translation.
 - `Infrastructure/CapturingQueryable<T>` is the test-only root (`Tables.Customers`, …): its provider only builds trees. For terminal operators (`Count`, `First`, …) `query.Executed(q => q.Count())` returns the expression the provider was asked to execute; nothing is executed.
 - Expected SQL is a raw string literal with one clause per line, wrapped in `Sql.Valid(...)`, which joins the lines with single spaces (a subquery may be indented between a line ending in `(` and a line starting with `)`) and asserts the statement parses as one PostgreSQL `SELECT` (`pgsqlparser`, libpg_query).
@@ -57,7 +57,7 @@ The repository is not part of the Pure ecosystem: do not reference `Pure.*` pack
 - A disagreement with LINQ to Objects is kept as `[Fact(Skip = "#<issue>: ...")]` (`xUnit1004` is suppressed for that).
 - `stryker-config.json` filters these tests out of mutation testing, like the performance tests.
 
-**Multi-targeting:** net8.0, net9.0, net10.0.
+**Multi-targeting:** net8.0, net9.0, net10.0, net11.0.
 
 **Publishing:** triggered by pushing a semver tag (pattern `*.*.*`). The tag becomes the `PackageVersion`. The workflow publishes to both GitHub Packages and NuGet.org. `dotnet pack` validates the public API against `PackageValidationBaselineVersion` (the latest released tag, from `git describe --tags --abbrev=0`); move it to the new tag after a release.
 
