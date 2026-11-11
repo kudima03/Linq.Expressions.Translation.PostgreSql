@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-preview.0.9.0] - 2026-11-11
+
+### Added
+
+- Support for `net11.0`: the package now targets `net8.0`, `net9.0`, `net10.0` and `net11.0`.
+
 ## [0.1.0-preview.0.8.0] - 2026-11-09
 
 ### Added
