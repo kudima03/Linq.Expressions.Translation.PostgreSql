@@ -165,8 +165,14 @@ internal sealed class Evaluator(HashSet<Expression> candidates) : ExpressionVisi
     private static bool IsQueryOperator(Expression node)
     {
         return node is MethodCallExpression call
-            && call.Method.DeclaringType == typeof(Queryable)
-            && call.Method.Name != nameof(Queryable.AsQueryable);
+            && (
+                (
+                    call.Method.DeclaringType == typeof(Queryable)
+                    && call.Method.Name != nameof(Queryable.AsQueryable)
+                )
+                || call.Method.DeclaringType == typeof(PostgreSqlWindows)
+                || call.Method.DeclaringType == typeof(PostgreSqlRecursion)
+            );
     }
 
     // Visits the operands of an operation, not what is below them.

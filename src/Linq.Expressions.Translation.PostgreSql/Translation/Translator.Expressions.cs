@@ -160,6 +160,7 @@ internal sealed partial class Translator
                 ? new ScalarShape(ScalarMember(scalar.Value, member.Member))
             : owner is EntityShape entity ? entity.Member(member.Member)
             : owner is GroupingShape grouping ? grouping.Key
+            : owner is WindowShape window ? Framed(window, member)
             : ((ObjectShape)owner).Member(member.Member);
     }
 

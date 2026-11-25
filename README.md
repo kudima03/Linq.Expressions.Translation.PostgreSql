@@ -21,11 +21,13 @@ Translates the expression tree of an `IQueryable<T>` into a single PostgreSQL `S
 - Captured variables and parameter-free subtrees, which are evaluated in memory and rendered as literals. A subtree that throws when it is evaluated where it may not be reached (a branch of a conditional, the right operand of `??`, `&&` or `||`) is left to the database with the constants below it folded: `o.Id < 0 ? one / zero : o.Total` with `zero == 0` is `CASE WHEN t0."Id" < 0 THEN (SELECT 1) / 0 ELSE t0."Total" END`, where the scalar subquery keeps the planner from computing the division while it plans the statement, as PostgreSQL folds an operation on constants alone before any row reaches it. Elsewhere the exception propagates from the translation.
 - One row of aggregates over tables: a constant one-element sequence as the root (`new[] { 0 }.AsQueryable().Select(_ => new { Orders = orders.Count(), Revenue = orders.Sum(o => o.Total) })`) is a `SELECT` of scalar subqueries without `FROM`. The element itself has no column and cannot be read. Joined on either side (`SelectMany`, `Join`, `GroupJoin`), the row is a derived table, which puts the totals next to every row: `customers.SelectMany(c => totals, (c, t) => new { c.Name, t.Orders })` is `FROM "Customer" AS t0 CROSS JOIN (SELECT (...) AS "Orders") AS t2`.
 
+- PostgreSQL features LINQ has no operator for, through the marker methods of [the PostgreSQL markers](#postgresql-markers): window functions over `OVER (PARTITION BY ... ORDER BY ... frame)` (`PostgreSqlWindows`, `PostgreSqlFrame`), `WITH RECURSIVE` with an optional depth limit that fails instead of cutting off (`PostgreSqlRecursion`).
+
 Anything else — user-defined methods, culture- or comparison-specific overloads, navigation properties, in-memory sources (other than the one-element root above), operators such as `Zip`, `Aggregate` or `SkipWhile` — throws `NotSupportedException` naming the offending member, method or expression node.
 
 ## Overview
 
-The package exposes exactly one public type, `PostgreSqlQuery`. It accepts a `System.Linq.Expressions.Expression` — the `Expression` of an `IQueryable<T>` — and exposes the PostgreSQL `SELECT` statement for that tree as its `TextValue`.
+The package exposes one public type that translates, `PostgreSqlQuery`, and the [PostgreSQL markers](#postgresql-markers), which only mark PostgreSQL's SQL in a tree. `PostgreSqlQuery` accepts a `System.Linq.Expressions.Expression` — the `Expression` of an `IQueryable<T>` — and exposes the PostgreSQL `SELECT` statement for that tree as its `TextValue`.
 
 ```csharp
 IQueryable<Order> orders = ...; // any IQueryable<T> whose provider builds the tree
@@ -38,6 +40,42 @@ string sql = new PostgreSqlQuery(
 ```
 
 The package does not execute queries, open connections or materialize results; it only produces SQL text.
+
+## PostgreSQL markers
+
+PostgreSQL features that LINQ cannot express are written with marker methods, as `EF.Functions` is: they are named after PostgreSQL, follow PostgreSQL's semantics, exist only in expression trees (a lambda, or `Expression.Call` for a query operator outside one) and throw `NotSupportedException` when they are called, so that a provider that evaluates closed subtrees keeps the call in the tree.
+
+| Type | Members | PostgreSQL |
+|---|---|---|
+| `PostgreSqlWindows` | `Over(source, partitionBy, orderBy, frame, (row, window) => ...)` | `SELECT ..., f(...) OVER (PARTITION BY ... ORDER BY ... frame) FROM source` |
+| | `RowNumber`, `Rank`, `DenseRank`, `PercentRank`, `CumeDist`, `Ntile(buckets)` | `ROW_NUMBER()`, `RANK()`, `DENSE_RANK()`, `PERCENT_RANK()`, `CUME_DIST()`, `NTILE(n)` |
+| | `Lag` / `Lead(value, offset, default)`, `FirstValue(value)`, `LastValue(value)` | `LAG(value, offset[, default])`, `LEAD(...)`, `FIRST_VALUE`, `LAST_VALUE` |
+| `PostgreSqlWindow<TSource>` | `Rows`: the rows of the frame, which LINQ's `Count`, `LongCount`, `Sum`, `Average`, `Min`, `Max`, `Any` and `All` aggregate (after `Where`, as `FILTER (WHERE ...)`, and `Select`) | `COUNT(*) FILTER (WHERE ...) OVER (...)`, ... |
+| `PostgreSqlFrame` | `Rows(start, end)`, `Range(decimal? start, decimal? end)`, `Range(TimeSpan? start, TimeSpan? end)`, `RangeMonths(start, end)`; `TextValue` | `ROWS` / `RANGE BETWEEN ... AND ...` |
+| `PostgreSqlRecursion` | `WithRecursive(seed, level => step)`, `WithRecursive(seed, level => step, maxDepth)` | `WITH RECURSIVE r AS (seed UNION ALL step) SELECT ... FROM r` |
+
+```csharp
+// The two largest orders of each customer, with a running total from the largest. This is
+// the tree a provider or a tree rewriter builds with Expression.Call (inside a lambda the
+// compiler builds it): called as code, Over throws.
+orders
+    .Over(
+        o => o.CustomerId,
+        rows => rows.OrderByDescending(o => o.Total).ThenBy(o => o.Id),
+        PostgreSqlFrame.Rows(null, 0), // ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        (o, w) => new Ranked(o.Id, w.RowNumber(), w.Rows.Sum(x => x.Total))
+    )
+    .Where(r => r.Number <= 2);
+
+// SELECT t1."Id", t1."Number", t1."Running" FROM (SELECT t0."Id", ROW_NUMBER() OVER (PARTITION BY
+// t0."CustomerId" ORDER BY t0."Total" DESC, t0."Id" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+// AS "Number", COALESCE(SUM(t0."Total") OVER (PARTITION BY t0."CustomerId" ORDER BY t0."Total" DESC,
+// t0."Id" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), 0) AS "Running" FROM "Order" AS t0) AS t1
+// WHERE t1."Number" <= 2
+```
+
+- **Windows.** `Over` yields one result per row of its source, in its order, computed after `WHERE`, joins and `GROUP BY` (a window over the groups of the same `SELECT` may aggregate them) and before `DISTINCT`, `ORDER BY` and paging; a paged, distinct or windowed source is wrapped into a derived table, and so is the result for a filter, a grouping, a join or an aggregate. The partition is one value, a tuple or an object of values (constants dropped), or `null`; the order is `OrderBy` or `Order` of the window's rows followed by `ThenBy`, which sorts as everywhere else in .NET's order (nulls first ascending; `StringComparer.Ordinal` sorts by code point); a `null` frame is PostgreSQL's default (with an order, `RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`, the current row's peers included). A frame bound is an offset from the current row: negative `PRECEDING`, positive `FOLLOWING`, `0` `CURRENT ROW`, `null` `UNBOUNDED`; a duration is written in seconds (elapsed time, also over a `timestamptz`), `RangeMonths` in calendar months. A `RANGE` with an offset needs exactly one sort key of a matching type (a number, or a date, time, timestamp or interval). The lambdas of the functions and of the aggregates over `Rows` read only their own row (SQL cannot name the current row inside an aggregate), the `default` of `Lag` and `Lead` is read in the current row, and the window may not be read in a lambda or a subquery of the selector. `Lag` and `Lead` take PostgreSQL's three arguments, the default standing for a missing row (a `null` default is PostgreSQL's own and is left out: `LAG(value, offset)`), so with a `null` default they read a nullable value; `FirstValue` and `LastValue` of a frame that may not hold the current row may find no row, where they are `NULL`, so they also have to read a nullable value. The aggregates over `Rows` keep .NET's semantics, as over a group (`Sum` is 0 and `Any` false over no rows); `DISTINCT`, which PostgreSQL has not implemented for window aggregates, is refused.
+- **Recursion.** `WithRecursive` is a derived table `(WITH RECURSIVE r AS (seed UNION ALL step) SELECT ... FROM r) AS t`: every row of every level, duplicates included, in no order; a cycle ends where the step's own predicate stops it (a path column, for example). The step's parameter is the level before, which it reads exactly once, in `FROM` or an inner join, never in a subquery, a derived table or on the optional side of an outer join, and the step does not group, as PostgreSQL requires of the recursive term; its columns are matched to the seed's by name, and a constant of the seed is cast to its type (`CAST(0 AS numeric)`), as the seed decides the types of the columns. With `maxDepth` (the seed is level 0), a hidden `"$depth"` column counts the levels and a row deeper than the limit fails the statement with `invalid input syntax for type bigint: "WITH RECURSIVE: a row deeper than the maximum depth of n"`: PostgreSQL has no `RAISE` in SQL, so the step casts that message, read by a scalar subquery the planner does not fold, to `bigint` in the branch of a `CASE` that only such a row reaches. A one-time filter, `WHERE (SELECT COUNT(*) FROM r) > 0`, computes every level before the first row is read, as PostgreSQL computes a recursive query only as far as its reader asks; so a query that reads only some of the rows (`Take`, `Any`, `First`) fails as one reading all of them does, and a walk over cyclic data always ends.
 
 ## Mapping
 

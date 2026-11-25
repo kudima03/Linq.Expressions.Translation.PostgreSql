@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- PostgreSQL markers for what LINQ cannot express, in the style of `EF.Functions`: named after PostgreSQL, with PostgreSQL's semantics, existing only in expression trees and throwing `NotSupportedException` when called; the evaluator never evaluates one.
+- `PostgreSqlWindows.Over(source, partitionBy, orderBy, frame, (row, window) => ...)`: one result per row of the source, in its order, with every window function of the selector `OVER (PARTITION BY ... ORDER BY ... frame)`. The window functions are `RowNumber`, `Rank`, `DenseRank`, `PercentRank`, `CumeDist`, `Ntile(buckets)`, `Lag` / `Lead(value, offset, default)` (a `null` default is PostgreSQL's own, `LAG(value, offset)`), `FirstValue` and `LastValue`; LINQ's `Count`, `LongCount`, `Sum`, `Average`, `Min`, `Max`, `Any` and `All` over `PostgreSqlWindow<TSource>.Rows`, the rows of the frame (after `Where`, as `FILTER (WHERE ...)`, and `Select`), are window aggregates with .NET's semantics. A paged, distinct or windowed source is wrapped into a derived table, and so is the result for a filter, a grouping, a join or an aggregate; a window may also be over the groups of the same `SELECT`.
+- `PostgreSqlFrame`, a frame clause as a value (`TextValue`): `Rows(start, end)`, `Range(decimal? start, decimal? end)`, `Range(TimeSpan? start, TimeSpan? end)` (in seconds) and `RangeMonths(start, end)`, each bound an offset from the current row (negative `PRECEDING`, positive `FOLLOWING`, `0` `CURRENT ROW`, `null` `UNBOUNDED`).
+- `PostgreSqlRecursion.WithRecursive(seed, level => step[, maxDepth])`: `WITH RECURSIVE r AS (seed UNION ALL step) SELECT ... FROM r` as a derived table, the step's columns matched to the seed's by name and its constants typed; PostgreSQL's rules for the recursive term are checked when translating. With `maxDepth`, a row deeper than it fails the statement (`invalid input syntax for type bigint: "WITH RECURSIVE: a row deeper than the maximum depth of n"`) whatever the query around it reads, instead of being cut off.
+
 ## [0.1.0-preview.0.9.0] - 2026-11-11
 
 ### Added

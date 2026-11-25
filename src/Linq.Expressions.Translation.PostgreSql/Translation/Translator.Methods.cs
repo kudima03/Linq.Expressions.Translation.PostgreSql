@@ -64,6 +64,7 @@ internal sealed partial class Translator
         Type owner = call.Method.DeclaringType!;
         string name = call.Method.Name;
         return owner == typeof(Queryable) ? Subquery(call)
+            : owner == typeof(PostgreSqlWindows) ? WindowFunction(call)
             : name == nameof(Equals) && call.Method.GetParameters().All(IsComparable)
                 ? Equated(call)
             : name == nameof(ToString) && call.Arguments.Count == 0 ? Stringified(call)
@@ -124,6 +125,7 @@ internal sealed partial class Translator
     {
         Shape source = Shape(call.Arguments[0]);
         return source is GroupingShape grouping ? Grouped(grouping, call)
+            : source is FrameShape frame ? Framed(frame, call)
             : source is GroupJoinShape group
                 ? Terminals.Contains(call.Method.Name)
                         ? new ScalarShape(Valued(Terminal(Correlated(group), call), call))

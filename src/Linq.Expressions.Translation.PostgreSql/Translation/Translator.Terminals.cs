@@ -258,7 +258,8 @@ internal sealed partial class Translator
         string name,
         SqlExpression? distinct,
         SqlExpression? filter,
-        bool windowed = false
+        bool windowed = false,
+        SqlWindow? window = null
     )
     {
         SqlExpression count = new SqlAggregate(
@@ -267,7 +268,8 @@ internal sealed partial class Translator
             distinct is not null,
             filter,
             typeof(long),
-            windowed
+            windowed,
+            window
         );
         if (distinct is { Nullable: true })
         {
@@ -300,7 +302,8 @@ internal sealed partial class Translator
         Type type,
         bool distinct,
         SqlExpression? filter,
-        bool windowed = false
+        bool windowed = false,
+        SqlWindow? window = null
     )
     {
         Type result = ScalarTypes.Underlying(type);
@@ -309,7 +312,15 @@ internal sealed partial class Translator
             SqlExpression sum = new SqlFunction(
                 "COALESCE",
                 [
-                    new SqlAggregate("SUM", value, distinct, filter, type, windowed),
+                    new SqlAggregate(
+                        "SUM",
+                        value,
+                        distinct,
+                        filter,
+                        type,
+                        windowed,
+                        window
+                    ),
                     new SqlConstant(0, typeof(int)),
                 ],
                 result
@@ -329,7 +340,8 @@ internal sealed partial class Translator
             distinct,
             filter,
             type,
-            windowed
+            windowed,
+            window
         );
     }
 
