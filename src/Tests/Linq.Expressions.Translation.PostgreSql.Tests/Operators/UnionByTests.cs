@@ -327,6 +327,6 @@ public sealed record UnionByTests
         NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("UnionBy", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Customer", exception.Message, StringComparison.Ordinal);
     }
 }

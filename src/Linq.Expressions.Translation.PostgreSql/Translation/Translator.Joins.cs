@@ -36,8 +36,16 @@ internal sealed partial class Translator
 
     private SelectQuery SelectMany(SqlQuery source, MethodCallExpression call)
     {
-        SelectQuery outer = Opened(source);
         LambdaExpression collection = Lambda(call, 1);
+        if (
+            call.Arguments[0] is ConstantExpression
+            && source.Shape is RowShape
+            && IsInMemory(collection.Body)
+        )
+        {
+            return Unrolled(source, call, collection);
+        }
+        SelectQuery outer = Opened(source);
         Binding binding = new(outer.Shape, collection);
         _bindings[collection.Parameters[0]] = binding;
         Expression body = collection.Body;
@@ -47,14 +55,31 @@ internal sealed partial class Translator
             padding = null;
         }
         Expression items = padding?.Arguments[0] ?? body;
-        Shape inner = items.Type.IsAssignableTo(typeof(IQueryable))
-            ? Flattened(outer, items, binding, padding)
-            : Flattened(outer, Shape(items), padding, call);
+        Shape inner =
+            items.Type.IsAssignableTo(typeof(IQueryable)) || IsInMemory(items)
+                ? Flattened(outer, items, binding, padding)
+                : Flattened(outer, Shape(items), padding, call);
         outer.Shape =
             call.Arguments.Count > 2
                 ? Bind(Lambda(call, 2, 2), outer.Shape, inner)
                 : inner;
         return outer;
+    }
+
+    // The one row of the root that yields the rows of an in-memory sequence yields
+    // those rows: they are the source, and the row itself cannot be read.
+    private SelectQuery Unrolled(
+        SqlQuery source,
+        MethodCallExpression call,
+        LambdaExpression collection
+    )
+    {
+        SelectQuery inner = (SelectQuery)Query(collection.Body);
+        if (call.Arguments.Count > 2)
+        {
+            inner.Shape = Bind(Lambda(call, 2, 2), source.Shape, inner.Shape);
+        }
+        return inner;
     }
 
     // The matches of a GroupJoin are filtered in the join condition: filtered after the
@@ -172,7 +197,9 @@ internal sealed partial class Translator
 
     private static Expression JoinedSource(MethodCallExpression call)
     {
-        return call.Arguments[1] is ConstantExpression { Value: not IQueryable }
+        return
+            call.Arguments[1] is ConstantExpression { Value: not IQueryable }
+            && !IsInMemory(call.Arguments[1])
             ? throw Unsupported.Method(call.Method)
             : call.Arguments[1];
     }

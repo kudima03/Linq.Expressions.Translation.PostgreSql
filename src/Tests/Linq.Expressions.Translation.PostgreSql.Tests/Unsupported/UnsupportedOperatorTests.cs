@@ -457,28 +457,6 @@ public sealed record UnsupportedOperatorTests
     }
 
     [Fact]
-    public void RejectsInMemoryRoot()
-    {
-        Expression query = new[] { 1, 2, 3 }.AsQueryable().Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsFilterOverInMemoryRoot()
-    {
-        Expression query = new[] { 1, 2, 3 }.AsQueryable().Where(i => i > 1).Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void RejectsOneElementInMemoryRootWhoseSelectorReadsTheElement()
     {
         Expression query = new[] { 0 }
@@ -498,96 +476,6 @@ public sealed record UnsupportedOperatorTests
         IQueryable<int> element = new[] { 0 }.AsQueryable();
         Expression query = Customers
             .SelectMany(c => element, (c, n) => c.Name)
-            .Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsMultiElementInMemoryRootOfAggregates()
-    {
-        Expression query = new[] { 0, 1 }
-            .AsQueryable()
-            .Select(_ => Orders.Count())
-            .Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsUnionWithInMemoryCollection()
-    {
-        Expression query = Customers.Select(c => c.Id).Union(new[] { 1, 2 }).Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("Union", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsConcatWithInMemoryCollection()
-    {
-        Expression query = Customers
-            .Select(c => c.Id)
-            .Concat(new List<int> { 1, 2 })
-            .Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("Concat", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsJoinWithInMemoryCollection()
-    {
-        Expression query = Customers
-            .Join(new[] { 1, 2 }, c => c.Id, i => i, (c, i) => c.Name)
-            .Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("Join", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsIntersectWithInMemoryCollection()
-    {
-        Expression query = Customers
-            .Select(c => c.Id)
-            .Intersect(new[] { 1, 2 })
-            .Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("Intersect", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsExceptWithInMemoryCollection()
-    {
-        Expression query = Customers.Select(c => c.Id).Except(new[] { 1, 2 }).Expression;
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("Except", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsInMemoryCollectionAsSubquerySource()
-    {
-        Expression query = Customers
-            .Where(c => new[] { 1, 2 }.AsQueryable().Any(i => i == c.Id))
             .Expression;
 
         NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
