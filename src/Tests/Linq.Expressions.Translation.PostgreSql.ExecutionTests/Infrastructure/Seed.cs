@@ -378,6 +378,51 @@ public static class Seed
         Attachment(6, 5, "paragraph", "\u2029\u00e9\u2029", "MiXeD Case"),
     ];
 
+    public static IReadOnlyList<Edge> Edges { get; } =
+    [
+        new()
+        {
+            Id = 1,
+            From = 1,
+            To = 2,
+            Cost = 3,
+        },
+        new()
+        {
+            Id = 2,
+            From = 2,
+            To = 3,
+            Cost = 1,
+        },
+        new()
+        {
+            Id = 3,
+            From = 3,
+            To = 1,
+        },
+        new()
+        {
+            Id = 4,
+            From = 3,
+            To = 4,
+            Cost = 2,
+        },
+        new()
+        {
+            Id = 5,
+            From = 5,
+            To = 5,
+            Cost = 1,
+        },
+        new()
+        {
+            Id = 6,
+            From = 2,
+            To = 4,
+            Cost = 5,
+        },
+    ];
+
     // Each table with its rows, in the order the tables are created.
     public static IReadOnlyList<TableDefinition> Tables { get; } =
     [
@@ -386,6 +431,7 @@ public static class Seed
         new(typeof(Order), Orders),
         new(typeof(OrderEvent), OrderEvents),
         new(typeof(Attachment), Attachments),
+        new(typeof(Edge), Edges),
     ];
 
     public static bool IsTable(Type type)

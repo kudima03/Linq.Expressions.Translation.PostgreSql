@@ -97,6 +97,9 @@ internal sealed partial class Translator
         SqlQuery query = expression switch
         {
             ConstantExpression { Value: IQueryable root } => Root(root),
+            ParameterExpression parameter
+                when _levels.TryGetValue(parameter, out Level? level) => Leveled(level),
+            MethodCallExpression call when IsMarker(call) => Marked(call),
             MethodCallExpression call => Operator(call),
             _ => throw Unsupported.Node(expression),
         };

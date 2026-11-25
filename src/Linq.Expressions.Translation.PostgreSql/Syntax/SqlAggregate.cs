@@ -6,7 +6,8 @@ internal sealed class SqlAggregate(
     bool distinct,
     SqlExpression? filter,
     Type type,
-    bool windowed = false
+    bool windowed = false,
+    SqlWindow? window = null
 ) : SqlExpression(type)
 {
     // MIN and MAX of a reference type are NULL when every value is NULL or filtered out.
@@ -28,7 +29,11 @@ internal sealed class SqlAggregate(
                 .Render(filter, SqlMode.Predicate)
                 .Append(")");
         }
-        if (windowed)
+        if (window is not null)
+        {
+            window.Render(writer);
+        }
+        else if (windowed)
         {
             _ = writer.Append(" OVER ()");
         }

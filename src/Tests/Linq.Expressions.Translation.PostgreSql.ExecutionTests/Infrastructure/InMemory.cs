@@ -18,6 +18,12 @@ public sealed class InMemory : ExpressionVisitor
             : base.VisitConstant(node);
     }
 
+    // The PostgreSQL markers become their in-memory counterparts.
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        return Reference.Rewrite(node, Visit) ?? base.VisitMethodCall(node);
+    }
+
     protected override Expression VisitMember(MemberExpression node)
     {
         if (typeof(IQueryable).IsAssignableFrom(node.Type) && IsClosed(node))

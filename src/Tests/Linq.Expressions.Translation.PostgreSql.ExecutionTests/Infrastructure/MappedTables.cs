@@ -4,4 +4,6 @@ public static class MappedTables
 {
     public static IQueryable<OrderEvent> OrderEvents =>
         new CapturingQueryable<OrderEvent>();
+
+    public static IQueryable<Edge> Edges => new CapturingQueryable<Edge>();
 }
