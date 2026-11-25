@@ -172,7 +172,6 @@ internal sealed class Evaluator(HashSet<Expression> candidates) : ExpressionVisi
                 )
                 || call.Method.DeclaringType == typeof(PostgreSqlWindows)
                 || call.Method.DeclaringType == typeof(PostgreSqlRecursion)
-                || call.Method.DeclaringType == typeof(PostgreSqlFunctions)
             );
     }
 

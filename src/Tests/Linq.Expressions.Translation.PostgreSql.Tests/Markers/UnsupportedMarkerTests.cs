@@ -50,23 +50,6 @@ public sealed record UnsupportedMarkerTests
                         .Expression,
                 "reads only its own row"
             },
-            {
-                () =>
-                    Trees
-                        .Over(
-                            Orders,
-                            null,
-                            rows => rows.OrderBy(o => o.Id),
-                            null,
-                            (o, w) =>
-                                PostgreSqlFunctions.VarPop(
-                                    w.Rows,
-                                    x => x.Weight - o.Weight
-                                )
-                        )
-                        .Expression,
-                "reads only its own row"
-            },
             // PostgreSQL has no DISTINCT in a window aggregate.
             {
                 () =>
@@ -94,45 +77,6 @@ public sealed record UnsupportedMarkerTests
                 "cannot be projected"
             },
             // A function that may find no row cannot be a non-nullable value.
-            {
-                () =>
-                    Trees
-                        .Over(
-                            Orders,
-                            null,
-                            rows => rows.OrderBy(o => o.Id),
-                            null,
-                            (o, w) => w.Lag(x => x.Quantity)
-                        )
-                        .Expression,
-                "may find no row"
-            },
-            {
-                () =>
-                    Trees
-                        .Over(
-                            Orders,
-                            null,
-                            rows => rows.OrderBy(o => o.Id),
-                            null,
-                            (o, w) => w.Lead(x => x.Quantity, 2)
-                        )
-                        .Expression,
-                "may find no row"
-            },
-            {
-                () =>
-                    Trees
-                        .Over(
-                            Orders,
-                            null,
-                            rows => rows.OrderBy(o => o.Id),
-                            null,
-                            (o, w) => w.NthValue(x => x.Id, 1)
-                        )
-                        .Expression,
-                "may find no row"
-            },
             {
                 () =>
                     Trees
@@ -216,20 +160,7 @@ public sealed record UnsupportedMarkerTests
                         .Expression,
                 "Enumerable.Order"
             },
-            // GROUPS needs an order; a RANGE offset one key of a type it can be added to.
-            {
-                () =>
-                    Trees
-                        .Over(
-                            Orders,
-                            null,
-                            null,
-                            PostgreSqlFrame.Groups(-1, 0),
-                            (o, w) => w.Rows.Count()
-                        )
-                        .Expression,
-                "GROUPS frame needs the window to have an order"
-            },
+            // A RANGE offset needs one key of a type it can be added to.
             {
                 () =>
                     Trees
@@ -294,24 +225,6 @@ public sealed record UnsupportedMarkerTests
                         )
                         .Expression,
                 "exactly one key"
-            },
-            // The statistics aggregate rows, not values.
-            {
-                () =>
-                    Orders
-                        .Select(o =>
-                            PostgreSqlFunctions.VarPop(o.Tags, t => (double?)t.Length)
-                        )
-                        .Expression,
-                "aggregates the rows of a group"
-            },
-            {
-                () =>
-                    Orders
-                        .GroupBy(o => o.CustomerId, o => o.Weight)
-                        .Select(g => PostgreSqlFunctions.VarPop(g.Distinct(), x => x))
-                        .Expression,
-                "over distinct group elements"
             },
             // The step of WITH RECURSIVE follows PostgreSQL's rules for the recursive term.
             {

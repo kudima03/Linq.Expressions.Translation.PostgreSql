@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.ExecutionTests;
 
 // The frames of PostgreSqlFrame hold the rows PostgreSQL's frame clause says, which
 // the aggregates of LINQ over PostgreSqlWindow.Rows read: ROWS counted from the
-// current row, GROUPS of peers, RANGE of the key's distance (numbers, durations and
+// current row, RANGE of the key's distance (numbers, durations and
 // months), frames before or after the current row that may be empty, and keys that
 // are NULL or tie.
 [Collection(SharedDatabase.Name)]
@@ -20,11 +20,6 @@ public sealed class FrameSemanticsTests(Database database)
         ["rows all..-1"] = PostgreSqlFrame.Rows(null, -1),
         ["rows 0..0"] = PostgreSqlFrame.Rows(0, 0),
         ["rows huge"] = PostgreSqlFrame.Rows(-1000, 1000),
-        ["groups -1..0"] = PostgreSqlFrame.Groups(-1, 0),
-        ["groups 0..1"] = PostgreSqlFrame.Groups(0, 1),
-        ["groups -1..1"] = PostgreSqlFrame.Groups(-1, 1),
-        ["groups 1..all"] = PostgreSqlFrame.Groups(1, null),
-        ["groups all..-1"] = PostgreSqlFrame.Groups(null, -1),
         ["range all..0"] = PostgreSqlFrame.Range(null, 0),
         ["range 0..0"] = PostgreSqlFrame.Range(0, 0),
         ["range 0..all"] = PostgreSqlFrame.Range(0, null),

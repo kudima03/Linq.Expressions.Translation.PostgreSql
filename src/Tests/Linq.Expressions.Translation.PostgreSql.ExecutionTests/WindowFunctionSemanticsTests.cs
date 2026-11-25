@@ -107,13 +107,14 @@ public sealed class WindowFunctionSemanticsTests(Database database)
                     new
                     {
                         o.Id,
-                        Previous = w.Lag(x => (int?)x.Quantity),
-                        TwoBack = w.Lag(x => (int?)x.Id, 2),
+                        Previous = w.Lag(x => (int?)x.Quantity, 1, null),
+                        TwoBack = w.Lag(x => (int?)x.Id, 2, null),
                         Defaulted = w.Lag(x => x.Quantity, 1, -1),
                         Next = w.Lead(x => x.Number, 1, "none"),
-                        ThreeOn = w.Lead(x => (decimal?)x.Total, 3),
-                        Nullable = w.Lead(x => x.Priority),
-                        Backwards = w.Lag(x => (int?)x.Id, -1),
+                        ThreeOn = w.Lead(x => (decimal?)x.Total, 3, null),
+                        Nullable = w.Lead(x => x.Priority, 1, null),
+                        Computed = w.Lead(x => x.Priority, 1, o.Priority),
+                        Backwards = w.Lag(x => (int?)x.Id, -1, null),
                         Current = w.Lead(x => x.Id, 0, 0),
                         OwnDefault = w.Lag(x => x.Total, 1, o.Total),
                     }
@@ -136,8 +137,6 @@ public sealed class WindowFunctionSemanticsTests(Database database)
                         o.Id,
                         First = w.FirstValue(x => x.Id),
                         Last = w.LastValue(x => x.Number),
-                        Second = w.NthValue(x => (int?)x.Id, 2),
-                        Third = w.NthValue(x => x.Note, 3),
                     }
             )
         );
@@ -158,7 +157,6 @@ public sealed class WindowFunctionSemanticsTests(Database database)
                         o.Id,
                         First = w.FirstValue(x => (int?)x.Id),
                         Last = w.LastValue(x => (decimal?)x.Total),
-                        Second = w.NthValue(x => (int?)x.Quantity, 2),
                     }
             )
         );
@@ -235,7 +233,7 @@ public sealed class WindowFunctionSemanticsTests(Database database)
                     {
                         c.Id,
                         Number = w.RowNumber(),
-                        Previous = w.Lag(x => x.Name),
+                        Previous = w.Lag(x => x.Name, 1, null),
                     }
             )
         );

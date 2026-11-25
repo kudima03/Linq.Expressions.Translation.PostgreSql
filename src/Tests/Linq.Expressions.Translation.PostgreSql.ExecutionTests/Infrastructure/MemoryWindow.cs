@@ -68,29 +68,9 @@ public sealed class MemoryWindow<T>(
             : larger + ((_index - inLarger) / size) + 1;
     }
 
-    public TValue Lag<TValue>(Func<T, TValue> value)
-    {
-        return Lag(value, 1, default!);
-    }
-
-    public TValue Lag<TValue>(Func<T, TValue> value, int offset)
-    {
-        return Lag(value, offset, default!);
-    }
-
     public TValue Lag<TValue>(Func<T, TValue> value, int offset, TValue defaultValue)
     {
         return At(_index - offset, value, defaultValue);
-    }
-
-    public TValue Lead<TValue>(Func<T, TValue> value)
-    {
-        return Lead(value, 1, default!);
-    }
-
-    public TValue Lead<TValue>(Func<T, TValue> value, int offset)
-    {
-        return Lead(value, offset, default!);
     }
 
     public TValue Lead<TValue>(Func<T, TValue> value, int offset, TValue defaultValue)
@@ -106,11 +86,6 @@ public sealed class MemoryWindow<T>(
     public TValue LastValue<TValue>(Func<T, TValue> value)
     {
         return _first > _last ? default! : value(_partition[_last]);
-    }
-
-    public TValue NthValue<TValue>(Func<T, TValue> value, int n)
-    {
-        return _first + n - 1 <= _last ? value(_partition[_first + n - 1]) : default!;
     }
 
     private TValue At<TValue>(int position, Func<T, TValue> value, TValue defaultValue)

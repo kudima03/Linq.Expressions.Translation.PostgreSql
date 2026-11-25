@@ -10,12 +10,7 @@ public sealed record MarkerTests
 {
     public static TheoryData<string> Methods =>
         [
-            .. new[]
-            {
-                typeof(PostgreSqlWindows),
-                typeof(PostgreSqlRecursion),
-                typeof(PostgreSqlFunctions),
-            }
+            .. new[] { typeof(PostgreSqlWindows), typeof(PostgreSqlRecursion) }
                 .SelectMany(type =>
                     type.GetMethods(BindingFlags.Public | BindingFlags.Static)
                 )
@@ -30,7 +25,6 @@ public sealed record MarkerTests
         {
             typeof(PostgreSqlWindows),
             typeof(PostgreSqlRecursion),
-            typeof(PostgreSqlFunctions),
         }
             .SelectMany(type =>
                 type.GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -85,9 +79,6 @@ public sealed record MarkerTests
         _ = Assert.Throws<NotSupportedException>(() =>
             Orders.WithRecursive(level => level, 3)
         );
-        _ = Assert.Throws<NotSupportedException>(() =>
-            PostgreSqlFunctions.VarPop(Array.Empty<Order>(), o => o.Weight)
-        );
     }
 
     [Fact]
@@ -107,7 +98,6 @@ public sealed record MarkerTests
                 c.Id,
                 Numbers = numbers.Count(),
                 Reports = reports.Count(),
-                Variance = PostgreSqlFunctions.VarPop(Orders, o => (double?)o.Weight),
             })
             .Expression;
 
@@ -134,7 +124,7 @@ public sealed record MarkerTests
                         FROM t4
                         WHERE (SELECT COUNT(*) FROM t4) > 0
                     ) AS t6
-                ) AS "Reports", (SELECT VAR_POP(t7."Weight") FROM "Order" AS t7) AS "Variance"
+                ) AS "Reports"
                 FROM "Customer" AS t0
                 """
             ),

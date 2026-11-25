@@ -3,13 +3,13 @@ using System.Globalization;
 namespace Linq.Expressions.Translation.PostgreSql;
 
 // The frame clause of a window, as PostgreSQL writes it: the rows of the ordered
-// partition of the current row that its aggregates and FIRST_VALUE, LAST_VALUE and
-// NTH_VALUE read. Each bound is an offset from the current row: a negative one is
-// PRECEDING, a positive one FOLLOWING, zero is CURRENT ROW and null is UNBOUNDED on
-// its side (PRECEDING for the start, FOLLOWING for the end). ROWS counts rows, GROUPS
-// counts groups of peers (rows equal on every ORDER BY key) and RANGE measures the
-// distance of the one ORDER BY key from the current row's: a number, a duration
-// (elapsed time, written in seconds) or a number of calendar months.
+// partition of the current row that its aggregates, FIRST_VALUE and LAST_VALUE read.
+// Each bound is an offset from the current row: a negative one is PRECEDING, a
+// positive one FOLLOWING, zero is CURRENT ROW and null is UNBOUNDED on its side
+// (PRECEDING for the start, FOLLOWING for the end). ROWS counts rows and RANGE
+// measures the distance of the one ORDER BY key from the current row's, in the unit
+// PostgreSQL adds to the key's type: a number, a duration (elapsed time, written in
+// seconds) or a number of calendar months, which no .NET type holds.
 public sealed record PostgreSqlFrame
 {
     private PostgreSqlFrame(string textValue, FrameKind kind, bool includesCurrentRow)
@@ -30,11 +30,6 @@ public sealed record PostgreSqlFrame
     public static PostgreSqlFrame Rows(long? start, long? end)
     {
         return Framed("ROWS", start, end, Number, FrameKind.Rows);
-    }
-
-    public static PostgreSqlFrame Groups(long? start, long? end)
-    {
-        return Framed("GROUPS", start, end, Number, FrameKind.Groups);
     }
 
     public static PostgreSqlFrame Range(decimal? start, decimal? end)
@@ -100,9 +95,7 @@ public sealed record PostgreSqlFrame
             )
             : new PostgreSqlFrame(
                 $"{unit} BETWEEN {Bound(start, first, distance)} AND {Bound(end, last, distance)}",
-                kind is FrameKind.Rows or FrameKind.Groups
-                || Math.Abs(first) == 1
-                || Math.Abs(last) == 1
+                kind == FrameKind.Rows || Math.Abs(first) == 1 || Math.Abs(last) == 1
                     ? kind
                     : FrameKind.Range,
                 first <= 0 && last >= 0

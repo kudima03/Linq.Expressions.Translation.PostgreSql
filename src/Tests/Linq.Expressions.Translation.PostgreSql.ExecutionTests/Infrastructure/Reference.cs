@@ -6,8 +6,7 @@ namespace Linq.Expressions.Translation.PostgreSql.ExecutionTests.Infrastructure;
 
 // The in-memory side of the PostgreSQL markers, with PostgreSQL's semantics, which
 // InMemory puts in their place: Over and WithRecursive over sources that read no
-// lambda parameter become their rows, computed when they are read, and the
-// statistics of PostgreSqlFunctions become ReferenceStatistics.
+// lambda parameter become their rows, computed when they are read.
 public static partial class Reference
 {
     public static Expression? Rewrite(
@@ -16,26 +15,6 @@ public static partial class Reference
     )
     {
         Type? owner = call.Method.DeclaringType;
-        if (owner == typeof(PostgreSqlFunctions))
-        {
-            MethodInfo method = typeof(ReferenceStatistics)
-                .GetMethods()
-                .Single(candidate =>
-                    candidate.Name == call.Method.Name
-                    && candidate
-                        .GetParameters()
-                        .Select(p => p.ParameterType.Name)
-                        .SequenceEqual(
-                            call.Method.GetGenericMethodDefinition()
-                                .GetParameters()
-                                .Select(p => p.ParameterType.Name)
-                        )
-                    && candidate.ReturnType
-                        == call.Method.GetGenericMethodDefinition().ReturnType
-                )
-                .MakeGenericMethod(call.Method.GetGenericArguments());
-            return Expression.Call(method, call.Arguments.Select(visit));
-        }
         if (
             owner == typeof(PostgreSqlWindows)
             && call.Method.Name == nameof(PostgreSqlWindows.Over)
@@ -226,7 +205,6 @@ public static partial class Reference
                             sorted.Count,
                             peerStart,
                             peerEnd,
-                            groups,
                             peers,
                             keys
                         );
@@ -377,9 +355,7 @@ public static partial class Reference
             );
         }
 
-        [GeneratedRegex(
-            "^(?<unit>ROWS|RANGE|GROUPS) BETWEEN (?<start>.+) AND (?<end>.+)$"
-        )]
+        [GeneratedRegex("^(?<unit>ROWS|RANGE) BETWEEN (?<start>.+) AND (?<end>.+)$")]
         private static partial Regex Clause();
 
         public (int First, int Last) Bounds<T>(
@@ -387,7 +363,6 @@ public static partial class Reference
             int count,
             int[] peerStart,
             int[] peerEnd,
-            int[] groups,
             object?[][] peers,
             List<(Func<T, object?> Key, bool Descending)> keys
         )
@@ -397,10 +372,6 @@ public static partial class Reference
                 "ROWS" => (
                     Math.Max(_start.Rows(index, count), 0),
                     Math.Min(_end.Rows(index, count), count - 1)
-                ),
-                "GROUPS" => (
-                    _start.GroupStart(index, peerStart, groups, count),
-                    _end.GroupEnd(index, peerEnd, groups, count)
                 ),
                 _ => (
                     _start.RangeStart(
@@ -486,35 +457,6 @@ public static partial class Reference
                 0 => index,
                 _ => (int)Math.Clamp(index + (_side * _number), -1, count),
             };
-        }
-
-        public int GroupStart(int index, int[] peerStart, int[] groups, int count)
-        {
-            if (_side == -2)
-            {
-                return 0;
-            }
-            if (_side == 0)
-            {
-                return peerStart[index];
-            }
-            long target = groups[index] + (_side * (long)_number);
-            int first = Array.FindIndex(groups, group => group >= target);
-            return first < 0 ? count : first;
-        }
-
-        public int GroupEnd(int index, int[] peerEnd, int[] groups, int count)
-        {
-            if (_side == 2)
-            {
-                return count - 1;
-            }
-            if (_side == 0)
-            {
-                return peerEnd[index] - 1;
-            }
-            long target = groups[index] + (_side * (long)_number);
-            return Array.FindLastIndex(groups, group => group <= target);
         }
 
         // Rows sort by the key, NULL before every value ascending and after every value

@@ -2,8 +2,8 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Markers;
 
 // Every window function of PostgreSqlWindows is PostgreSQL's function of the same
 // name over the window of its Over. A function that may find no row (LAG and LEAD
-// without a default, NTH_VALUE, FIRST_VALUE and LAST_VALUE of a frame that may be
-// empty) is nullable.
+// with a null default, which is PostgreSQL's own and is left out, FIRST_VALUE and
+// LAST_VALUE of a frame that may be empty) is nullable.
 public sealed record WindowFunctionTests
 {
     public static TheoryData<
@@ -55,37 +55,40 @@ public sealed record WindowFunctionTests
     > Offsets =>
         new()
         {
-            { (o, w) => w.Lag(x => x.Note), "LAG(t0.\"Note\")" },
-            { (o, w) => w.Lag(x => (int?)x.Quantity, 2), "LAG(t0.\"Quantity\", 2)" },
+            { (o, w) => w.Lag(x => x.Note, 1, null), "LAG(t0.\"Note\", 1)" },
+            {
+                (o, w) => w.Lag(x => (int?)x.Quantity, 2, null),
+                "LAG(t0.\"Quantity\", 2)"
+            },
+            {
+                (o, w) => w.Lag(x => x.Quantity, 1, o.Priority),
+                "LAG(t0.\"Quantity\", 1, t0.\"Priority\")"
+            },
+            {
+                (o, w) => w.Lead(x => x.Note, 1, o.Number),
+                "LEAD(t0.\"Note\", 1, t0.\"Number\")"
+            },
             { (o, w) => w.Lag(x => x.Quantity, 1, 0), "LAG(t0.\"Quantity\", 1, 0)" },
             {
                 (o, w) => w.Lag(x => x.Total, 3, o.Total),
                 "LAG(t0.\"Total\", 3, t0.\"Total\")"
             },
-            { (o, w) => w.Lead(x => x.Priority), "LEAD(t0.\"Priority\")" },
+            { (o, w) => w.Lead(x => x.Priority, 1, null), "LEAD(t0.\"Priority\", 1)" },
             {
-                (o, w) => w.Lead(x => x.Number, o.Quantity),
+                (o, w) => w.Lead(x => x.Number, o.Quantity, null),
                 "LEAD(t0.\"Number\", t0.\"Quantity\")"
             },
             {
                 (o, w) => w.Lead(x => x.Number, 1, "none"),
                 "LEAD(t0.\"Number\", 1, 'none')"
             },
-            {
-                (o, w) => w.Lead(x => x.Priority, -1, null),
-                "LEAD(t0.\"Priority\", -1, NULL)"
-            },
+            { (o, w) => w.Lead(x => x.Priority, -1, null), "LEAD(t0.\"Priority\", -1)" },
             {
                 (o, w) => w.Lag(x => x.Quantity * 2, 1, -1),
                 "LAG(t0.\"Quantity\" * 2, 1, -1)"
             },
             { (o, w) => w.FirstValue(x => x.Id), "FIRST_VALUE(t0.\"Id\")" },
             { (o, w) => w.LastValue(x => x.Note), "LAST_VALUE(t0.\"Note\")" },
-            { (o, w) => w.NthValue(x => (int?)x.Id, 2), "NTH_VALUE(t0.\"Id\", 2)" },
-            {
-                (o, w) => w.NthValue(x => x.Number, o.Quantity),
-                "NTH_VALUE(t0.\"Number\", t0.\"Quantity\")"
-            },
         };
 
     [Theory]
@@ -177,7 +180,7 @@ public sealed record WindowFunctionTests
                 null,
                 rows => rows.OrderBy(o => o.Id),
                 null,
-                (o, w) => new { o.Id, Previous = w.Lag(x => (int?)x.Quantity) }
+                (o, w) => new { o.Id, Previous = w.Lag(x => (int?)x.Quantity, 1, null) }
             )
             .Where(x => x.Previous == 2)
             .Expression;
@@ -187,7 +190,7 @@ public sealed record WindowFunctionTests
                 """
                 SELECT t1."Id", t1."Previous"
                 FROM (
-                    SELECT t0."Id", LAG(t0."Quantity") OVER (ORDER BY t0."Id") AS "Previous"
+                    SELECT t0."Id", LAG(t0."Quantity", 1) OVER (ORDER BY t0."Id") AS "Previous"
                     FROM "Order" AS t0
                 ) AS t1
                 WHERE t1."Previous" IS NOT DISTINCT

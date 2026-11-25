@@ -2,7 +2,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Markers;
 
 // A PostgreSqlFrame is PostgreSQL's frame clause: each bound an offset from the
 // current row (negative PRECEDING, positive FOLLOWING, zero CURRENT ROW, null
-// UNBOUNDED), ROWS and GROUPS counted, RANGE a number, a duration in seconds or a
+// UNBOUNDED), ROWS counted, RANGE a number, a duration in seconds or a
 // number of months. A frame whose start lies on a later side than its end, which
 // PostgreSQL rejects, cannot be made.
 public sealed record FrameTests
@@ -31,10 +31,6 @@ public sealed record FrameTests
     public void CountsRows(long? start, long? end, string text)
     {
         Assert.Equal(text, PostgreSqlFrame.Rows(start, end).TextValue);
-        Assert.Equal(
-            text.Replace("ROWS", "GROUPS", StringComparison.Ordinal),
-            PostgreSqlFrame.Groups(start, end).TextValue
-        );
     }
 
     [Theory]
@@ -107,7 +103,7 @@ public sealed record FrameTests
     public void ComparesFramesByValue()
     {
         Assert.Equal(PostgreSqlFrame.Rows(-1, 1), PostgreSqlFrame.Rows(-1, 1));
-        Assert.NotEqual(PostgreSqlFrame.Rows(-1, 1), PostgreSqlFrame.Groups(-1, 1));
+        Assert.NotEqual(PostgreSqlFrame.Rows(-1, 1), PostgreSqlFrame.Range(-1, 1));
         Assert.Equal(PostgreSqlFrame.Range(-1.0m, 0), PostgreSqlFrame.Range(-1m, 0m));
         Assert.Equal(
             "PostgreSqlFrame { TextValue = ROWS BETWEEN CURRENT ROW AND CURRENT ROW }",
@@ -123,7 +119,6 @@ public sealed record FrameTests
     public void RejectsAStartOnALaterSideThanTheEnd(int start, int end)
     {
         _ = Assert.Throws<ArgumentException>(() => PostgreSqlFrame.Rows(start, end));
-        _ = Assert.Throws<ArgumentException>(() => PostgreSqlFrame.Groups(start, end));
         _ = Assert.Throws<ArgumentException>(() => PostgreSqlFrame.Range(start, end));
         _ = Assert.Throws<ArgumentException>(() =>
             PostgreSqlFrame.Range(TimeSpan.FromSeconds(start), TimeSpan.FromSeconds(end))
@@ -151,10 +146,6 @@ public sealed record FrameTests
         new()
         {
             { "ROWS BETWEEN 2 PRECEDING AND CURRENT ROW", PostgreSqlFrame.Rows(-2, 0) },
-            {
-                "GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING",
-                PostgreSqlFrame.Groups(-1, 1)
-            },
             {
                 "RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING",
                 PostgreSqlFrame.Range((decimal?)null, null)

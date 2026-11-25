@@ -147,16 +147,10 @@ internal sealed partial class Translator
             );
     }
 
-    // GROUPS needs an ORDER BY, and a RANGE with an offset exactly one key of a type
-    // the offset can be added to.
+    // A RANGE with an offset needs exactly one key of a type the offset can be added
+    // to.
     private static void Framed(PostgreSqlFrame frame, List<Ordering> order)
     {
-        if (frame.Kind == FrameKind.Groups && order.Count == 0)
-        {
-            throw new NotSupportedException(
-                "A GROUPS frame needs the window to have an order."
-            );
-        }
         if (frame.Kind is not (FrameKind.NumericRange or FrameKind.IntervalRange))
         {
             return;
@@ -269,7 +263,7 @@ internal sealed partial class Translator
         );
     }
 
-    // ROW_NUMBER, RANK, ..., LAG, LEAD, FIRST_VALUE, LAST_VALUE and NTH_VALUE over the
+    // ROW_NUMBER, RANK, ..., LAG, LEAD, FIRST_VALUE and LAST_VALUE over the
     // window of the selector of Over, in the projection of its SELECT.
     private SqlWindowFunction WindowFunction(MethodCallExpression call)
     {
@@ -308,16 +302,9 @@ internal sealed partial class Translator
                 nameof(PostgreSqlWindows.FirstValue) => Valued(
                     "FIRST_VALUE",
                     window,
-                    call,
-                    !window.IncludesCurrentRow
+                    call
                 ),
-                nameof(PostgreSqlWindows.LastValue) => Valued(
-                    "LAST_VALUE",
-                    window,
-                    call,
-                    !window.IncludesCurrentRow
-                ),
-                _ => Valued("NTH_VALUE", window, call, true),
+                _ => Valued("LAST_VALUE", window, call),
             };
     }
 
@@ -330,7 +317,8 @@ internal sealed partial class Translator
         return new SqlWindowFunction(name, [], window.Window, call.Type, false);
     }
 
-    // LAG and LEAD read their value in another row, and their default in this one.
+    // LAG and LEAD read their value in another row, and their default in this one,
+    // where a null default is PostgreSQL's own: NULL for a missing row.
     private SqlWindowFunction Shifted(
         string name,
         WindowShape window,
@@ -338,31 +326,33 @@ internal sealed partial class Translator
     )
     {
         SqlExpression value = Read(window, call);
-        List<SqlExpression> arguments = [value, .. call.Arguments.Skip(2).Select(Sql)];
+        SqlExpression offset = Sql(call.Arguments[2]);
+        SqlExpression fallback = Sql(call.Arguments[3]);
         return Missing(
             name,
-            arguments,
+            fallback is SqlConstant { Value: null }
+                ? [value, offset]
+                : [value, offset, fallback],
             window,
             call,
-            call.Arguments.Count < 4 || value.Nullable || arguments[2].Nullable
+            value.Nullable || fallback.Nullable
         );
     }
 
-    // FIRST_VALUE, LAST_VALUE and NTH_VALUE are NULL where the frame has no such row.
+    // FIRST_VALUE and LAST_VALUE are NULL where the frame is empty.
     private SqlWindowFunction Valued(
         string name,
         WindowShape window,
-        MethodCallExpression call,
-        bool missing
+        MethodCallExpression call
     )
     {
         SqlExpression value = Read(window, call);
         return Missing(
             name,
-            [value, .. call.Arguments.Skip(2).Select(Sql)],
+            [value],
             window,
             call,
-            missing || value.Nullable
+            !window.IncludesCurrentRow || value.Nullable
         );
     }
 

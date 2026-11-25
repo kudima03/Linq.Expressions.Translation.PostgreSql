@@ -65,7 +65,6 @@ internal sealed partial class Translator
         string name = call.Method.Name;
         return owner == typeof(Queryable) ? Subquery(call)
             : owner == typeof(PostgreSqlWindows) ? WindowFunction(call)
-            : owner == typeof(PostgreSqlFunctions) ? Statistic(call)
             : name == nameof(Equals) && call.Method.GetParameters().All(IsComparable)
                 ? Equated(call)
             : name == nameof(ToString) && call.Arguments.Count == 0 ? Stringified(call)

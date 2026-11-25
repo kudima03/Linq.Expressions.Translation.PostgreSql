@@ -66,27 +66,11 @@ public static class PostgreSqlWindows
         throw Marker.Called($"{nameof(PostgreSqlWindows)}.{nameof(Ntile)}");
     }
 
-    // LAG(value[, offset[, default]]): the value in the row offset rows (1 by
-    // default) before the current one in its partition, or default (NULL by default)
+    // LAG(value, offset, default): the value in the row offset rows before the
+    // current one in its partition (after it for a negative offset), or default
     // where there is none. The value is read in that row, the default in the
-    // current row.
-    public static TValue Lag<TSource, TValue>(
-        this PostgreSqlWindow<TSource> window,
-        Func<TSource, TValue> value
-    )
-    {
-        throw Marker.Called($"{nameof(PostgreSqlWindows)}.{nameof(Lag)}");
-    }
-
-    public static TValue Lag<TSource, TValue>(
-        this PostgreSqlWindow<TSource> window,
-        Func<TSource, TValue> value,
-        int offset
-    )
-    {
-        throw Marker.Called($"{nameof(PostgreSqlWindows)}.{nameof(Lag)}");
-    }
-
+    // current row; a default of null is PostgreSQL's LAG(value, offset), NULL for a
+    // missing row.
     public static TValue Lag<TSource, TValue>(
         this PostgreSqlWindow<TSource> window,
         Func<TSource, TValue> value,
@@ -97,24 +81,7 @@ public static class PostgreSqlWindows
         throw Marker.Called($"{nameof(PostgreSqlWindows)}.{nameof(Lag)}");
     }
 
-    // LEAD(value[, offset[, default]]): as LAG, offset rows after the current one.
-    public static TValue Lead<TSource, TValue>(
-        this PostgreSqlWindow<TSource> window,
-        Func<TSource, TValue> value
-    )
-    {
-        throw Marker.Called($"{nameof(PostgreSqlWindows)}.{nameof(Lead)}");
-    }
-
-    public static TValue Lead<TSource, TValue>(
-        this PostgreSqlWindow<TSource> window,
-        Func<TSource, TValue> value,
-        int offset
-    )
-    {
-        throw Marker.Called($"{nameof(PostgreSqlWindows)}.{nameof(Lead)}");
-    }
-
+    // LEAD(value, offset, default): as LAG, offset rows after the current one.
     public static TValue Lead<TSource, TValue>(
         this PostgreSqlWindow<TSource> window,
         Func<TSource, TValue> value,
@@ -141,15 +108,5 @@ public static class PostgreSqlWindows
     )
     {
         throw Marker.Called($"{nameof(PostgreSqlWindows)}.{nameof(LastValue)}");
-    }
-
-    // NTH_VALUE(value, n): the value in row n of the frame, from 1, NULL for none.
-    public static TValue NthValue<TSource, TValue>(
-        this PostgreSqlWindow<TSource> window,
-        Func<TSource, TValue> value,
-        int n
-    )
-    {
-        throw Marker.Called($"{nameof(PostgreSqlWindows)}.{nameof(NthValue)}");
     }
 }

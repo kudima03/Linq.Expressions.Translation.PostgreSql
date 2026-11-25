@@ -262,7 +262,7 @@ public sealed record OverTests
                         o.Id,
                         Number = w.RowNumber(),
                         Moving = w.Rows.Average(x => x.Total),
-                        Previous = w.Lag(x => x.Number),
+                        Previous = w.Lag(x => x.Number, 1, null),
                     }
             )
             .Expression;
@@ -270,7 +270,7 @@ public sealed record OverTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Id", ROW_NUMBER() OVER (PARTITION BY t0."CustomerId" ORDER BY t0."CreatedAt" ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS "Number", AVG(t0."Total") OVER (PARTITION BY t0."CustomerId" ORDER BY t0."CreatedAt" ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS "Moving", LAG(t0."Number") OVER (PARTITION BY t0."CustomerId" ORDER BY t0."CreatedAt" ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS "Previous"
+                SELECT t0."Id", ROW_NUMBER() OVER (PARTITION BY t0."CustomerId" ORDER BY t0."CreatedAt" ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS "Number", AVG(t0."Total") OVER (PARTITION BY t0."CustomerId" ORDER BY t0."CreatedAt" ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS "Moving", LAG(t0."Number", 1) OVER (PARTITION BY t0."CustomerId" ORDER BY t0."CreatedAt" ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS "Previous"
                 FROM "Order" AS t0
                 """
             ),
