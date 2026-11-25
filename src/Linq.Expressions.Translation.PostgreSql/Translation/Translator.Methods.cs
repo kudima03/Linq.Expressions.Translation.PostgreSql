@@ -68,6 +68,10 @@ internal sealed partial class Translator
             : name == nameof(Equals) && call.Method.GetParameters().All(IsComparable)
                 ? Equated(call)
             : name == nameof(ToString) && call.Arguments.Count == 0 ? Stringified(call)
+            : owner == typeof(MemoryExtensions)
+            && name is nameof(Enumerable.Max) or nameof(Enumerable.Min)
+            && Unspanned(call.Arguments[0]) is NewArrayExpression values
+                ? Extremes(values, call)
             : name == nameof(Enumerable.Contains) && owner != typeof(string)
                 ? Membership(call)
             : name == nameof(long.Parse) && call.Object is null ? Parsed(call)
@@ -123,6 +127,14 @@ internal sealed partial class Translator
 
     private Shape Enumerated(MethodCallExpression call)
     {
+        if (
+            call.Arguments[0]
+                is NewArrayExpression { NodeType: ExpressionType.NewArrayInit } values
+            && call.Method.Name is nameof(Enumerable.Max) or nameof(Enumerable.Min)
+        )
+        {
+            return new ScalarShape(Extremes(values, call));
+        }
         Shape source = Shape(call.Arguments[0]);
         return source is GroupingShape grouping ? Grouped(grouping, call)
             : source is FrameShape frame ? Framed(frame, call)
@@ -263,6 +275,8 @@ internal sealed partial class Translator
             (nameof(string.IsNullOrEmpty), 1) => IsNullOrEmpty(Sql(arguments[0])),
             (nameof(string.Concat), _) => Concatenation(call),
             (nameof(string.Format), _) => Formatted(call),
+            (nameof(string.Join), 2) => Separated(call),
+            (nameof(string.Normalize), _) => Normalized(call),
             _ => throw Unsupported.Method(call.Method),
         };
     }

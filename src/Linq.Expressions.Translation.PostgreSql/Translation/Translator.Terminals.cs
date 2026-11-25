@@ -119,7 +119,10 @@ internal sealed partial class Translator
 
     private SqlQuery Operand(MethodCallExpression call)
     {
-        return call.Method.GetParameters().Any(IsRejected) && !IsOrdinal(call)
+        return
+            call.Method.GetParameters().Any(IsRejected)
+            && !IsOrdinal(call)
+            && !IsOrdinallyCompared(call)
             ? throw Unsupported.Method(call.Method)
             : Query(call.Arguments[0]);
     }
@@ -243,6 +246,11 @@ internal sealed partial class Translator
     private SqlScalarSubquery Aggregated(SqlQuery source, MethodCallExpression call)
     {
         SelectQuery query = Unordered(Open(source, Barrier.Aggregation, false));
+        if (IsOrdinallyCompared(call))
+        {
+            query.Shape = new ScalarShape(Ordinal(Scalar(query.Shape), null, call));
+            return new SqlScalarSubquery(query, call.Type);
+        }
         SqlExpression value =
             call.Arguments.Count > 1
                 ? Scalar(Bind(Lambda(call, 1), query.Shape))

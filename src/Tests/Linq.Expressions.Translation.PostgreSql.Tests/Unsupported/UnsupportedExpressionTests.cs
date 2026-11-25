@@ -415,9 +415,11 @@ public sealed record UnsupportedExpressionTests
     }
 
     [Fact]
-    public void RejectsStringJoin()
+    public void RejectsStringJoinOfObjects()
     {
-        Expression query = Orders.Select(o => string.Join(",", o.Tags)).Expression;
+        Expression query = Orders
+            .Select(o => string.Join(",", new object[] { o.Id, o.Number }))
+            .Expression;
 
         NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
             new PostgreSqlQuery(query).TextValue
