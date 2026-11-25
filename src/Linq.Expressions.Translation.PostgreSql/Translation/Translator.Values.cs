@@ -39,11 +39,8 @@ internal sealed partial class Translator
 
     private static bool IsInMemory(Expression expression)
     {
-        return expression
-            is ConstantExpression
-        {
-            Value: IEnumerable and not IQueryable and not string
-        };
+        object? value = (expression as ConstantExpression)?.Value;
+        return value is IEnumerable and not IQueryable and not string;
     }
 
     // An in-memory sequence of scalars or tuples of scalars is a VALUES list, one row
