@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -97,6 +98,8 @@ internal sealed partial class Translator
         SqlQuery query = expression switch
         {
             ConstantExpression { Value: IQueryable root } => Root(root),
+            ConstantExpression { Value: IEnumerable items } constant
+                when IsInMemory(constant) => Values(items, ElementOf(constant)),
             ParameterExpression parameter
                 when _levels.TryGetValue(parameter, out Level? level) => Leveled(level),
             MethodCallExpression call when IsMarker(call) => Marked(call),
@@ -112,7 +115,9 @@ internal sealed partial class Translator
     {
         if (root is EnumerableQuery)
         {
-            return OneRow(root);
+            return Enumerable.Cast<object?>(root).Take(2).Count() == 1
+                ? OneRow(root)
+                : Values(root, root.ElementType);
         }
         TableMapping table = new(root.ElementType);
         string alias = NextAlias();
@@ -133,15 +138,10 @@ internal sealed partial class Translator
     }
 
     // A one-element in-memory root selects one row without FROM: a row of aggregates
-    // over tables. Any other in-memory sequence has no table to read.
+    // over tables. Any other in-memory sequence is a VALUES list.
     private static SelectQuery OneRow(IQueryable root)
     {
-        string source = root.GetType().Name;
-        return Enumerable.Cast<object?>(root).Take(2).Count() == 1
-            ? new SelectQuery(null, new RowShape(source))
-            : throw new NotSupportedException(
-                $"The in-memory source '{source}' cannot be translated into SQL."
-            );
+        return new SelectQuery(null, new RowShape(root.GetType().Name));
     }
 
     private SqlQuery Operator(MethodCallExpression call)
