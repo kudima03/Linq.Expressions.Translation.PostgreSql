@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-preview.0.10.0] - 2026-11-25
+
 ### Added
 
 - PostgreSQL markers for what LINQ cannot express, in the style of `EF.Functions`: named after PostgreSQL, with PostgreSQL's semantics, existing only in expression trees and throwing `NotSupportedException` when called; the evaluator never evaluates one.
