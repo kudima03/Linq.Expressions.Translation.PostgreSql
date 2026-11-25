@@ -100,9 +100,10 @@ internal sealed partial class Translator
         {
             nameof(Enumerable.Where) => new GroupingShape(
                 group.Key,
-                element,
+                Kept(Lambda(call, 1), element),
                 Conjoined(Scalar(Bind(Lambda(call, 1), element)), group.Filter),
-                group.Distinct
+                group.Distinct,
+                group.Order
             ),
             // A projection of the distinct elements is not the distinct projection,
             // which is what the aggregate of a DISTINCT group would compute.
@@ -114,13 +115,15 @@ internal sealed partial class Translator
                 group.Key,
                 Bind(Lambda(call, 1), element),
                 group.Filter,
-                group.Distinct
+                group.Distinct,
+                group.Order
             ),
             nameof(Enumerable.Distinct) => new GroupingShape(
                 group.Key,
                 element,
                 group.Filter,
-                true
+                true,
+                group.Order
             ),
             nameof(Enumerable.Count) or nameof(Enumerable.LongCount) => new ScalarShape(
                 Counting(
@@ -141,6 +144,8 @@ internal sealed partial class Translator
                 throw new NotSupportedException(
                     $"'{name}' with a selector over distinct group elements is not supported; select the value before Distinct."
                 ),
+            nameof(Enumerable.Min) or nameof(Enumerable.Max) when IsCompared(call) =>
+                new ScalarShape(Extreme(group, element, call)),
             nameof(Enumerable.Sum)
             or nameof(Enumerable.Average)
             or nameof(Enumerable.Min)
@@ -154,7 +159,7 @@ internal sealed partial class Translator
                     group.Filter
                 )
             ),
-            _ => throw Unsupported.Method(call.Method),
+            _ => Sequenced(group, element, call),
         };
     }
 
