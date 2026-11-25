@@ -675,7 +675,10 @@ internal sealed partial class Translator
     {
         string name = call.Method.Name;
         bool day = call.Method.DeclaringType == typeof(DateOnly);
-        return name == nameof(DateOnly.FromDateTime)
+        return name == nameof(DateOnly.FromDayNumber)
+                ? DayOfNumber(Sql(call.Arguments[0]))
+            : day && name == nameof(DateOnly.ToDateTime) ? DayAt(call)
+            : name == nameof(DateOnly.FromDateTime)
                 ? new SqlCast(Sql(call.Arguments[0]), day ? "date" : "time", call.Type)
             : day && name == nameof(DateOnly.AddDays)
                 ? Calculate("+", Sql(call.Object!), Sql(call.Arguments[0]))

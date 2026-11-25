@@ -125,11 +125,11 @@ internal sealed partial class Translator
 
     private Shape Created(NewExpression creation)
     {
-        return
-            creation.Type == typeof(DateTime)
+        return creation.Type == typeof(DateTime)
             && creation.Arguments is [Expression { Type: Type first }, ..]
             && first == typeof(long)
-            ? new ScalarShape(Moment(creation))
+                ? new ScalarShape(Moment(creation))
+            : Constructed(creation) is SqlExpression built ? new ScalarShape(built)
             : New(creation);
     }
 

@@ -472,14 +472,16 @@ public sealed record UnsupportedExpressionTests
     }
 
     [Fact]
-    public void RejectsDateTimeConstructionFromColumns()
+    public void RejectsDateTimeOffsetConstructionFromColumns()
     {
-        Expression query = Orders.Select(o => new DateTime(o.Quantity, 1, 1)).Expression;
+        Expression query = Orders
+            .Select(o => new DateTimeOffset(o.CreatedAt, TimeSpan.Zero))
+            .Expression;
 
         NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("DateTime", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("DateTimeOffset", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
