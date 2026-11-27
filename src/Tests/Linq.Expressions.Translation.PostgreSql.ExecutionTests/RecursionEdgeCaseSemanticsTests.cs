@@ -642,16 +642,21 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     }
 
     // Observed: ArgumentException: An item with the same key has already been
-    // added. Key: Id (the step's columns are matched ignoring case).
+    // added. Key: Id (the step's columns are matched ignoring case). The result is
+    // renamed after the recursion, as the materializer matches names ignoring case.
     [Fact(Skip = "#142: columns whose names differ in case only throw ArgumentException")]
     public void KeepsColumnsWhoseNamesDifferInCaseOnly()
     {
         database.AssertSameRows(
-            Trees.WithRecursive(
-                Employees.Where(e => e.Id == 1).Select(e => new { id = 0, e.Id }),
-                level =>
-                    level.Where(r => r.id < 2).Select(r => new { id = r.id + 1, r.Id })
-            )
+            Trees
+                .WithRecursive(
+                    Employees.Where(e => e.Id == 1).Select(e => new { id = 0, e.Id }),
+                    level =>
+                        level
+                            .Where(r => r.id < 2)
+                            .Select(r => new { id = r.id + 1, r.Id })
+                )
+                .Select(r => new { Depth = r.id, Employee = r.Id })
         );
     }
 
