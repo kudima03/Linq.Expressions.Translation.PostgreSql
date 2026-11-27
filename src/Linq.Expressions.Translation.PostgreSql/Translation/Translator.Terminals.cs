@@ -429,16 +429,28 @@ internal sealed partial class Translator
         }
         if (name != nameof(Queryable.Average))
         {
-            return new SqlAggregate(
-                Extreme(name, value.Type),
-                value,
-                distinct,
-                filter,
-                type,
-                windowed,
-                window
-            );
+            SqlAggregate Extremal(string function, SqlExpression argument)
+            {
+                return new SqlAggregate(
+                    function,
+                    argument,
+                    distinct,
+                    filter,
+                    type,
+                    windowed,
+                    window
+                );
+            }
+            return IsFloating(value.Type)
+                ? Negated(
+                    Extremal(
+                        name == nameof(Queryable.Max) ? "MIN" : "MAX",
+                        Negated(value)
+                    )
+                )
+                : Extremal(Extreme(name, value.Type), value);
         }
+        // The mean of integers is a numeric, of their type until it is converted.
         SqlAggregate Mean(SqlExpression argument)
         {
             return new SqlAggregate(
@@ -446,7 +458,7 @@ internal sealed partial class Translator
                 argument,
                 distinct,
                 filter,
-                type,
+                IsFloating(type) && !IsFloating(argument.Type) ? argument.Type : type,
                 windowed,
                 window
             );

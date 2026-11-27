@@ -92,7 +92,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #132: .NET orders NaN below -Infinity, PostgreSQL above +Infinity.
-    [Fact(Skip = "#132: OrderBy of doubles sorts NaN last where .NET sorts it first")]
+    [Fact]
     public void OrdersNaNAndInfinitiesAsDotNet()
     {
         database.AssertSameSequence(
@@ -111,7 +111,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #132: RANK() OVER (ORDER BY value) ranks NaN first in .NET: 1, 5, 2, 6, 3, 3.
-    [Fact(Skip = "#132: a window ordered by a double ranks NaN last, .NET first")]
+    [Fact]
     public void RanksNaNAsDotNet()
     {
         database.AssertSameRows(
@@ -134,7 +134,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #132: for NaN, n > 0, n < 0 and n == n * 1 are all false in .NET.
-    [Fact(Skip = "#132: comparisons of a double NaN are true in SQL, false in .NET")]
+    [Fact]
     public void ComparesNaNWithItselfAndZeroAsDotNet()
     {
         database.AssertSameRows(

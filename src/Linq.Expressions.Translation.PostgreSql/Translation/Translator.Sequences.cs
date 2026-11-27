@@ -81,10 +81,13 @@ internal sealed partial class Translator
             .. Bind(Lambda(call, 1), element)
                 .Columns()
                 .Where(column => column.Value is not SqlConstant)
-                .Select(column => new Ordering(
-                    ordinal ? new SqlCollation(column.Value) : column.Value,
-                    descending
-                )),
+                .SelectMany(column =>
+                    Keys(
+                        ordinal ? new SqlCollation(column.Value) : column.Value,
+                        descending,
+                        descending
+                    )
+                ),
         ];
         return new GroupingShape(group.Key, element, group.Filter, group.Distinct, keys);
     }

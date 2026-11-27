@@ -61,14 +61,20 @@ internal sealed partial class Translator
                     .Where(value => value is not SqlConstant),
             ]
             : [];
-        List<Ordering> order = Optional(call, 2) is LambdaExpression orderBy
-            ? WindowOrder(orderBy, query.Shape)
-            : [];
         PostgreSqlFrame? frame = call.Arguments[3] is ConstantExpression constant
             ? (PostgreSqlFrame?)constant.Value
             : throw new NotSupportedException(
                 "The frame of a window must be a constant, not computed for each row."
             );
+        // A RANGE with an offset measures the distance of its one key: a key that
+        // may be NULL is not split in two to put NaN where .NET sorts it.
+        List<Ordering> order = Optional(call, 2) is LambdaExpression orderBy
+            ? WindowOrder(
+                orderBy,
+                query.Shape,
+                frame?.Kind is FrameKind.NumericRange or FrameKind.IntervalRange
+            )
+            : [];
         WindowShape window = new(
             new SqlWindow(partition, order, frame is null ? null : Framed(frame, order)),
             query.Shape,
@@ -100,7 +106,7 @@ internal sealed partial class Translator
 
     // The ORDER BY of a window: OrderBy (or Order) of its rows, then ThenBy, each
     // ascending or descending and by the default or the ordinal comparer.
-    private List<Ordering> WindowOrder(LambdaExpression orderBy, Shape row)
+    private List<Ordering> WindowOrder(LambdaExpression orderBy, Shape row, bool ranged)
     {
         List<Ordering> order = [];
         Expression body = orderBy.Body;
@@ -124,10 +130,15 @@ internal sealed partial class Translator
                 0,
                 key.Columns()
                     .Where(column => column.Value is not SqlConstant)
-                    .Select(column => new Ordering(
-                        ordinal ? new SqlCollation(column.Value) : column.Value,
-                        descending
-                    ))
+                    .SelectMany(column =>
+                        ranged && column.Value.Nullable
+                            ? [new Ordering(column.Value, descending)]
+                            : Keys(
+                                ordinal ? new SqlCollation(column.Value) : column.Value,
+                                descending,
+                                descending
+                            )
+                    )
             );
             body = sort.Arguments[0];
             if (!name.StartsWith("Then", StringComparison.Ordinal))

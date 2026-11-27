@@ -279,7 +279,7 @@ public sealed record NumericCombinationTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE (t0."Weight" * 1.5) > CAST(t0."Quantity" AS double precision)
+                WHERE ((t0."Weight" * 1.5) > CAST(t0."Quantity" AS double precision)) AND ((t0."Weight" * 1.5) <> 'NaN')
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -411,7 +411,7 @@ public sealed record NumericCombinationTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE SQRT(t0."Weight") > 3
+                WHERE (SQRT(t0."Weight") > 3) AND (SQRT(t0."Weight") <> 'NaN')
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -501,7 +501,7 @@ public sealed record NumericCombinationTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE (t0."Weight" NOT IN (CAST('NaN' AS double precision), CAST('Infinity' AS double precision), CAST('-Infinity' AS double precision))) AND (t0."Weight" > 0)
+                WHERE (t0."Weight" NOT IN (CAST('NaN' AS double precision), CAST('Infinity' AS double precision), CAST('-Infinity' AS double precision))) AND (t0."Weight" > 0) AND (t0."Weight" <> 'NaN')
                 """
             ),
             new PostgreSqlQuery(query).TextValue

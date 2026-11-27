@@ -97,7 +97,7 @@ public sealed record CapturedVariableTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE t0."Weight" > 1.5
+                WHERE (t0."Weight" > 1.5) AND (t0."Weight" <> 'NaN')
                 """
             ),
             new PostgreSqlQuery(query).TextValue

@@ -333,11 +333,13 @@ internal sealed partial class Translator
         [
             .. key.Columns()
                 .Where(column => column.Value is not SqlConstant)
-                .Select(column => new Ordering(
-                    ordinal ? new SqlCollation(column.Value) : column.Value,
-                    descending,
-                    descending || nullsLast
-                )),
+                .SelectMany(column =>
+                    Keys(
+                        ordinal ? new SqlCollation(column.Value) : column.Value,
+                        descending,
+                        descending || nullsLast
+                    )
+                ),
         ];
         // A later OrderBy sorts the elements the earlier one ordered, which keep their
         // order where its keys tie, as a stable sort does: the keys of the earlier

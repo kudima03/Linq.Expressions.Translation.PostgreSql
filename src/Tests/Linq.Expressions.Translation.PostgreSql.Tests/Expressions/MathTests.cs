@@ -948,7 +948,7 @@ public sealed record MathTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT MAX(SQRT(t0."Weight"))
+                SELECT -MIN(-SQRT(t0."Weight"))
                 FROM "Order" AS t0
                 """
             ),

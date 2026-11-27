@@ -115,8 +115,15 @@ public sealed record ComparisonTests
     > ComparesDoubleColumnWithConstantData =>
         new()
         {
-            { o => o.Weight > 1.5, "t0.\"Weight\" > 1.5" },
-            { o => o.Weight >= 1.5, "t0.\"Weight\" >= 1.5" },
+            // NaN is greater than every number to PostgreSQL and not to .NET.
+            {
+                o => o.Weight > 1.5,
+                "(t0.\"Weight\" > 1.5) AND (t0.\"Weight\" <> 'NaN')"
+            },
+            {
+                o => o.Weight >= 1.5,
+                "(t0.\"Weight\" >= 1.5) AND (t0.\"Weight\" <> 'NaN')"
+            },
             { o => o.Weight < 1.5, "t0.\"Weight\" < 1.5" },
             { o => o.Weight <= 1.5, "t0.\"Weight\" <= 1.5" },
             { o => o.Weight == 1.5, "t0.\"Weight\" = 1.5" },

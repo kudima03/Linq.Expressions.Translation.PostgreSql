@@ -329,7 +329,8 @@ internal sealed partial class Translator
             return Equality(
                 binary.Left,
                 binary.Right,
-                binary.NodeType == ExpressionType.NotEqual
+                binary.NodeType == ExpressionType.NotEqual,
+                true
             );
         }
         if (binary.NodeType == ExpressionType.Coalesce)
@@ -361,18 +362,20 @@ internal sealed partial class Translator
                 or ExpressionType.RightShift
             ? Masked(binary)
             : Sql(binary.Right);
+        SqlBinary operation = new(
+            symbol,
+            kind,
+            left,
+            right,
+            binary.Type,
+            left.Nullable || right.Nullable
+        );
         return binary.NodeType == ExpressionType.Modulo && IsFloating(binary.Type)
                 ? Remainder(left, right, binary.Type)
             : binary.NodeType == ExpressionType.Divide && IsDecimal(binary.Type)
                 ? Quotient(left, right, binary.Type)
-            : new SqlBinary(
-                symbol,
-                kind,
-                left,
-                right,
-                binary.Type,
-                left.Nullable || right.Nullable
-            );
+            : Comparisons.ContainsKey(binary.NodeType) ? Ordered(operation)
+            : operation;
     }
 
     private static (string Symbol, SqlBinaryKind Kind) Operator(BinaryExpression binary)
@@ -431,7 +434,14 @@ internal sealed partial class Translator
             : Calculate("&", count, Integer(mask));
     }
 
-    private SqlExpression Equality(Expression left, Expression right, bool negated)
+    // The operators == and != are false and true for NaN; Equals takes it for equal
+    // to itself.
+    private SqlExpression Equality(
+        Expression left,
+        Expression right,
+        bool negated,
+        bool operators = false
+    )
     {
         if (left is ConstantExpression { Value: null })
         {
@@ -452,11 +462,21 @@ internal sealed partial class Translator
         }
         Shape first = Shape(left);
         Shape second = Shape(right);
-        return first is not ScalarShape || second is not ScalarShape
-            ? throw new NotSupportedException(
+        if (first is not ScalarShape || second is not ScalarShape)
+        {
+            throw new NotSupportedException(
                 "Comparing entities or projections for equality is not supported."
-            )
-            : Equated(Scalar(first), Scalar(second), negated, IsCorrelation(left, right));
+            );
+        }
+        SqlExpression equated = Equated(
+            Scalar(first),
+            Scalar(second),
+            negated,
+            IsCorrelation(left, right)
+        );
+        return operators
+            ? Unequal(equated, Scalar(first), Scalar(second), negated)
+            : equated;
     }
 
     // A correlation key equal to NULL is false in both languages, but not equal to it

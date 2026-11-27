@@ -272,7 +272,10 @@ public sealed record FrameTests
             { rows => rows.OrderBy(o => o.Quantity), "t0.\"Quantity\"" },
             { rows => rows.OrderBy(o => o.Points), "t0.\"Points\"" },
             { rows => rows.OrderByDescending(o => o.Total), "t0.\"Total\" DESC" },
-            { rows => rows.OrderBy(o => o.Weight), "t0.\"Weight\"" },
+            {
+                rows => rows.OrderBy(o => o.Weight),
+                "NULLIF(t0.\"Weight\", 'NaN') NULLS FIRST"
+            },
             { rows => rows.OrderBy(o => o.Priority), "t0.\"Priority\" NULLS FIRST" },
             { rows => rows.OrderBy(o => o.Status), "t0.\"Status\"" },
         };
