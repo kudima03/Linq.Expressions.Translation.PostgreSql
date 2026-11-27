@@ -102,7 +102,7 @@ public sealed record StringJoinTests
                         g.OrderBy(o => o.Note, StringComparer.Ordinal)
                             .Select(o => o.Number)
                     ),
-                "COALESCE(STRING_AGG(t0.\"Number\", '' ORDER BY t0.\"Note\" COLLATE \"C\" NULLS FIRST), '')"
+                "COALESCE(STRING_AGG(t0.\"Number\", '' ORDER BY REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" NULLS FIRST), '')"
             },
             {
                 g =>
@@ -113,7 +113,7 @@ public sealed record StringJoinTests
                             .Where(v => v != null)
                             .Distinct()
                     ),
-                "COALESCE(STRING_AGG(DISTINCT t0.\"Note\" COLLATE \"C\", ',' ORDER BY t0.\"Note\" COLLATE \"C\" DESC) FILTER (WHERE t0.\"Note\" IS NOT NULL), '') COLLATE \"default\""
+                "REGEXP_REPLACE(COALESCE(STRING_AGG(DISTINCT REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\", ',' ORDER BY REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" DESC) FILTER (WHERE t0.\"Note\" IS NOT NULL), ''), E'\\ud7ff([\\\\U00010000-\\\\U0010FFFF])', '\\1', 'g') COLLATE \"default\""
             },
             {
                 g =>

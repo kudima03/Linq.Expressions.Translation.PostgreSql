@@ -83,7 +83,7 @@ internal sealed partial class Translator
                 .Where(column => column.Value is not SqlConstant)
                 .SelectMany(column =>
                     Keys(
-                        ordinal ? new SqlCollation(column.Value) : column.Value,
+                        ordinal ? CodeUnits(column.Value) : column.Value,
                         descending,
                         descending
                     )
@@ -186,26 +186,26 @@ internal sealed partial class Translator
             : throw Unsupported.Method(call.Method);
     }
 
-    // Min and Max of strings with StringComparer.Ordinal are MIN and MAX in the "C"
-    // collation, whose result is read in the collation of the database.
+    // Min and Max of strings with StringComparer.Ordinal are MIN and MAX of the keys
+    // of the ordinal order, read back as text in the collation of the database.
     private static SqlCollation Ordinal(
         SqlExpression value,
         SqlExpression? filter,
         MethodCallExpression call
     )
     {
-        return value.Type != typeof(string)
-            ? throw Unsupported.Method(call.Method)
-            : new SqlCollation(
-                new SqlAggregate(
-                    call.Method.Name.ToUpperInvariant(),
-                    new SqlCollation(value),
-                    false,
-                    filter,
-                    typeof(string)
-                ),
-                "default"
-            );
+        if (value.Type != typeof(string))
+        {
+            throw Unsupported.Method(call.Method);
+        }
+        SqlAggregate extreme = new(
+            call.Method.Name.ToUpperInvariant(),
+            CodeUnits(value),
+            false,
+            filter,
+            typeof(string)
+        );
+        return Restored(extreme, extreme.Nullable);
     }
 
     // new[] { a, b, ... }.Max() is GREATEST(a, b, ...) and Min() is LEAST(...): both
@@ -239,7 +239,7 @@ internal sealed partial class Translator
         [
             .. array
                 .Expressions.Select(Sql)
-                .Select(value => ordinal ? new SqlCollation(value) : value),
+                .Select(value => ordinal ? CodeUnits(value) : value),
         ];
         SqlFunction extreme = new(
             name == nameof(Enumerable.Max) ? "GREATEST" : "LEAST",
@@ -247,7 +247,7 @@ internal sealed partial class Translator
             call.Type,
             values.All(value => value.Nullable)
         );
-        return ordinal ? new SqlCollation(extreme, "default") : extreme;
+        return ordinal ? Restored(extreme, extreme.Nullable) : extreme;
     }
 
     // string.Normalize() is in form C.
@@ -387,9 +387,8 @@ internal sealed partial class Translator
         [
             .. order.Select(ordering => SqlWriter.Text(ordering.Key)),
         ];
-        bool ordinal =
-            order.Count > 0 && keys.Contains(SqlWriter.Text(new SqlCollation(value)));
-        SqlExpression argument = ordinal ? new SqlCollation(value) : value;
+        bool ordinal = order.Count > 0 && keys.Contains(SqlWriter.Text(CodeUnits(value)));
+        SqlExpression argument = ordinal ? CodeUnits(value) : value;
         if (
             value.Nullable
             || keys.Count > 1
@@ -411,7 +410,7 @@ internal sealed partial class Translator
             ],
             group.Filter
         );
-        return ordinal ? new SqlCollation(joined, "default") : joined;
+        return ordinal ? Restored(joined, false) : joined;
     }
 
     private static SqlFunction Aggregated(

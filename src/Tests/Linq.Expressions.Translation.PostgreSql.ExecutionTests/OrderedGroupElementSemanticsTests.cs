@@ -457,9 +457,7 @@ public sealed class OrderedGroupElementSemanticsTests(Database database)
 
     // UTF-16 code units order U+FF21 above the surrogates of U+1F600, code points
     // below: .NET's ordinal maximum is "Ａ", COLLATE "C" yields the emoji.
-    [Fact(
-        Skip = "#133: StringComparer.Ordinal compares UTF-16 code units, COLLATE \"C\" code points"
-    )]
+    [Fact]
     public void TakesOrdinalExtremesInUtf16Order()
     {
         database.AssertSameRows(

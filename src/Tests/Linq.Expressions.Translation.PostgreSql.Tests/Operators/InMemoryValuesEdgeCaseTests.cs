@@ -738,7 +738,7 @@ public sealed record InMemoryValuesEdgeCaseTests
                 """
                 SELECT t0."Item1", t0."Item2"
                 FROM (VALUES (2, CAST('b' AS text)), (1, 'z'), (2, 'a')) AS t0 ("Item1", "Item2")
-                ORDER BY t0."Item1", t0."Item2" COLLATE "C" DESC
+                ORDER BY t0."Item1", REGEXP_REPLACE(t0."Item2", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C" DESC
                 """
             ),
             new PostgreSqlQuery(query).TextValue

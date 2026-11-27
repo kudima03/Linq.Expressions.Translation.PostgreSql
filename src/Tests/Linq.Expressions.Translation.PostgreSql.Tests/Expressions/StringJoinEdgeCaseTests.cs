@@ -368,7 +368,7 @@ public sealed record StringJoinEdgeCaseTests
             Sql.Valid(
                 """
                 SELECT (
-                    SELECT COALESCE(STRING_AGG(t1."Number", ',' ORDER BY t1."Number" COLLATE "C"), '')
+                    SELECT COALESCE(STRING_AGG(t1."Number", ',' ORDER BY REGEXP_REPLACE(t1."Number", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"), '')
                     FROM "Order" AS t1
                     WHERE t1."IsPaid"
                 )
@@ -422,7 +422,7 @@ public sealed record StringJoinEdgeCaseTests
             Sql.Valid(
                 """
                 SELECT (
-                    SELECT COALESCE(STRING_AGG(t3."Number", ',' ORDER BY t3."Number" COLLATE "C"), '')
+                    SELECT COALESCE(STRING_AGG(t3."Number", ',' ORDER BY REGEXP_REPLACE(t3."Number", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"), '')
                     FROM (
                         SELECT t1."Number"
                         FROM "Order" AS t1

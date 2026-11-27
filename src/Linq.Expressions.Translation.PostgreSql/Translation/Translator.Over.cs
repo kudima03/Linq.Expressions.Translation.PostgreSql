@@ -134,7 +134,7 @@ internal sealed partial class Translator
                         ranged && column.Value.Nullable
                             ? [new Ordering(column.Value, descending)]
                             : Keys(
-                                ordinal ? new SqlCollation(column.Value) : column.Value,
+                                ordinal ? CodeUnits(column.Value) : column.Value,
                                 descending,
                                 descending
                             )

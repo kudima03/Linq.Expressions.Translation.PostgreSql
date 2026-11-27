@@ -335,7 +335,7 @@ internal sealed partial class Translator
                 .Where(column => column.Value is not SqlConstant)
                 .SelectMany(column =>
                     Keys(
-                        ordinal ? new SqlCollation(column.Value) : column.Value,
+                        ordinal ? CodeUnits(column.Value) : column.Value,
                         descending,
                         descending || nullsLast
                     )

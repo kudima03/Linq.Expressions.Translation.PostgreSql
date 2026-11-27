@@ -385,7 +385,7 @@ public sealed record FrameEdgeCaseTests
             { rows => rows.OrderBy(o => o.TrackingId), "t0.\"TrackingId\"" },
             {
                 rows => rows.OrderByDescending(o => o.Number, StringComparer.Ordinal),
-                "t0.\"Number\" COLLATE \"C\" DESC"
+                "REGEXP_REPLACE(t0.\"Number\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" DESC"
             },
             {
                 rows => rows.OrderBy(o => o.Quantity).ThenBy(o => o.Id),

@@ -305,7 +305,7 @@ public sealed record MinByMaxByTests
                 """
                 SELECT t0."Id", t0."Name", t0."Email", t0."Region", t0."IsActive"
                 FROM "Customer" AS t0
-                ORDER BY t0."Name" COLLATE "C"
+                ORDER BY REGEXP_REPLACE(t0."Name", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"
                 LIMIT 1
                 """
             ),

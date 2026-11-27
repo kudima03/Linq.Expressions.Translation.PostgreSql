@@ -64,7 +64,7 @@ public sealed record ArrayExtremeEdgeCaseTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT GREATEST(t0."Number" COLLATE "C", 'm' COLLATE "C") COLLATE "default"
+                SELECT REGEXP_REPLACE(GREATEST(REGEXP_REPLACE(t0."Number", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C", 'm' COLLATE "C"), E'\ud7ff([\\U00010000-\\U0010FFFF])', '\1', 'g') COLLATE "default"
                 FROM "Order" AS t0
                 """
             ),
@@ -126,7 +126,7 @@ public sealed record ArrayExtremeEdgeCaseTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                ORDER BY GREATEST(t0."Number" COLLATE "C", t0."Note" COLLATE "C") COLLATE "default" COLLATE "C"
+                ORDER BY REGEXP_REPLACE(REGEXP_REPLACE(GREATEST(REGEXP_REPLACE(t0."Number", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C", REGEXP_REPLACE(t0."Note", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"), E'\ud7ff([\\U00010000-\\U0010FFFF])', '\1', 'g') COLLATE "default", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"
                 """
             ),
             new PostgreSqlQuery(query).TextValue

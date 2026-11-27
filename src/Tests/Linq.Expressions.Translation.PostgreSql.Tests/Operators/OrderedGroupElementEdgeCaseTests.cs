@@ -44,18 +44,18 @@ public sealed record OrderedGroupElementEdgeCaseTests
                     g.OrderBy(o => o.Note, StringComparer.Ordinal)
                         .Select(o => o.Id)
                         .Last(),
-                "(ARRAY_AGG(t0.\"Id\" ORDER BY t0.\"Note\" COLLATE \"C\" DESC NULLS LAST))[1]"
+                "(ARRAY_AGG(t0.\"Id\" ORDER BY REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" DESC NULLS LAST))[1]"
             },
             {
                 g =>
                     g.OrderByDescending(o => o.Note, StringComparer.Ordinal)
                         .Select(o => o.Id)
                         .First(),
-                "(ARRAY_AGG(t0.\"Id\" ORDER BY t0.\"Note\" COLLATE \"C\" DESC NULLS LAST))[1]"
+                "(ARRAY_AGG(t0.\"Id\" ORDER BY REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" DESC NULLS LAST))[1]"
             },
             {
                 g => g.Select(o => o.Note).OrderBy(n => n, StringComparer.Ordinal).Last(),
-                "(ARRAY_AGG(t0.\"Note\" ORDER BY t0.\"Note\" COLLATE \"C\" DESC NULLS LAST))[1]"
+                "(ARRAY_AGG(t0.\"Note\" ORDER BY REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" DESC NULLS LAST))[1]"
             },
             {
                 g => g.OrderBy(o => g.Key).Select(o => o.Id).First(),
@@ -97,7 +97,7 @@ public sealed record OrderedGroupElementEdgeCaseTests
                 g =>
                     g.Select(o => o.Note)
                         .Max(StringComparer.FromComparison(StringComparison.Ordinal)),
-                "MAX(t0.\"Note\" COLLATE \"C\") COLLATE \"default\""
+                "REGEXP_REPLACE(MAX(REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\"), E'\\ud7ff([\\\\U00010000-\\\\U0010FFFF])', '\\1', 'g') COLLATE \"default\""
             },
         };
 
@@ -228,7 +228,7 @@ public sealed record OrderedGroupElementEdgeCaseTests
             Sql.Valid(
                 """
                 SELECT (
-                    SELECT MAX(t1."Note" COLLATE "C") COLLATE "default"
+                    SELECT REGEXP_REPLACE(MAX(REGEXP_REPLACE(t1."Note", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"), E'\ud7ff([\\U00010000-\\U0010FFFF])', '\1', 'g') COLLATE "default"
                     FROM "Order" AS t1
                     WHERE t1."CustomerId" = t0."Id"
                 )
@@ -256,7 +256,7 @@ public sealed record OrderedGroupElementEdgeCaseTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT MAX(t0."Note" COLLATE "C") COLLATE "default" AS "Max", MIN(t0."Note" COLLATE "C") COLLATE "default" AS "Min"
+                SELECT REGEXP_REPLACE(MAX(REGEXP_REPLACE(t0."Note", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"), E'\ud7ff([\\U00010000-\\U0010FFFF])', '\1', 'g') COLLATE "default" AS "Max", REGEXP_REPLACE(MIN(REGEXP_REPLACE(t0."Note", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"), E'\ud7ff([\\U00010000-\\U0010FFFF])', '\1', 'g') COLLATE "default" AS "Min"
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
                 """
@@ -275,7 +275,7 @@ public sealed record OrderedGroupElementEdgeCaseTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT GREATEST(t0."Note" COLLATE "C", 'Ａ' COLLATE "C") COLLATE "default"
+                SELECT REGEXP_REPLACE(GREATEST(REGEXP_REPLACE(t0."Note", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C", 'Ａ' COLLATE "C"), E'\ud7ff([\\U00010000-\\U0010FFFF])', '\1', 'g') COLLATE "default"
                 FROM "Order" AS t0
                 """
             ),

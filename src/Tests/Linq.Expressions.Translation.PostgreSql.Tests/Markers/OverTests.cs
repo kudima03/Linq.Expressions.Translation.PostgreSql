@@ -173,7 +173,7 @@ public sealed record OverTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT ROW_NUMBER() OVER (ORDER BY t0."Region", t0."Id", t0."Name" COLLATE "C" DESC)
+                SELECT ROW_NUMBER() OVER (ORDER BY t0."Region", t0."Id", REGEXP_REPLACE(t0."Name", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C" DESC)
                 FROM "Customer" AS t0
                 """
             ),
@@ -215,7 +215,7 @@ public sealed record OverTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT RANK() OVER (ORDER BY t0."Name" COLLATE "C" DESC)
+                SELECT RANK() OVER (ORDER BY REGEXP_REPLACE(t0."Name", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C" DESC)
                 FROM "Customer" AS t0
                 """
             ),

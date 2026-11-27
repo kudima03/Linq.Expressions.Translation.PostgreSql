@@ -326,7 +326,7 @@ public sealed record FrameTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CAST(COUNT(*) OVER (ORDER BY t0."Region", t0."Name" COLLATE "C" RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS integer)
+                SELECT CAST(COUNT(*) OVER (ORDER BY t0."Region", REGEXP_REPLACE(t0."Name", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C" RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS integer)
                 FROM "Customer" AS t0
                 """
             ),

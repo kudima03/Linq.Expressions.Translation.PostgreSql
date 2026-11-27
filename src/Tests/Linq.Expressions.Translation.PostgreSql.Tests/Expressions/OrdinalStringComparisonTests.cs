@@ -10,19 +10,19 @@ public sealed record OrdinalStringComparisonTests
         {
             {
                 c => string.CompareOrdinal(c.Name, "C") < 0,
-                "t0.\"Name\" COLLATE \"C\" < 'C'"
+                "REGEXP_REPLACE(t0.\"Name\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" < 'C'"
             },
             {
                 c => string.CompareOrdinal(c.Name, "C") <= 0,
-                "t0.\"Name\" COLLATE \"C\" <= 'C'"
+                "REGEXP_REPLACE(t0.\"Name\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" <= 'C'"
             },
             {
                 c => string.CompareOrdinal(c.Name, "C") > 0,
-                "t0.\"Name\" COLLATE \"C\" > 'C'"
+                "REGEXP_REPLACE(t0.\"Name\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" > 'C'"
             },
             {
                 c => string.CompareOrdinal(c.Name, "C") >= 0,
-                "t0.\"Name\" COLLATE \"C\" >= 'C'"
+                "REGEXP_REPLACE(t0.\"Name\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" >= 'C'"
             },
             {
                 c => string.CompareOrdinal(c.Name, "C") == 0,
@@ -40,19 +40,19 @@ public sealed record OrdinalStringComparisonTests
         {
             {
                 c => string.CompareOrdinal(c.Email, "C") < 0,
-                "(t0.\"Email\" IS NULL) OR (t0.\"Email\" COLLATE \"C\" < 'C')"
+                "(t0.\"Email\" IS NULL) OR (REGEXP_REPLACE(t0.\"Email\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" < 'C')"
             },
             {
                 c => string.CompareOrdinal(c.Email, "C") <= 0,
-                "(t0.\"Email\" IS NULL) OR (t0.\"Email\" COLLATE \"C\" <= 'C')"
+                "(t0.\"Email\" IS NULL) OR (REGEXP_REPLACE(t0.\"Email\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" <= 'C')"
             },
             {
                 c => string.CompareOrdinal(c.Email, "C") > 0,
-                "t0.\"Email\" COLLATE \"C\" > 'C'"
+                "REGEXP_REPLACE(t0.\"Email\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" > 'C'"
             },
             {
                 c => string.CompareOrdinal(c.Email, "C") >= 0,
-                "t0.\"Email\" COLLATE \"C\" >= 'C'"
+                "REGEXP_REPLACE(t0.\"Email\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" >= 'C'"
             },
             {
                 c => string.CompareOrdinal(c.Email, "C") == 0,
@@ -99,7 +99,7 @@ public sealed record OrdinalStringComparisonTests
                 """
                 SELECT t0."Id"
                 FROM "Customer" AS t0
-                WHERE t0."Name" COLLATE "C" > t0."Region"
+                WHERE REGEXP_REPLACE(t0."Name", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C" > REGEXP_REPLACE(t0."Region", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g')
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -118,7 +118,7 @@ public sealed record OrdinalStringComparisonTests
                 """
                 SELECT t0."Id", t0."Name", t0."Email", t0."Region", t0."IsActive"
                 FROM "Customer" AS t0
-                ORDER BY t0."Name" COLLATE "C"
+                ORDER BY REGEXP_REPLACE(t0."Name", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -137,7 +137,7 @@ public sealed record OrdinalStringComparisonTests
                 """
                 SELECT t0."Id", t0."Name", t0."Email", t0."Region", t0."IsActive"
                 FROM "Customer" AS t0
-                ORDER BY t0."Name" COLLATE "C" DESC
+                ORDER BY REGEXP_REPLACE(t0."Name", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C" DESC
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -157,7 +157,7 @@ public sealed record OrdinalStringComparisonTests
                 """
                 SELECT t0."Id", t0."Name", t0."Email", t0."Region", t0."IsActive"
                 FROM "Customer" AS t0
-                ORDER BY t0."Id", t0."Name" COLLATE "C"
+                ORDER BY t0."Id", REGEXP_REPLACE(t0."Name", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -177,7 +177,7 @@ public sealed record OrdinalStringComparisonTests
                 """
                 SELECT t0."Id", t0."Name", t0."Email", t0."Region", t0."IsActive"
                 FROM "Customer" AS t0
-                ORDER BY t0."Id", t0."Name" COLLATE "C" DESC
+                ORDER BY t0."Id", REGEXP_REPLACE(t0."Name", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C" DESC
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -196,7 +196,7 @@ public sealed record OrdinalStringComparisonTests
                 """
                 SELECT t0."Id", t0."Name", t0."Email", t0."Region", t0."IsActive"
                 FROM "Customer" AS t0
-                ORDER BY t0."Email" COLLATE "C" NULLS FIRST
+                ORDER BY REGEXP_REPLACE(t0."Email", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C" NULLS FIRST
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -212,19 +212,19 @@ public sealed record OrdinalStringComparisonTests
         {
             {
                 x => string.CompareOrdinal(x.Item1.Note, x.Item2.Email) < 0,
-                "((t0.\"Note\" IS NULL) AND (t1.\"Email\" IS NOT NULL)) OR (t0.\"Note\" COLLATE \"C\" < t1.\"Email\")"
+                "((t0.\"Note\" IS NULL) AND (t1.\"Email\" IS NOT NULL)) OR (REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" < REGEXP_REPLACE(t1.\"Email\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g'))"
             },
             {
                 x => string.CompareOrdinal(x.Item1.Note, x.Item2.Email) <= 0,
-                "(t0.\"Note\" IS NULL) OR (t0.\"Note\" COLLATE \"C\" <= t1.\"Email\")"
+                "(t0.\"Note\" IS NULL) OR (REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" <= REGEXP_REPLACE(t1.\"Email\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g'))"
             },
             {
                 x => string.CompareOrdinal(x.Item1.Note, x.Item2.Email) > 0,
-                "((t1.\"Email\" IS NULL) AND (t0.\"Note\" IS NOT NULL)) OR (t0.\"Note\" COLLATE \"C\" > t1.\"Email\")"
+                "((t1.\"Email\" IS NULL) AND (t0.\"Note\" IS NOT NULL)) OR (REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" > REGEXP_REPLACE(t1.\"Email\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g'))"
             },
             {
                 x => string.CompareOrdinal(x.Item1.Note, x.Item2.Email) >= 0,
-                "(t1.\"Email\" IS NULL) OR (t0.\"Note\" COLLATE \"C\" >= t1.\"Email\")"
+                "(t1.\"Email\" IS NULL) OR (REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" >= REGEXP_REPLACE(t1.\"Email\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g'))"
             },
         };
 
@@ -269,7 +269,7 @@ public sealed record OrdinalStringComparisonTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT COALESCE(t0."Email" COLLATE "C" > 'C', FALSE)
+                SELECT COALESCE(REGEXP_REPLACE(t0."Email", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C" > 'C', FALSE)
                 FROM "Customer" AS t0
                 """
             ),
@@ -314,7 +314,7 @@ public sealed record OrdinalStringComparisonTests
                 """
                 SELECT t0."Name"
                 FROM "Customer" AS t0
-                ORDER BY t0."Name" COLLATE "C"
+                ORDER BY REGEXP_REPLACE(t0."Name", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -334,7 +334,7 @@ public sealed record OrdinalStringComparisonTests
                 """
                 SELECT t0."Name"
                 FROM "Customer" AS t0
-                ORDER BY t0."Name" COLLATE "C" DESC
+                ORDER BY REGEXP_REPLACE(t0."Name", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C" DESC
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -392,5 +392,27 @@ public sealed record OrdinalStringComparisonTests
             new PostgreSqlQuery(query).TextValue
         );
         Assert.Contains("CompareOrdinal", exception.Message, StringComparison.Ordinal);
+    }
+
+    // #133: a constant is compared as its key too, U+D7FF before a character above
+    // U+FFFF, so that it orders before U+E000..U+FFFF as its surrogates do in UTF-16.
+    [Fact]
+    public void ComparesWithAConstantAboveTheBasicPlaneByItsKey()
+    {
+        Expression query = Customers
+            .Where(c => string.CompareOrdinal(c.Name, "a\U0001F600") < 0)
+            .Select(c => c.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Customer" AS t0
+                WHERE REGEXP_REPLACE(t0."Name", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C" < 'a퟿😀'
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
     }
 }
