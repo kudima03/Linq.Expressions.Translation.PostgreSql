@@ -162,7 +162,7 @@ public sealed record InMemorySequenceTests
 
     // #135: a lone UTF-16 surrogate has no UTF-8 encoding, so the statement cannot be
     // sent; it is refused before any statement runs, as the NUL character is.
-    [Theory(Skip = "#135: a string with a lone surrogate is written into the statement")]
+    [Theory]
     [MemberData(nameof(LoneSurrogates))]
     public void RefusesLoneSurrogates(Func<Expression> query)
     {

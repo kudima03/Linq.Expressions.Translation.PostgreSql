@@ -51,6 +51,12 @@ internal static class SqlLiteral
                 "PostgreSQL text cannot contain the NUL character."
             );
         }
+        if (text.Where((character, index) => IsLone(text, index)).Any())
+        {
+            throw new NotSupportedException(
+                "PostgreSQL text cannot contain a lone surrogate, which is no character and has no UTF-8 encoding."
+            );
+        }
         if (!text.Any(IsInvisible))
         {
             return "'" + text.Replace("'", "''", StringComparison.Ordinal) + "'";
@@ -77,6 +83,17 @@ internal static class SqlLiteral
             );
         }
         return escaped.Append('\'').ToString();
+    }
+
+    // A surrogate that is not half of a pair: a high one without a low one after it,
+    // or a low one without a high one before it.
+    private static bool IsLone(string text, int index)
+    {
+        char character = text[index];
+        return char.IsHighSurrogate(character)
+            ? index + 1 == text.Length || !char.IsLowSurrogate(text[index + 1])
+            : char.IsLowSurrogate(character)
+                && (index == 0 || !char.IsHighSurrogate(text[index - 1]));
     }
 
     // A control character or a white-space character other than the space is written
