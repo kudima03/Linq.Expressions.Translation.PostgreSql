@@ -19,6 +19,10 @@ internal sealed class SqlBinary(
 
     private bool IsLifted => System.Nullable.GetUnderlyingType(Type) is not null;
 
+    // A DateTime plus or minus a duration is of its kind.
+    public override SqlKind TimeKind =>
+        Symbol is "+" or "-" ? KindOf([Left]) : SqlKind.Unspecified;
+
     public string Symbol { get; } = symbol;
 
     public SqlBinaryKind Kind { get; } = kind;

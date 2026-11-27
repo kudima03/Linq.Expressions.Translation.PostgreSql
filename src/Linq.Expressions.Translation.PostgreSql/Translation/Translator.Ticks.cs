@@ -49,16 +49,7 @@ internal sealed partial class Translator
             typeof(DateTime),
             ticks.Nullable
         );
-        return Kind(creation) == DateTimeKind.Utc
-            ? new SqlBinary(
-                "AT TIME ZONE",
-                SqlBinaryKind.Arithmetic,
-                moment,
-                Text("UTC"),
-                typeof(DateTime),
-                ticks.Nullable
-            )
-            : moment;
+        return Kind(creation) == DateTimeKind.Utc ? new SqlUtc(moment) : moment;
     }
 
     private static DateTimeKind Kind(NewExpression creation)

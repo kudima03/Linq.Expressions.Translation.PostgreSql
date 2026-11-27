@@ -299,8 +299,7 @@ public sealed record AdditionalExpressionSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."PaidAt" AT TIME ZONE 'UTC'
-                FROM "Order" AS t0
+                SELECT t0."PaidAt" FROM "Order" AS t0
                 """
             ),
             new PostgreSqlQuery(query).TextValue

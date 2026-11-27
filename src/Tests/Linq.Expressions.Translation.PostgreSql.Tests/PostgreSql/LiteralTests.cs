@@ -601,7 +601,7 @@ public sealed record LiteralTests
             Sql.Valid(
                 """
                 SELECT TIMESTAMP '2024-01-31 12:30:00'
-                FROM "Order" AS t0
+                AT TIME ZONE 'UTC' FROM "Order" AS t0
                 """
             ),
             new PostgreSqlQuery(query).TextValue

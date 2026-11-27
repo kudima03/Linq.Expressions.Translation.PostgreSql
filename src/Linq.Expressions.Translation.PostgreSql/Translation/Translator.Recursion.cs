@@ -75,7 +75,13 @@ internal sealed partial class Translator
             ),
             seed.Shape.Map(
                 (value, column) =>
-                    new SqlColumn(alias, column!, value.Type, nullability[index++]),
+                    new SqlColumn(
+                        alias,
+                        column!,
+                        value.Type,
+                        nullability[index++],
+                        value.TimeKind
+                    ),
                 null
             )
         );
@@ -137,7 +143,13 @@ internal sealed partial class Translator
             source,
             level.Shape.Map(
                 (value, column) =>
-                    new SqlColumn(alias, column!, value.Type, level.Nullability[index++]),
+                    new SqlColumn(
+                        alias,
+                        column!,
+                        value.Type,
+                        level.Nullability[index++],
+                        value.TimeKind
+                    ),
                 null
             )
         );

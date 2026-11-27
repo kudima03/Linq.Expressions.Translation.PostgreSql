@@ -10,6 +10,9 @@ internal sealed class SqlCase(
     public override bool Nullable =>
         Otherwise.Nullable || Whens.Any(branch => branch.Result.Nullable);
 
+    public override SqlKind TimeKind =>
+        KindOf([.. Whens.Select(branch => branch.Result), Otherwise]);
+
     public IReadOnlyList<SqlWhen> Whens { get; } = whens;
 
     public SqlExpression Otherwise { get; } = otherwise;

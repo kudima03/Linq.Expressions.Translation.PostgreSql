@@ -435,14 +435,14 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
                 (o, d) => o.Id
             )
         );
-        database.AssertSameRows(
-            new[]
-            {
+        // Equal by their ticks, they are one distinct value; read, the column would
+        // be of the kind Utc on one row and Unspecified on the other.
+        database.AssertSameResult(
+            Rows([
                 new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Unspecified),
-            }
-                .AsQueryable()
-                .Distinct()
+            ]),
+            q => q.Distinct().Count()
         );
     }
 

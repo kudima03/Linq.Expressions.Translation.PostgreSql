@@ -655,9 +655,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // Observed: MAKE_TIMESTAMP(...) AT TIME ZONE 'UTC' is a timestamptz, whose hour,
     // day and date PostgreSQL reads in the session zone (America/New_York), so Hour
     // of 2024-01-01 02:00 UTC is 21 instead of 2.
-    [Fact(
-        Skip = "#129: a DateTime constructed with DateTimeKind.Utc is a timestamptz, read in the session time zone"
-    )]
+    [Fact]
     public void ReadsMembersOfUtcTimestampsAsWritten()
     {
         database.AssertSameRows(
@@ -693,9 +691,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
 
     // Observed: the timestamptz compares with the timestamp column and the TIMESTAMP
     // constant through the session zone, five hours later.
-    [Fact(
-        Skip = "#129: a DateTime constructed with DateTimeKind.Utc compares with a DateTime through the session time zone"
-    )]
+    [Fact]
     public void ComparesUtcTimestampsByTicks()
     {
         database.AssertSameRows(
@@ -721,9 +717,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
 
     // Observed: timestamptz - timestamp converts the timestamp through the session
     // zone, and adding a day across the change to daylight saving time adds 23 hours.
-    [Fact(
-        Skip = "#129: arithmetic on a DateTime constructed with DateTimeKind.Utc follows the session time zone"
-    )]
+    [Fact]
     public void ComputesWithUtcTimestampsByTicks()
     {
         database.AssertSameRows(
@@ -745,17 +739,24 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
         );
     }
 
-    // Observed: UNION and GREATEST resolve timestamptz and timestamp to timestamptz,
-    // so the column's values shift by the session zone's offset.
-    [Fact(
-        Skip = "#129: a DateTime constructed with DateTimeKind.Utc shifts a DateTime it is combined with by the session time zone"
-    )]
+    // A Utc DateTime combined with a column stays a timestamp, so nothing is shifted
+    // by the session zone: Union keeps the distinct ticks and Max takes the later
+    // ticks. The combined values are of two kinds, which no column can be read as, so
+    // they are counted and read through their members.
+    [Fact]
     public void CombinesUtcTimestampsWithColumns()
     {
-        database.AssertSameRows(
-            Orders
-                .Select(o => new DateTime(2024, 1, 1, o.Quantity, 0, 0, DateTimeKind.Utc))
-                .Union(Orders.Select(o => o.CreatedAt))
+        database.AssertSameResult(
+            Orders.Select(o => new DateTime(
+                2024,
+                1,
+                1,
+                o.Quantity,
+                0,
+                0,
+                DateTimeKind.Utc
+            )),
+            q => q.Union(Orders.Select(o => o.CreatedAt)).Count()
         );
         database.AssertSameRows(
             Orders.Select(o => new
@@ -765,8 +766,31 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
                 {
                     o.CreatedAt,
                     new DateTime(2024, 1, 1, o.Quantity, 0, 0, DateTimeKind.Utc),
-                }.Max(),
+                }
+                    .Max()
+                    .Hour,
+                Later = new[]
+                {
+                    o.CreatedAt,
+                    new DateTime(2024, 1, 1, o.Quantity, 0, 0, DateTimeKind.Utc),
+                }.Max() > new DateTime(2024, 1, 1, 5, 0, 0),
             })
+        );
+        _ = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(
+                Orders
+                    .Select(o => new DateTime(
+                        2024,
+                        1,
+                        1,
+                        o.Quantity,
+                        0,
+                        0,
+                        DateTimeKind.Utc
+                    ))
+                    .Union(Orders.Select(o => o.CreatedAt))
+                    .Expression
+            ).TextValue
         );
     }
 

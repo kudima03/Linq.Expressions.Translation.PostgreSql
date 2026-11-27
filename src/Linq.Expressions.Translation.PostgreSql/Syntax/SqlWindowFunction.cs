@@ -12,6 +12,10 @@ internal sealed class SqlWindowFunction(
 {
     public override bool Nullable => nullable;
 
+    // LAG, LEAD, FIRST_VALUE and LAST_VALUE yield their value or their default.
+    public override SqlKind TimeKind =>
+        KindOf(arguments.Where((argument, index) => index != 1));
+
     public override void Render(SqlWriter writer, SqlMode mode)
     {
         _ = writer

@@ -218,15 +218,7 @@ internal sealed partial class Translator
                 ? throw new NotSupportedException(
                     "A DateTime is constructed with a constant kind of Utc or Unspecified; a Local one has no PostgreSQL equivalent."
                 )
-            : value == DateTimeKind.Utc
-                ? new SqlBinary(
-                    "AT TIME ZONE",
-                    SqlBinaryKind.Arithmetic,
-                    moment,
-                    Text("UTC"),
-                    typeof(DateTime),
-                    false
-                )
+            : value == DateTimeKind.Utc ? new SqlUtc(moment)
             : moment;
     }
 

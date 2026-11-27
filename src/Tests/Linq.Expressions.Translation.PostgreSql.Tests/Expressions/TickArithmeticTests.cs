@@ -166,11 +166,11 @@ public sealed record TickArithmeticTests
             },
             {
                 o => new DateTime(o.Points, DateTimeKind.Utc) == o.CreatedAt,
-                $"(({Moment}) AT TIME ZONE 'UTC') = t0.\"CreatedAt\""
+                $"({Moment}) = t0.\"CreatedAt\""
             },
             {
                 o => new DateTime(o.Priority!.Value, DateTimeKind.Utc) == o.CreatedAt,
-                $"(({NullableMoment}) AT TIME ZONE 'UTC') = t0.\"CreatedAt\""
+                $"({NullableMoment}) = t0.\"CreatedAt\""
             },
             {
                 o => TimeSpan.FromTicks(o.Points) == TimeSpan.Zero,

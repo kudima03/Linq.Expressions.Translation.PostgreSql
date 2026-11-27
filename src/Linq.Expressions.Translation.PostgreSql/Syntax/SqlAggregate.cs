@@ -15,6 +15,10 @@ internal sealed class SqlAggregate(
         System.Nullable.GetUnderlyingType(Type) is not null
         || (!Type.IsValueType && (filter is not null || argument is { Nullable: true }));
 
+    // MIN and MAX of DateTime values are one of them.
+    public override SqlKind TimeKind =>
+        argument is null ? SqlKind.Unspecified : KindOf([argument]);
+
     public override void Render(SqlWriter writer, SqlMode mode)
     {
         _ = writer.Append(name + "(" + (distinct ? "DISTINCT " : string.Empty));

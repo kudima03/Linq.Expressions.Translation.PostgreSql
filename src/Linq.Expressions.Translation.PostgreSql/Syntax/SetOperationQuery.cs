@@ -25,6 +25,19 @@ internal sealed class SetOperationQuery(
         ];
     }
 
+    // A column is of a kind when it is of that kind on both sides.
+    public override IReadOnlyList<SqlKind> Kinds()
+    {
+        return
+        [
+            .. Left.Kinds()
+                .Zip(
+                    Right.Kinds(),
+                    (first, second) => first == second ? first : SqlKind.Mixed
+                ),
+        ];
+    }
+
     public override void Render(SqlWriter writer)
     {
         Operand(

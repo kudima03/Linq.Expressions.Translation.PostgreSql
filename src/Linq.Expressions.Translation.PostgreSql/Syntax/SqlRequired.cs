@@ -9,6 +9,8 @@ internal sealed class SqlRequired(SqlExpression operand, Type type) : SqlExpress
 
     public override bool Nullable => false;
 
+    public override SqlKind TimeKind => Operand.TimeKind;
+
     public override bool IsCompound(SqlMode mode)
     {
         return Operand.IsCompound(mode);

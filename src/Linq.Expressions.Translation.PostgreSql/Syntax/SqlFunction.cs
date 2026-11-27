@@ -9,6 +9,12 @@ internal sealed class SqlFunction(
 {
     public override bool Nullable => nullable;
 
+    // One of the arguments, or the day of a DateTime, is of the kind it was.
+    public override SqlKind TimeKind =>
+        Unifying.Contains(name) ? KindOf(arguments)
+        : name == "DATE_TRUNC" ? KindOf([arguments[^1]])
+        : SqlKind.Unspecified;
+
     public SqlFunction(string name, IReadOnlyList<SqlExpression> arguments, Type type)
         : this(name, arguments, type, System.Nullable.GetUnderlyingType(type) is not null)
     { }

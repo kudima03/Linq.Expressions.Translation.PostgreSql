@@ -829,8 +829,10 @@ internal sealed partial class Translator
 
     // to_timestamp reads the text in the session's zone, where a time in a
     // daylight-saving gap shifts by an hour; a fixed +00 offset put before the text
-    // keeps the time as written, taken back as UTC into a timestamp, or kept as
-    // the instant in UTC, a timestamptz, which is read with the kind Utc.
+    // keeps the time as written, taken back as UTC into a timestamp, which is of
+    // the kind Utc when the text is read as UTC. The
+    // fraction of a second is read up to the microsecond when the text has one, and
+    // a seventh digit, which PostgreSQL cannot hold, fails.
     private static SqlExpression ParsedMoment(SqlExpression text, bool universal)
     {
         SqlFunction moment = new(
@@ -844,21 +846,13 @@ internal sealed partial class Translator
                     typeof(string),
                     text.Nullable
                 ),
-                Text("TZH " + DatePattern + " HH24:MI:SS"),
+                Text("TZH " + DatePattern + " HH24:MI:SS.US"),
             ],
             typeof(DateTime),
             text.Nullable
         );
-        return universal
-            ? moment
-            : new SqlBinary(
-                "AT TIME ZONE",
-                SqlBinaryKind.Arithmetic,
-                moment,
-                Text("UTC"),
-                typeof(DateTime),
-                text.Nullable
-            );
+        SqlBinary written = Zoned(moment, typeof(DateTime));
+        return universal ? new SqlUtc(written) : written;
     }
 
     private static object? Styles(Expression option)

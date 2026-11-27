@@ -74,7 +74,8 @@ internal sealed partial class Translator
                         alias,
                         column.Name,
                         column.Type,
-                        rows.Any(row => row[index] is null)
+                        rows.Any(row => row[index] is null),
+                        Kind(rows.Select(row => row[index]))
                     )
             )
         );
@@ -97,6 +98,22 @@ internal sealed partial class Translator
             ),
             Shaped(element, read)
         );
+    }
+
+    // The kind of a column of DateTime values: theirs when they agree. A Local one
+    // has no literal, which says so.
+    private static SqlKind Kind(IEnumerable<object?> cells)
+    {
+        List<bool> universal =
+        [
+            .. cells
+                .OfType<DateTime>()
+                .Select(moment => moment.Kind == DateTimeKind.Utc)
+                .Distinct(),
+        ];
+        return universal.Count > 1 ? SqlKind.Mixed
+            : universal.Contains(true) ? SqlKind.Utc
+            : SqlKind.Unspecified;
     }
 
     private static SqlExpression Cell(object? value, Type type, bool first)

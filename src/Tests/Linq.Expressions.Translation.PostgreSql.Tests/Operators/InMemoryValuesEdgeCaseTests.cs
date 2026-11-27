@@ -268,7 +268,7 @@ public sealed record InMemoryValuesEdgeCaseTests
             {
                 () =>
                     Root(
-                        new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                        new DateTime(2024, 1, 1, 0, 0, 0),
                         new DateTime(2024, 1, 1, 0, 0, 0, 0, 1)
                     ),
                 "TIMESTAMP '2024-01-01 00:00:00'), "
@@ -841,6 +841,14 @@ public sealed record InMemoryValuesEdgeCaseTests
                 () =>
                     Root(new DateTime(2024, 1, 1).AddTicks(1), new DateTime(2024, 1, 2)),
                 "microsecond"
+            },
+            {
+                () =>
+                    Root(
+                        new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                        new DateTime(2024, 1, 2)
+                    ),
+                "Utc on some rows"
             },
             { () => Root("a", "b\0c"), "NUL" },
             { () => Root<object>(1, 2), "Object" },

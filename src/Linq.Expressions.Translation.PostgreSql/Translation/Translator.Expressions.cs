@@ -252,9 +252,15 @@ internal sealed partial class Translator
         }
         // Only a DateTime converts to a DateTimeOffset: a timestamp compares with a
         // timestamptz through the session time zone, as the conversion uses the local one.
+        // A Utc one is the instant of its UTC time, as its offset is zero.
         if (target == typeof(DateTimeOffset))
         {
-            return value;
+            return value.TimeKind switch
+            {
+                SqlKind.Utc => Instant(value, to),
+                SqlKind.Mixed => throw Unkinded(),
+                _ => value,
+            };
         }
         // A conversion to a byte or an unsigned integer wraps in C#, which a cast to
         // the wider PostgreSQL type does not: only the conversion of a signed integer

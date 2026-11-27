@@ -18,6 +18,7 @@ internal sealed partial class Translator
     {
         SqlQuery query = Query(Evaluator.Evaluate(expression));
         _ = Ungrouped(query.Shape);
+        Read(query, query.Kinds());
         SqlWriter writer = new();
         query.Render(writer);
         return writer.ToString();
@@ -550,12 +551,19 @@ internal sealed partial class Translator
             _ = names.TryAdd(SqlWriter.Text(column.Value), column.Name!);
         }
         IReadOnlyList<bool> nullability = inner.Nullability();
+        IReadOnlyList<SqlKind> kinds = inner.Kinds();
         int index = 0;
         SelectQuery outer = new(
             new DerivedSource(inner, alias),
             inner.Shape.Map(
                 (value, name) =>
-                    new SqlColumn(alias, name!, value.Type, nullability[index++]),
+                    new SqlColumn(
+                        alias,
+                        name!,
+                        value.Type,
+                        nullability[index],
+                        kinds[index++]
+                    ),
                 null
             )
         )

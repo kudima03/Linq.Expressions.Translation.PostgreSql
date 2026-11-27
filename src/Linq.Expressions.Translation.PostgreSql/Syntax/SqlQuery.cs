@@ -17,5 +17,11 @@ internal abstract class SqlQuery(Shape shape)
         return [.. Shape.Columns().Select(column => column.Value.Nullable)];
     }
 
+    // The kind of the DateTime each column of the result is read as.
+    public virtual IReadOnlyList<SqlKind> Kinds()
+    {
+        return [.. Shape.Columns().Select(column => column.Value.TimeKind)];
+    }
+
     public abstract void Render(SqlWriter writer);
 }

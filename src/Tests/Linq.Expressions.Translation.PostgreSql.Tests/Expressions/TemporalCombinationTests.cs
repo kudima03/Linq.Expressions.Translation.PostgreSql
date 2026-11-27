@@ -199,7 +199,7 @@ public sealed record TemporalCombinationTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE (t0."CreatedAt" + (CAST(t0."Quantity" AS double precision) * INTERVAL '1 day')) < NOW()
+                WHERE (t0."CreatedAt" + (CAST(t0."Quantity" AS double precision) * INTERVAL '1 day')) < (NOW() AT TIME ZONE 'UTC')
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -489,7 +489,7 @@ public sealed record TemporalCombinationTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE CAST(EXTRACT(YEAR FROM t0."CreatedAt") AS integer) = CAST(EXTRACT(YEAR FROM NOW()) AS integer)
+                WHERE CAST(EXTRACT(YEAR FROM t0."CreatedAt") AS integer) = CAST(EXTRACT(YEAR FROM (NOW() AT TIME ZONE 'UTC')) AS integer)
                 """
             ),
             new PostgreSqlQuery(query).TextValue

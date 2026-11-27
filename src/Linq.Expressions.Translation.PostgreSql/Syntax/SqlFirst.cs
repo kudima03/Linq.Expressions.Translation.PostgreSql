@@ -11,6 +11,8 @@ internal sealed class SqlFirst(
 {
     public override bool Nullable => value.Nullable || filter is not null;
 
+    public override SqlKind TimeKind => value.TimeKind;
+
     public override void Render(SqlWriter writer, SqlMode mode)
     {
         _ = writer.Append("(ARRAY_AGG(").Render(value, SqlMode.Value);

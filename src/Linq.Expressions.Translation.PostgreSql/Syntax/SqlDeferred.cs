@@ -6,6 +6,8 @@ internal sealed class SqlDeferred(SqlExpression value) : SqlExpression(value.Typ
 {
     public override bool Nullable => value.Nullable;
 
+    public override SqlKind TimeKind => value.TimeKind;
+
     public override void Render(SqlWriter writer, SqlMode mode)
     {
         _ = writer.Append("(SELECT ").Render(value, SqlMode.Value).Append(")");
