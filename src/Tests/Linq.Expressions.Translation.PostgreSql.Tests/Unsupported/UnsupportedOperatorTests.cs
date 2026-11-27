@@ -456,32 +456,45 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Select", exception.Message, StringComparison.Ordinal);
     }
 
+    // #137: a selector that reads the element of the one-element root reads a VALUES
+    // row.
     [Fact]
-    public void RejectsOneElementInMemoryRootWhoseSelectorReadsTheElement()
+    public void ReadsElementOfOneElementInMemoryRootFromValues()
     {
         Expression query = new[] { 0 }
             .AsQueryable()
             .Select(x => x + Orders.Count())
             .Expression;
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Value" + (SELECT CAST(COUNT(*) AS integer) FROM "Order" AS t1)
+                FROM (VALUES (0)) AS t0 ("Value")
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void RejectsJoiningOneElementInMemoryRootWithoutSelector()
+    public void CrossJoinsOneElementInMemoryRootAsValues()
     {
         IQueryable<int> element = new[] { 0 }.AsQueryable();
         Expression query = Customers
             .SelectMany(c => element, (c, n) => c.Name)
             .Expression;
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name"
+                FROM "Customer" AS t0
+                CROSS JOIN (VALUES (0)) AS t1 ("Value")
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

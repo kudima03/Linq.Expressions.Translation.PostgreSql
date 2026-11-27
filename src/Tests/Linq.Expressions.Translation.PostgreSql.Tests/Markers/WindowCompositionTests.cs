@@ -197,10 +197,11 @@ public sealed record WindowCompositionTests
         );
     }
 
+    // #137: the element of a one-element root is read by the window, a VALUES row.
     [Fact]
-    public void RefusesAWindowOverAnInMemorySourceWithoutRows()
+    public void NumbersTheRowOfAOneElementInMemorySource()
     {
-        Expression one = Trees
+        Expression query = Trees
             .Over(
                 new[] { 5 }.AsQueryable(),
                 null,
@@ -209,6 +210,21 @@ public sealed record WindowCompositionTests
                 (v, w) => new { v, N = w.RowNumber() }
             )
             .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Value" AS "v", ROW_NUMBER() OVER () AS "N"
+                FROM (VALUES (5)) AS t0 ("Value")
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    [Fact]
+    public void RefusesAWindowOverAnInMemorySourceWithoutRows()
+    {
         Expression none = Trees
             .Over(
                 Array.Empty<int>().AsQueryable(),
@@ -219,9 +235,6 @@ public sealed record WindowCompositionTests
             )
             .Expression;
 
-        _ = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(one).TextValue
-        );
         _ = Assert.Throws<NotSupportedException>(() =>
             new PostgreSqlQuery(none).TextValue
         );

@@ -56,7 +56,7 @@ public sealed record InMemoryValuesEdgeCaseTests
 
     // NotSupportedException: The element of the in-memory source 'EnumerableQuery`1'
     // cannot be translated into SQL; select aggregates over tables from it.
-    [Fact(Skip = "#137: the one-element AsQueryable() inner of Join is refused")]
+    [Fact]
     public void JoinsQueryableOfOneElement()
     {
         IQueryable<int> ids = new[] { 1 }.AsQueryable();
@@ -80,7 +80,7 @@ public sealed record InMemoryValuesEdgeCaseTests
     // NotSupportedException: The element of the in-memory source 'EnumerableQuery`1'
     // cannot be translated into SQL; select aggregates over tables from it. The same
     // subquery over two elements is a VALUES list.
-    [Fact(Skip = "#137: a subquery over a one-element AsQueryable() is refused")]
+    [Fact]
     public void TestsExistenceInQueryableOfOneElement()
     {
         int[] ids = [1];
@@ -853,10 +853,6 @@ public sealed record InMemoryValuesEdgeCaseTests
             { () => Root("a", "b\0c"), "NUL" },
             { () => Root<object>(1, 2), "Object" },
             { () => Root(new KeyValuePair<int, int>(1, 2), default), "KeyValuePair" },
-            {
-                () => new[] { 5 }.AsQueryable().Select(x => x + 1).Expression,
-                "EnumerableQuery"
-            },
         };
     }
 

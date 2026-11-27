@@ -2,20 +2,23 @@ using Linq.Expressions.Translation.PostgreSql.Syntax;
 
 namespace Linq.Expressions.Translation.PostgreSql.Shapes;
 
-// The element of a one-element in-memory source: its row holds what the selector
-// computes from tables and has no column of its own, so the element cannot be read.
-internal sealed class RowShape(string source) : Shape
+// The element of a one-element in-memory source. Its row holds what a selector
+// computes from tables and needs no column of its own, so it is a SELECT without
+// FROM until the element is read: then the source becomes a VALUES list of its one
+// row, whose shape this stands for.
+internal sealed class RowShape(Func<Shape> read) : Shape
 {
-    public NotSupportedException Rejected()
+    private Shape? _element;
+
+    // The element as the columns of its VALUES row, which reading it brings about.
+    public Shape Element()
     {
-        return new NotSupportedException(
-            $"The element of the in-memory source '{source}' cannot be translated into SQL; select aggregates over tables from it."
-        );
+        return _element ??= read();
     }
 
     public override void Collect(List<ProjectionColumn> columns, string? path)
     {
-        throw Rejected();
+        Element().Collect(columns, path);
     }
 
     public override Shape Map(
@@ -23,6 +26,6 @@ internal sealed class RowShape(string source) : Shape
         string? path
     )
     {
-        throw Rejected();
+        return Element().Map(map, path);
     }
 }

@@ -4,7 +4,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 
 internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape)
 {
-    public SqlSource? From { get; } = from;
+    public SqlSource? From { get; set; } = from;
 
     public List<SqlJoin> Joins { get; } = [];
 

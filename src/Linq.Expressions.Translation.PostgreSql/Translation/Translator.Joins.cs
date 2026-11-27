@@ -43,9 +43,9 @@ internal sealed partial class Translator
             && IsInMemory(collection.Body)
         )
         {
-            return Unrolled(source, call, collection);
+            return Unrolled((SelectQuery)source, call, collection);
         }
-        SelectQuery outer = Opened(source);
+        SelectQuery outer = Opened(Sourced(source));
         Binding binding = new(outer.Shape, collection);
         _bindings[collection.Parameters[0]] = binding;
         Expression body = collection.Body;
@@ -67,19 +67,27 @@ internal sealed partial class Translator
     }
 
     // The one row of the root that yields the rows of an in-memory sequence yields
-    // those rows: they are the source, and the row itself cannot be read.
+    // those rows: they are the source. A result selector that reads the row makes it
+    // a VALUES row, which the rows are joined to.
     private SelectQuery Unrolled(
-        SqlQuery source,
+        SelectQuery source,
         MethodCallExpression call,
         LambdaExpression collection
     )
     {
         SelectQuery inner = (SelectQuery)Query(collection.Body);
-        if (call.Arguments.Count > 2)
+        if (call.Arguments.Count == 2)
         {
-            inner.Shape = Bind(Lambda(call, 2, 2), source.Shape, inner.Shape);
+            return inner;
         }
-        return inner;
+        Shape shape = Bind(Lambda(call, 2, 2), source.Shape, inner.Shape);
+        SelectQuery query = source.From is null ? inner : source;
+        if (query == source)
+        {
+            source.Joins.Add(new SqlJoin("CROSS JOIN", inner.From!, null));
+        }
+        query.Shape = shape;
+        return query;
     }
 
     // The matches of a GroupJoin are filtered in the join condition: filtered after the
@@ -132,7 +140,7 @@ internal sealed partial class Translator
     {
         bool left = padding is not null;
         int uses = collection.Uses;
-        SqlQuery query = Query(items);
+        SqlQuery query = Sourced(Query(items));
         bool correlated = collection.Uses > uses;
         bool simple = IsJoinable(query, left);
         SelectQuery inner = simple ? (SelectQuery)query : Wrap(query, false);
@@ -172,7 +180,7 @@ internal sealed partial class Translator
 
     private SqlQuery Correlated(GroupJoinShape group)
     {
-        SelectQuery inner = Simple(Query(group.Inner), true);
+        SelectQuery inner = Simple(Sourced(Query(group.Inner)), true);
         inner.Where = Conjoined(
             Matching(Bind(group.InnerKey, inner.Shape), group.OuterKey),
             inner.Where
@@ -196,7 +204,7 @@ internal sealed partial class Translator
 
     private SqlQuery Joined(MethodCallExpression call)
     {
-        return Query(JoinedSource(call));
+        return Sourced(Query(JoinedSource(call)));
     }
 
     private static Expression JoinedSource(MethodCallExpression call)
@@ -229,7 +237,7 @@ internal sealed partial class Translator
     // element is in LINQ to Objects, so such a source is joined as a derived table too.
     private SelectQuery Joinable(SqlQuery query, bool left)
     {
-        return IsJoinable(query, left) ? (SelectQuery)query : Wrap(query, false);
+        return IsJoinable(Sourced(query), left) ? (SelectQuery)query : Wrap(query, false);
     }
 
     private static bool IsJoinable(SqlQuery query, bool left)

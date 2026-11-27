@@ -211,7 +211,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #137
-    [Fact(Skip = "#137: a one-element AsQueryable() side of a set operation is refused")]
+    [Fact]
     public void CombinesTableWithQueryableOfOneElement()
     {
         database.AssertSameRows(Customers.Select(c => c.Name).Union(Ann.AsQueryable()));
@@ -223,7 +223,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #137
-    [Fact(Skip = "#137: a one-element AsQueryable() side of a set operation is refused")]
+    [Fact]
     public void CombinesQueryableOfOneElementWithTable()
     {
         database.AssertSameRows(Ann.AsQueryable().Union(Customers.Select(c => c.Name)));
@@ -237,7 +237,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #137
-    [Fact(Skip = "#137: the one-element AsQueryable() inner of Join is refused")]
+    [Fact]
     public void JoinsQueryableOfOneElement()
     {
         database.AssertSameRows(
@@ -246,7 +246,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #137
-    [Fact(Skip = "#137: a one-element AsQueryable() in SelectMany is refused")]
+    [Fact]
     public void FlattensQueryableOfOneElement()
     {
         database.AssertSameRows(
@@ -261,7 +261,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #137
-    [Fact(Skip = "#137: a subquery over a one-element AsQueryable() is refused")]
+    [Fact]
     public void FiltersOnQueryableOfOneElement()
     {
         database.AssertSameRows(
@@ -275,7 +275,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #137
-    [Fact(Skip = "#137: a Count() over a one-element AsQueryable() is refused")]
+    [Fact]
     public void CountsQueryableOfOneElementPerRow()
     {
         database.AssertSameRows(
@@ -289,7 +289,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
 
     // #137: only the root of aggregates is the one-row root without FROM; an element
     // that is read is a one-row VALUES.
-    [Fact(Skip = "#137: the element of a one-element AsQueryable() root is refused")]
+    [Fact]
     public void ReadsElementOfQueryableOfOneElement()
     {
         database.AssertSameRows(

@@ -139,10 +139,30 @@ internal sealed partial class Translator
     }
 
     // A one-element in-memory root selects one row without FROM: a row of aggregates
-    // over tables. Any other in-memory sequence is a VALUES list.
-    private static SelectQuery OneRow(IQueryable root)
+    // over tables. Any other in-memory sequence is a VALUES list, and so is this one
+    // once its element is read.
+    private SelectQuery OneRow(IQueryable root)
     {
-        return new SelectQuery(null, new RowShape(root.GetType().Name));
+        SelectQuery query = new(null, null!);
+        query.Shape = new RowShape(() =>
+        {
+            SelectQuery values = Values(root, root.ElementType);
+            query.From = values.From;
+            if (query.Shape is RowShape)
+            {
+                query.Shape = values.Shape;
+            }
+            return values.Shape;
+        });
+        return query;
+    }
+
+    // The rows of a one-element root that is read as a sequence of its own, joined,
+    // combined or searched, are its VALUES row.
+    private static SqlQuery Sourced(SqlQuery query)
+    {
+        _ = (query.Shape as RowShape)?.Element();
+        return query;
     }
 
     private SqlQuery Operator(MethodCallExpression call)
@@ -152,8 +172,20 @@ internal sealed partial class Translator
             : Sequence(Operand(call), call);
     }
 
+    // Where, Select and SelectMany may leave the element of a one-row root unread.
     private SqlQuery Sequence(SqlQuery source, MethodCallExpression call)
     {
+        if (
+            call.Method.Name
+            is not (
+                nameof(Queryable.Where)
+                or nameof(Queryable.Select)
+                or nameof(Queryable.SelectMany)
+            )
+        )
+        {
+            _ = Sourced(source);
+        }
         return call.Method.Name switch
         {
             nameof(Queryable.Where) => Where(source, Lambda(call, 1)),

@@ -33,6 +33,14 @@ internal sealed partial class Translator
 
     private static readonly HashSet<Type> Integral = [typeof(int), typeof(long)];
 
+    private static readonly HashSet<string> Countable =
+    [
+        nameof(Queryable.Count),
+        nameof(Queryable.LongCount),
+        nameof(Queryable.Any),
+        nameof(Queryable.All),
+    ];
+
     private static SelectQuery Statement(SqlExpression result)
     {
         return result is SqlScalarSubquery subquery
@@ -127,9 +135,15 @@ internal sealed partial class Translator
             : Query(call.Arguments[0]);
     }
 
+    // Counting and testing the rows of a one-row root leave its element unread,
+    // unless their predicate reads it.
     private SqlExpression Terminal(SqlQuery source, MethodCallExpression call)
     {
         bool filtered = call.Arguments.Count > 1;
+        if (!Countable.Contains(call.Method.Name))
+        {
+            _ = Sourced(source);
+        }
         return call.Method.Name switch
         {
             nameof(Queryable.Count) or nameof(Queryable.LongCount) => Counted(

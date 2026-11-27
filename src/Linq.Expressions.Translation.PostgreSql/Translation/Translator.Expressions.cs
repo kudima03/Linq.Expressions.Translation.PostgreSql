@@ -105,7 +105,7 @@ internal sealed partial class Translator
     {
         Binding binding = _bindings[parameter];
         binding.Uses++;
-        return binding.Shape is RowShape row ? throw row.Rejected() : binding.Shape;
+        return binding.Shape is RowShape row ? row.Element() : binding.Shape;
     }
 
     // A constant tuple is projected member by member, as a constructed one is: each

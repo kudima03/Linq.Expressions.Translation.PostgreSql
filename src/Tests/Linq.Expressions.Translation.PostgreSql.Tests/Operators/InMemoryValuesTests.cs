@@ -778,17 +778,23 @@ public sealed record InMemoryValuesTests
         );
     }
 
+    // #137: the element of the one-element root is read, so it is a VALUES row.
     [Fact]
-    public void RejectsUnrollingThatReadsOneElementRoot()
+    public void CrossJoinsOneElementRootThatIsReadWithValues()
     {
         Expression query = new[] { 0 }
             .AsQueryable()
             .SelectMany(one => new[] { 1, 2 }, (one, row) => one + row)
             .Expression;
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Value" + t0."Value"
+                FROM (VALUES (0)) AS t1 ("Value") CROSS JOIN (VALUES (1), (2)) AS t0 ("Value")
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
     }
 }
