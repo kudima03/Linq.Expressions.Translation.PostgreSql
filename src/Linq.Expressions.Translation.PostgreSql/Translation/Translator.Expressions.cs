@@ -370,7 +370,11 @@ internal sealed partial class Translator
             binary.Type,
             left.Nullable || right.Nullable
         );
-        return binary.NodeType == ExpressionType.Modulo && IsFloating(binary.Type)
+        return binary.NodeType == ExpressionType.Subtract
+            && binary.Left.Type == typeof(TimeOnly)
+            && binary.Right.Type == typeof(TimeOnly)
+                ? Elapsed(operation)
+            : binary.NodeType == ExpressionType.Modulo && IsFloating(binary.Type)
                 ? Remainder(left, right, binary.Type)
             : binary.NodeType == ExpressionType.Divide && IsDecimal(binary.Type)
                 ? Quotient(left, right, binary.Type)
@@ -391,6 +395,30 @@ internal sealed partial class Translator
             : Arithmetic.TryGetValue(binary.NodeType, out string? arithmetic)
                 ? (arithmetic, SqlBinaryKind.Arithmetic)
             : throw Unsupported.Node(binary);
+    }
+
+    // A TimeOnly less another is the time elapsed from it on a circular clock, never
+    // negative: an earlier time is a day behind. No time is earlier than midnight.
+    private static SqlExpression Elapsed(SqlBinary difference)
+    {
+        return
+            difference.Right is SqlConstant { Value: TimeOnly time }
+            && time == TimeOnly.MinValue
+            ? difference
+            : new SqlCase(
+                [
+                    new SqlWhen(
+                        Compare("<", difference.Left, difference.Right),
+                        Calculate(
+                            "+",
+                            difference,
+                            new SqlFragment("INTERVAL '1 day'", typeof(TimeSpan))
+                        )
+                    ),
+                ],
+                difference,
+                typeof(TimeSpan)
+            );
     }
 
     private static bool IsFloating(Type type)

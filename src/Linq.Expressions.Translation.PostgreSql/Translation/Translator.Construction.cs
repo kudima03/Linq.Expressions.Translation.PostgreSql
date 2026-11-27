@@ -40,6 +40,25 @@ internal sealed partial class Translator
             : null;
     }
 
+    // A date or a time of parts that are all constants is one that failed to
+    // evaluate, as any other is folded: the planner would fold it too, and fail the
+    // statement though no row reaches it, so its first part is read through a
+    // subquery, when a row does.
+    private static SqlFunction Made(
+        string function,
+        IReadOnlyList<SqlExpression> parts,
+        Type type
+    )
+    {
+        return new SqlFunction(
+            function,
+            parts.All(part => part is SqlConstant)
+                ? [new SqlDeferred(parts[0]), .. parts.Skip(1)]
+                : parts,
+            type
+        );
+    }
+
     private static bool IsPart(Type type)
     {
         return type == typeof(int);
@@ -48,7 +67,7 @@ internal sealed partial class Translator
     private SqlFunction Day(IReadOnlyList<Expression> arguments)
     {
         SqlExpression year = Sql(arguments[0]);
-        return new SqlFunction(
+        return Made(
             "MAKE_DATE",
             [
                 Guarded(year, [Within(year, 1, 9999)], 0),
@@ -64,7 +83,7 @@ internal sealed partial class Translator
     {
         List<SqlExpression> parts = [.. arguments.Select(Sql)];
         SqlExpression hour = parts[0];
-        return new SqlFunction(
+        return Made(
             "MAKE_TIME",
             [
                 Guarded(hour, [Within(hour, 0, 23), .. Fraction(parts.Skip(2))], -1),
@@ -191,7 +210,7 @@ internal sealed partial class Translator
             checks.AddRange(Fraction(parts.Skip(5)));
             clock = [parts[3], parts[4], Seconds(parts.Skip(5))];
         }
-        SqlFunction moment = new(
+        SqlFunction moment = Made(
             "MAKE_TIMESTAMP",
             [Guarded(year, checks, 0), parts[1], parts[2], .. clock],
             typeof(DateTime)

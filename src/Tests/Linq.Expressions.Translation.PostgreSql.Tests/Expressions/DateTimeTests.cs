@@ -429,8 +429,8 @@ public sealed record DateTimeTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."DeliveryTime" - TIME '08:00:00'
-                FROM "Order" AS t0
+                SELECT CASE WHEN t0."DeliveryTime" < TIME '08:00:00' THEN (t0."DeliveryTime" - TIME '08:00:00') + INTERVAL '1 day' ELSE t0."DeliveryTime" - TIME '08:00:00'
+                END FROM "Order" AS t0
                 """
             ),
             new PostgreSqlQuery(query).TextValue
