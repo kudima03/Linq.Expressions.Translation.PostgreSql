@@ -65,24 +65,43 @@ internal sealed class SqlWriter
         return this;
     }
 
-    // A whole decimal constant is written with its point, as PostgreSQL takes a
-    // number without one for an integer. Among operands it resolves to one type (an
-    // operator, COALESCE, CASE, IN, VALUES, a cast), a numeric one beside it types
-    // it, and it is written as its digits alone.
+    // A constant of a fractional type is written so that PostgreSQL takes it for
+    // one: a whole number with its point, a float in a cast. Among operands it
+    // resolves to one type (an operator, a function, CASE, IN), a numeric or double
+    // precision one beside it types it, as does an interval it multiplies, and it
+    // is written as its digits alone.
     public static bool IsNumeric(IEnumerable<SqlExpression> operands)
     {
         return operands.Any(operand =>
             operand is not SqlConstant
-            && (Nullable.GetUnderlyingType(operand.Type) ?? operand.Type)
-                == typeof(decimal)
+            && (Nullable.GetUnderlyingType(operand.Type) ?? operand.Type) is Type type
+            && (
+                type == typeof(decimal)
+                || type == typeof(double)
+                || type == typeof(TimeSpan)
+            )
         );
     }
 
     public SqlWriter Unified(SqlExpression operand, bool numeric)
     {
-        return numeric && operand is SqlConstant { Value: decimal number }
-            ? Append(SqlLiteral.Number(number))
+        return
+            numeric
+            && operand is SqlConstant constant
+            && SqlLiteral.Digits(constant.Value) is string digits
+            ? Append(digits)
             : Render(operand, SqlMode.Value);
+    }
+
+    // The operand of a cast is typed by it: its digits, or the text of a number
+    // that has none.
+    public SqlWriter Cast(SqlExpression operand)
+    {
+        return
+            operand is SqlConstant { Value: double or float } constant
+            && SqlLiteral.Digits(constant.Value) is null
+            ? Append(SqlLiteral.Quoted(System.Convert.ToDouble(constant.Value, null)))
+            : Unified(operand, true);
     }
 
     public SqlWriter Operand(SqlExpression operand, SqlMode mode)

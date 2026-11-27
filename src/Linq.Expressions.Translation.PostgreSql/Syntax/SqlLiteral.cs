@@ -22,9 +22,9 @@ internal static class SqlLiteral
                     CultureInfo.InvariantCulture
                 )
                 .ToString()!,
-            decimal number => Exact(number),
-            double number => Floating(number, "double precision"),
-            float number => Floating(number, "real"),
+            decimal number => Exact(Number(number)),
+            double number => Floating(number),
+            float number => Single(number),
             Guid guid => $"UUID '{guid}'",
             DateTime moment => Timestamp(moment),
             DateTimeOffset moment =>
@@ -105,13 +105,16 @@ internal static class SqlLiteral
             || (char.IsWhiteSpace(character) && character != ' ');
     }
 
-    // A whole decimal is written with its point, as a number without one is an
-    // integer to PostgreSQL, which divides integers without a remainder; the point
-    // alone keeps the scale of the decimal.
-    private static string Exact(decimal number)
+    // A whole decimal or double is written with its point, as a number without one
+    // is an integer to PostgreSQL, which divides integers without a remainder; the
+    // point alone keeps the scale of a decimal.
+    private static string Exact(string digits)
     {
-        string text = Number(number);
-        return text.Contains('.', StringComparison.Ordinal) ? text : text + ".";
+        return
+            digits.Contains('.', StringComparison.Ordinal)
+            || digits.Contains('E', StringComparison.Ordinal)
+            ? digits
+            : digits + ".";
     }
 
     // A decimal as its digits, for where a numeric operand beside it types it.
@@ -120,14 +123,49 @@ internal static class SqlLiteral
         return number.ToString(CultureInfo.InvariantCulture);
     }
 
-    private static string Floating(IFormattable number, string type)
+    // A number of a fractional type as its digits alone, for where an operand beside
+    // it, a cast or a column types it; null for one that has no digits: NaN, an
+    // infinity, or the negative zero, whose sign the integer -0 would lose.
+    public static string? Digits(object? value)
     {
-        NumberFormatInfo format = NumberFormatInfo.InvariantInfo;
-        string text = number.ToString(null, format);
-        return text == format.NaNSymbol ? $"CAST('NaN' AS {type})"
-            : text == format.PositiveInfinitySymbol ? $"CAST('Infinity' AS {type})"
-            : text == format.NegativeInfinitySymbol ? $"CAST('-Infinity' AS {type})"
-            : text;
+        return value switch
+        {
+            decimal number => Number(number),
+            double number when double.IsFinite(number) && !IsNegativeZero(number) =>
+                number.ToString(null, CultureInfo.InvariantCulture),
+            float number when float.IsFinite(number) && !IsNegativeZero(number) =>
+                number.ToString(null, CultureInfo.InvariantCulture),
+            _ => null,
+        };
+    }
+
+    // A floating-point number without digits as the text a cast reads it from.
+    public static string Quoted(double number)
+    {
+        return double.IsNaN(number) ? "'NaN'"
+            : double.IsPositiveInfinity(number) ? "'Infinity'"
+            : double.IsNegativeInfinity(number) ? "'-Infinity'"
+            : "'-0'";
+    }
+
+    private static bool IsNegativeZero(double number)
+    {
+        return number == 0 && double.IsNegative(number);
+    }
+
+    // A double is a numeric literal, which PostgreSQL converts to the double
+    // precision of the operand beside it; a float is always cast, as a real beside a
+    // numeric literal would be computed in double precision.
+    private static string Floating(double number)
+    {
+        return Digits(number) is string digits
+            ? Exact(digits)
+            : $"CAST({Quoted(number)} AS double precision)";
+    }
+
+    private static string Single(float number)
+    {
+        return $"CAST({Digits(number) ?? Quoted(number)} AS real)";
     }
 
     // A DateTime is a timestamp whatever its kind, as C# compares DateTime values by

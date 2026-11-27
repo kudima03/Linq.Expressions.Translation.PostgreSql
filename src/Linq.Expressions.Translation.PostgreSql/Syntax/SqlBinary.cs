@@ -75,7 +75,7 @@ internal sealed class SqlBinary(
     )
     {
         SqlMode inner = Kind == SqlBinaryKind.Logical ? mode : SqlMode.Value;
-        return operand is SqlConstant { Value: decimal } && SqlWriter.IsNumeric([other])
+        return operand is SqlConstant && SqlWriter.IsNumeric([other])
                 ? writer.Unified(operand, true)
             : IsChained(operand) || (Kind == SqlBinaryKind.Logical && operand is SqlUnary)
                 ? writer.Render(operand, inner)

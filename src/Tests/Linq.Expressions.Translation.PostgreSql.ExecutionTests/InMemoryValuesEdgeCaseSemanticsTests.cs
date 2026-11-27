@@ -181,7 +181,7 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         );
     }
 
-    [Fact(Skip = "#131: a -0.0 double literal is the numeric -0, which loses its sign")]
+    [Fact]
     public void KeepsSignOfNegativeZero()
     {
         // VALUES (CAST(-0 AS double precision)), (1.5): the numeric -0 is 0, so its

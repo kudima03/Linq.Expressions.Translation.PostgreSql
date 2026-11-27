@@ -7,6 +7,6 @@ internal sealed class SqlCast(SqlExpression operand, string target, Type type)
 
     public override void Render(SqlWriter writer, SqlMode mode)
     {
-        _ = writer.Append("CAST(").Unified(operand, true).Append(" AS " + target + ")");
+        _ = writer.Append("CAST(").Cast(operand).Append(" AS " + target + ")");
     }
 }

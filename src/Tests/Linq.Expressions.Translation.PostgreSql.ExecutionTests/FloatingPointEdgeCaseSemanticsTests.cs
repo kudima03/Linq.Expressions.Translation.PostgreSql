@@ -16,7 +16,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #131: a -0.0 past the first row of VALUES is the untyped -0, which is 0.
-    [Fact(Skip = "#131: a -0.0 constant is the integer literal -0, which loses its sign")]
+    [Fact]
     public void KeepsSignOfNegativeZeroPastTheFirstRow()
     {
         database.AssertSameRows(
@@ -25,7 +25,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #131: the default of LAG is written -0.
-    [Fact(Skip = "#131: a -0.0 constant is the integer literal -0, which loses its sign")]
+    [Fact]
     public void KeepsSignOfNegativeZeroAsDefaultOfLag()
     {
         database.AssertSameRows(
@@ -42,7 +42,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #131: a -0.0 in a computed value is the integer literal -0.
-    [Fact(Skip = "#131: a -0.0 constant is the integer literal -0, which loses its sign")]
+    [Fact]
     public void KeepsSignOfNegativeZeroInAComputedValue()
     {
         database.AssertSameRows(
@@ -50,9 +50,19 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
         );
     }
 
+    // Whole double constants in the branches of a conditional are divided as
+    // doubles, not as the integers their digits alone would be.
+    [Fact]
+    public void DividesWholeDoubleConstantsAsDoubles()
+    {
+        database.AssertSameRows(
+            Orders.Select(o => new { o.Id, Half = (o.IsPaid ? 7.0 : 5.0) / 2.0 })
+        );
+    }
+
     // #131: 100000000f + x is 100000000f in single precision for small x, so the
     // difference is 0; computed in double precision it is x.
-    [Fact(Skip = "#131: float constants are untyped, so float arithmetic is double")]
+    [Fact]
     public void AddsFloatConstantsInSinglePrecision()
     {
         database.AssertSameRows(
@@ -68,7 +78,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #131: x.Score + 0.5f over a real column is t0."Score" + 0.5, double precision.
-    [Fact(Skip = "#131: float constants are untyped, so float arithmetic is double")]
+    [Fact]
     public void AddsFloatConstantsToARealColumnInSinglePrecision()
     {
         database.AssertSameRows(

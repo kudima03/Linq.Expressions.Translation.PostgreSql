@@ -229,6 +229,54 @@ public sealed record LiteralTests
         );
     }
 
+    // #131: the integer -0 is 0, so the negative zero is read from its text, also
+    // beside an operand of its type and as the first row of VALUES.
+    [Fact]
+    public void RendersNegativeZeroFromItsText()
+    {
+        Expression query = Orders
+            .Select(o => new { Zero = -0.0, Sum = o.Weight + -0.0 })
+            .Expression;
+        Expression values = new[] { -0.0, 1.5, -0.0 }.AsQueryable().Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST('-0' AS double precision) AS "Zero", t0."Weight" + CAST('-0' AS double precision) AS "Sum"
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Value"
+                FROM (VALUES (CAST('-0' AS double precision)), (1.5), (CAST('-0' AS double precision))) AS t0 ("Value")
+                """
+            ),
+            new PostgreSqlQuery(values).TextValue
+        );
+    }
+
+    // A whole double that no operand types is written with its point: as integers,
+    // the branches of the conditional would be divided as integers.
+    [Fact]
+    public void RendersWholeDoublesWithTheirPointWhereNothingTypesThem()
+    {
+        Expression query = Orders.Select(o => (o.IsPaid ? 7.0 : 5.0) / 2.0).Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CASE WHEN t0."IsPaid" THEN 7. ELSE 5. END / 2
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
     [Fact]
     public void RendersWholeDouble()
     {
@@ -237,7 +285,7 @@ public sealed record LiteralTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT 100000
+                SELECT 100000.
                 FROM "Order" AS t0
                 """
             ),
@@ -1289,7 +1337,8 @@ public sealed record LiteralTests
     [InlineData(float.NaN, "CAST('NaN' AS real)")]
     [InlineData(float.PositiveInfinity, "CAST('Infinity' AS real)")]
     [InlineData(float.NegativeInfinity, "CAST('-Infinity' AS real)")]
-    [InlineData(1.5f, "1.5")]
+    [InlineData(1.5f, "CAST(1.5 AS real)")]
+    [InlineData(-0f, "CAST('-0' AS real)")]
     public void RendersSpecialSingleValues(float value, string literal)
     {
         Expression query = Orders

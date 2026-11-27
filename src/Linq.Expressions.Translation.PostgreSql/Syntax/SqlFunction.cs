@@ -24,7 +24,7 @@ internal sealed class SqlFunction(
 
     public override void Render(SqlWriter writer, SqlMode mode)
     {
-        bool numeric = Unifying.Contains(name) && SqlWriter.IsNumeric(arguments);
+        bool numeric = SqlWriter.IsNumeric(arguments);
         _ = writer
             .Append(name + "(")
             .Join(arguments, argument => writer.Unified(argument, numeric))

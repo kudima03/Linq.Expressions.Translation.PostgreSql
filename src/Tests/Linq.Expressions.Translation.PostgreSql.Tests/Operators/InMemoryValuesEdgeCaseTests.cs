@@ -228,14 +228,14 @@ public sealed record InMemoryValuesEdgeCaseTests
             { () => Root<bool?>(true, null), "TRUE), (NULL" },
             {
                 () => Root(double.NaN, double.PositiveInfinity),
-                "CAST(CAST('NaN' AS double precision) AS double precision)), "
+                "CAST('NaN' AS double precision)), "
                     + "(CAST('Infinity' AS double precision)"
             },
             {
                 () => Root(1d, double.NegativeInfinity),
                 "CAST(1 AS double precision)), (CAST('-Infinity' AS double precision)"
             },
-            { () => Root(float.NaN, 0.1f), "CAST(CAST('NaN' AS real) AS real)), (0.1" },
+            { () => Root(float.NaN, 0.1f), "CAST('NaN' AS real)), (0.1" },
             {
                 () => Root(double.Epsilon, double.MaxValue),
                 "CAST(5E-324 AS double precision)), (1.7976931348623157E+308"
