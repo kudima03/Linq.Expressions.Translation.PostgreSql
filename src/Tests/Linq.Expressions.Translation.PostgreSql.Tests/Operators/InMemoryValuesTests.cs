@@ -583,8 +583,8 @@ public sealed record InMemoryValuesTests
             Sql.Valid(
                 """
                 SELECT t0."Value"
-                FROM (VALUES (3), (1), (2)) AS t0 ("Value")
-                ORDER BY t0."Value" DESC
+                FROM (VALUES (3, 0), (1, 1), (2, 2)) AS t0 ("Value", "$position")
+                ORDER BY t0."Value" DESC, t0."$position"
                 LIMIT 1 OFFSET 1
                 """
             ),

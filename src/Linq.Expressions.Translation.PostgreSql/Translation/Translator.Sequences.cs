@@ -89,7 +89,14 @@ internal sealed partial class Translator
                     )
                 ),
         ];
-        return new GroupingShape(group.Key, element, group.Filter, group.Distinct, keys);
+        return new GroupingShape(
+            group.Key,
+            element,
+            group.Filter,
+            group.Distinct,
+            keys,
+            group.Source
+        );
     }
 
     // The first or last element of a group in its order is the first of the array of
@@ -104,11 +111,11 @@ internal sealed partial class Translator
     {
         string name = call.Method.Name;
         bool last = name.StartsWith(nameof(Enumerable.Last), StringComparison.Ordinal);
-        IReadOnlyList<Ordering> order = group.Order ?? [];
+        IReadOnlyList<Ordering> order = group.Sequence;
         if (last && order.Count == 0)
         {
             throw new NotSupportedException(
-                $"'{name}' of a group is translated only once its elements are sorted with OrderBy: they have no order in SQL."
+                $"'{name}' of a group is translated only once its elements are sorted with OrderBy, or come from an ordered source: they have no order in SQL."
             );
         }
         SqlExpression? filter =
@@ -122,15 +129,21 @@ internal sealed partial class Translator
                 $"'{name}' of a filtered group is not supported: where no element is left, .NET throws; use {name}OrDefault."
             );
         }
-        SqlExpression first = new SqlFirst(
-            element is ScalarShape scalar
-                ? scalar.Value
-                : throw new NotSupportedException(
-                    $"'{name}' of a group is translated for a single value only: select the value before {name}."
-                ),
-            [.. last ? order.Select(ordering => ordering.Inverted()) : order],
-            filter
-        );
+        SqlExpression value = element is ScalarShape scalar
+            ? scalar.Value
+            : throw new NotSupportedException(
+                $"'{name}' of a group is translated for a single value only: select the value before {name}."
+            );
+        // The first of the distinct values is the first value; the last of them is
+        // the one that occurs first the latest, not the last value.
+        SqlExpression first =
+            last && group.Distinct && !IsSortedByItself(group, value)
+                ? new SqlOccurrences(value, order, filter, true, value.Type)
+                : new SqlFirst(
+                    value,
+                    [.. last ? order.Select(ordering => ordering.Inverted()) : order],
+                    filter
+                );
         return filter is null ? first : Substituted(first, call.Type);
     }
 
@@ -368,8 +381,28 @@ internal sealed partial class Translator
         );
     }
 
-    // STRING_AGG(DISTINCT ...) orders by its value only, and would take a NULL for
-    // the empty string, which .NET joins as a value of its own.
+    // Whether the elements of a group are sorted by their value alone, in the order
+    // of the database or the ordinal one: their distinct values then come in that
+    // order whichever of equal values came first.
+    private static bool IsSortedByItself(GroupingShape group, SqlExpression value)
+    {
+        HashSet<string> keys =
+        [
+            .. (group.Order ?? []).Select(ordering => SqlWriter.Text(ordering.Key)),
+        ];
+        return keys.Count == 1
+            && (
+                keys.Contains(SqlWriter.Text(value))
+                || keys.Contains(SqlWriter.Text(CodeUnits(value)))
+            );
+    }
+
+    // The values of a group joined in the order they come in: the keys they are
+    // sorted by, then the order of the source. STRING_AGG(DISTINCT ...) orders by its
+    // value only, and would take a NULL for the empty string, which .NET joins as a
+    // value of its own: it joins the distinct values that are sorted by themselves,
+    // or come in no order at all, and are never null. In any other order the distinct
+    // values come by their first occurrences.
     private static SqlExpression Aggregated(GroupingShape group, SqlExpression separator)
     {
         SqlExpression value = Scalar(
@@ -378,25 +411,39 @@ internal sealed partial class Translator
                     "The elements of a group are not available once the groups have been paged, made distinct or combined; aggregate them before that."
                 )
         );
-        IReadOnlyList<Ordering> order = group.Order ?? [];
         if (!group.Distinct)
         {
-            return Aggregated(value, separator, false, order, group.Filter);
+            return Aggregated(value, separator, false, group.Sequence, group.Filter);
         }
-        HashSet<string> keys =
-        [
-            .. order.Select(ordering => SqlWriter.Text(ordering.Key)),
-        ];
-        bool ordinal = order.Count > 0 && keys.Contains(SqlWriter.Text(CodeUnits(value)));
+        IReadOnlyList<Ordering> sorted = group.Order ?? [];
+        bool ordinal = sorted.Any(ordering =>
+            SqlWriter.Text(ordering.Key) == SqlWriter.Text(CodeUnits(value))
+        );
         SqlExpression argument = ordinal ? CodeUnits(value) : value;
-        if (
-            value.Nullable
-            || keys.Count > 1
-            || (order.Count > 0 && !keys.Contains(SqlWriter.Text(argument)))
-        )
+        bool byValue =
+            sorted.Count == 0 ? group.Source.Count == 0 : IsSortedByItself(group, value);
+        if (!byValue || (value.Nullable && sorted.Count > 0))
+        {
+            return new SqlFunction(
+                "ARRAY_TO_STRING",
+                [
+                    new SqlOccurrences(
+                        value,
+                        group.Sequence,
+                        group.Filter,
+                        false,
+                        typeof(string[])
+                    ),
+                    separator,
+                    Text(string.Empty),
+                ],
+                typeof(string)
+            );
+        }
+        if (value.Nullable)
         {
             throw new NotSupportedException(
-                "string.Join of the distinct values of a group is translated only for values that are never null and are sorted by themselves: STRING_AGG(DISTINCT ...) orders by its value."
+                "string.Join of the distinct values of a group that may be null is translated only once they come in an order, their own or the source's: STRING_AGG(DISTINCT ...) would take a NULL for the empty string."
             );
         }
         SqlExpression joined = Aggregated(
@@ -404,7 +451,7 @@ internal sealed partial class Translator
             separator,
             true,
             [
-                .. order
+                .. sorted
                     .Take(1)
                     .Select(ordering => new Ordering(argument, ordering.Descending)),
             ],

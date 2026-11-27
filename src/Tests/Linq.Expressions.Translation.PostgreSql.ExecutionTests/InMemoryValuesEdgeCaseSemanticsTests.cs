@@ -25,7 +25,7 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         return Customers.Where(c => c.Id == 1).SelectMany(c => values);
     }
 
-    [Fact(Skip = "#134: Distinct().Take(n) of an in-memory sequence ignores its order")]
+    [Fact]
     public void TakesFirstDistinctValuesInSequenceOrder()
     {
         // SELECT DISTINCT t0."Value" FROM (VALUES (3), (1), (3), (2)) AS t0 ("Value")
@@ -33,7 +33,7 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         database.AssertSameRows(new[] { 3, 1, 3, 2 }.AsQueryable().Distinct().Take(2));
     }
 
-    [Fact(Skip = "#134: GroupBy().Take(n) of an in-memory sequence ignores its order")]
+    [Fact]
     public void TakesFirstGroupsInSequenceOrder()
     {
         // SELECT t0."Value" FROM (VALUES (3), (1), (3), (2)) AS t0 ("Value")

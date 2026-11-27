@@ -79,25 +79,27 @@ internal sealed partial class Translator
                     )
             )
         );
-        return new SelectQuery(
-            new ValuesSource(
-                [
-                    .. rows.Select(
-                        (row, number) =>
-                            (IReadOnlyList<SqlExpression>)
-                                [
-                                    .. row.Select(
-                                        (cell, index) =>
-                                            Cell(cell, columns[index].Type, number == 0)
-                                    ),
-                                ]
-                    ),
-                ],
-                [.. columns.Select(column => column.Name)],
-                alias
-            ),
-            Shaped(element, read)
+        ValuesSource source = new(
+            [
+                .. rows.Select(
+                    (row, number) =>
+                        (IReadOnlyList<SqlExpression>)
+                            [
+                                .. row.Select(
+                                    (cell, index) =>
+                                        Cell(cell, columns[index].Type, number == 0)
+                                ),
+                            ]
+                ),
+            ],
+            [.. columns.Select(column => column.Name)],
+            alias
         );
+        // The rows come in the order of the sequence, which breaks the ties of a sort.
+        return new SelectQuery(source, Shaped(element, read))
+        {
+            Ties = [new Ordering(new SqlPosition(source), false)],
+        };
     }
 
     // The kind of a column of DateTime values: theirs when they agree. A Local one

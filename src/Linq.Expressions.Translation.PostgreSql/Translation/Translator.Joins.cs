@@ -17,6 +17,7 @@ internal sealed partial class Translator
             Bind(Lambda(call, 3), inner.Shape)
         );
         outer.Joins.Add(new SqlJoin("INNER JOIN", inner.From!, condition));
+        Follow(outer, inner);
         Absorb(outer, inner);
         outer.Shape = Bind(Lambda(call, 4, 2), outer.Shape, inner.Shape);
         return outer;
@@ -175,6 +176,7 @@ internal sealed partial class Translator
     )
     {
         outer.Joins.Add(new SqlJoin(kind, inner.From!, condition));
+        Follow(outer, inner);
         return padding is null ? inner.Shape : Absent(inner.Shape, padding);
     }
 
@@ -186,6 +188,21 @@ internal sealed partial class Translator
             inner.Where
         );
         return group.Operators.Aggregate<MethodCallExpression, SqlQuery>(inner, Sequence);
+    }
+
+    // The rows of a join come in the order of the outer rows and, for each of them,
+    // of the inner ones: the positions of a joined in-memory sequence follow the
+    // order of the outer rows, or break the ties of a later one.
+    private static void Follow(SelectQuery outer, SelectQuery inner)
+    {
+        if (outer.Orderings.Count > 0 && outer.IsOrdered)
+        {
+            outer.Orderings.AddRange(inner.Ties);
+        }
+        else
+        {
+            outer.Ties.AddRange(inner.Ties);
+        }
     }
 
     private static void Absorb(SelectQuery outer, SelectQuery inner)

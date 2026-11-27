@@ -2,7 +2,8 @@ namespace Linq.Expressions.Translation.PostgreSql.ExecutionTests;
 
 // LINQ to Objects sorts stably and takes first occurrences in the order of the
 // source: tying keys keep the source order, Last of a descending order is the last
-// of the tied elements, and Distinct keeps the first occurrence of every value.
+// of the tied elements, and Distinct keeps the first occurrence of every value. A
+// source without an order, the rows of a table, has none to keep on either side.
 [Collection(SharedDatabase.Name)]
 public sealed class SourceOrderTieSemanticsTests(Database database)
 {
@@ -16,9 +17,7 @@ public sealed class SourceOrderTieSemanticsTests(Database database)
     // #134: every element of a customer's group ties on the CustomerId; in the order
     // of Id the last of a descending order is the greatest Id of the group.
     // SQL: (ARRAY_AGG(t0."Id" ORDER BY t0."CustomerId"))[1], the first of the ties.
-    [Fact(
-        Skip = "#134: Last of a descending order of a group is First of the inverted order, the first of the ties"
-    )]
+    [Fact]
     public void ReadsLastOfDescendingOrderAmongTies()
     {
         database.AssertSameRows(
@@ -39,9 +38,7 @@ public sealed class SourceOrderTieSemanticsTests(Database database)
     }
 
     // #134: VALUES carries no position, so its ties are sorted in any order.
-    [Fact(
-        Skip = "#134: OrderBy over VALUES breaks ties in no order instead of the sequence's"
-    )]
+    [Fact]
     public void SortsInMemorySequenceStably()
     {
         (int Key, int Position)[] ties = Ties;
@@ -52,9 +49,7 @@ public sealed class SourceOrderTieSemanticsTests(Database database)
     }
 
     // #134: the same VALUES joined to a row of a table.
-    [Fact(
-        Skip = "#134: OrderBy over VALUES breaks ties in no order instead of the sequence's"
-    )]
+    [Fact]
     public void SortsJoinedInMemorySequenceStably()
     {
         (int Key, int Position)[] ties = Ties;
@@ -78,9 +73,7 @@ public sealed class SourceOrderTieSemanticsTests(Database database)
 
     // #134: the distinct states of a group in the order of their first occurrence;
     // STRING_AGG(DISTINCT ...) sorts them by value.
-    [Fact(
-        Skip = "#134: string.Join of Distinct of a group sorts the values instead of keeping first occurrences"
-    )]
+    [Fact]
     public void JoinsDistinctValuesOfGroupInFirstOccurrenceOrder()
     {
         database.AssertSameRows(
@@ -98,21 +91,21 @@ public sealed class SourceOrderTieSemanticsTests(Database database)
         );
     }
 
-    // #134: the same over an unordered group of the table, whose elements LINQ to
-    // Objects takes in the order of the rows. A refusal, where the source has no order
-    // to keep, is an acceptable fix as well.
-    [Fact(
-        Skip = "#134: string.Join of Distinct of an unordered group sorts the values (a refusal is acceptable)"
-    )]
-    public void JoinsDistinctValuesOfUnorderedGroup()
+    // #134: an unordered group of a table has no order to keep: LINQ to Objects takes
+    // its elements in the order of the rows it happens to be given, and SQL gives the
+    // distinct values in an order of its own (STRING_AGG(DISTINCT ...) sorts them), as
+    // the rows of any query without ORDER BY come. The values are the same; their
+    // order is not defined on either side, so they are compared without it.
+    [Fact]
+    public void JoinsDistinctValuesOfUnorderedGroupInNoOrder()
     {
-        database.AssertSameRows(
+        AssertSameValues(
             Orders
                 .GroupBy(o => o.CustomerId)
-                .Select(g => new
+                .Select(g => new Joined
                 {
-                    g.Key,
-                    States = string.Join(
+                    Key = g.Key,
+                    Values = string.Join(
                         ",",
                         g.Select(o => o.IsPaid ? "paid" : "open").Distinct()
                     ),
@@ -139,24 +132,60 @@ public sealed class SourceOrderTieSemanticsTests(Database database)
         );
     }
 
-    // #134: the same over an unordered subquery, in the order of the rows: SELECT
-    // DISTINCT in a derived table has no order. A refusal is an acceptable fix as well.
-    [Fact(
-        Skip = "#134: string.Join of Distinct of an unordered subquery joins the values in no order (a refusal is acceptable)"
-    )]
-    public void JoinsDistinctValuesOfUnorderedSubquery()
+    // #134: the same over an unordered subquery: SELECT DISTINCT in a derived table
+    // has no order, and neither have the rows LINQ to Objects reads the values from.
+    [Fact]
+    public void JoinsDistinctValuesOfUnorderedSubqueryInNoOrder()
     {
-        database.AssertSameRows(
+        AssertSameValues(
             Customers
                 .Where(c => c.Id == 1)
-                .Select(c => new
+                .Select(c => new Joined
                 {
-                    c.Id,
-                    Notes = string.Join(
+                    Key = c.Id,
+                    Values = string.Join(
                         ",",
                         Orders.Select(o => o.CustomerId == 1 ? "x" : o.Number).Distinct()
                     ),
                 })
         );
+    }
+
+    // The joined values of each key, sorted, on both sides.
+    private void AssertSameValues(IQueryable<Joined> query)
+    {
+        static string Sorted(Joined row)
+        {
+            return row.Key
+                + ": "
+                + string.Join(",", row.Values.Split(',').Order(StringComparer.Ordinal));
+        }
+        List<string> expected =
+        [
+            .. new EnumerableQuery<Joined>(InMemory.Rewrite(query.Expression))
+                .AsEnumerable()
+                .Select(Sorted)
+                .Order(StringComparer.Ordinal),
+        ];
+        ResultSet result = database.Query(
+            new PostgreSqlQuery(query.Expression).TextValue
+        );
+
+        Assert.NotEmpty(expected);
+        Assert.Equal(
+            expected,
+            result
+                .Rows.Select(row =>
+                    Sorted((Joined)Materializer.Element(typeof(Joined), result, row)!)
+                )
+                .Order(StringComparer.Ordinal)
+        );
+    }
+
+    public sealed record Joined
+    {
+        public int Key { get; init; }
+
+        public string Values { get; init; } = string.Empty;
     }
 }

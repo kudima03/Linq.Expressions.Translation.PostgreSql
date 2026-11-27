@@ -806,9 +806,7 @@ public sealed class StringAggregationEdgeCaseSemanticsTests(Database database)
     // In LINQ to Objects the elements of a group keep the order of the source; the
     // groups come in that order (ORDER BY MAX(t0."Id") DESC), but STRING_AGG has no
     // ORDER BY: "A-001,A-002,a-003" instead of "a-003,A-002,A-001".
-    [Fact(
-        Skip = "#134: string.Join of a group ignores the order of the source before GroupBy"
-    )]
+    [Fact]
     public void JoinsGroupsOfOrderedSourceInSourceOrder()
     {
         database.AssertSameRows(

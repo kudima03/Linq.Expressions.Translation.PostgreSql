@@ -19,7 +19,7 @@ internal sealed partial class Translator
         SqlQuery query = Query(Evaluator.Evaluate(expression));
         _ = Ungrouped(query.Shape);
         Read(query, query.Kinds());
-        SqlWriter writer = new();
+        SqlWriter writer = new(true);
         query.Render(writer);
         return writer.ToString();
     }
@@ -346,6 +346,7 @@ internal sealed partial class Translator
         // ordering follow every key of the later one, those of its ThenBy included.
         if (!then)
         {
+            Sequenced(query);
             query.Inherited = query.Orderings.Count;
         }
         int own = query.Orderings.Count - query.Inherited;
@@ -358,13 +359,44 @@ internal sealed partial class Translator
         return query;
     }
 
+    // The rows of an in-memory sequence come in its order, which no ORDER BY states
+    // while they are read as they are. A sort is given their positions to break its
+    // ties with, and so are the distinct values and the groups of the sequence when
+    // the first of them are taken, which are those that occur first.
+    private static void Sequenced(SelectQuery query)
+    {
+        if (query.Orderings.Count == 0)
+        {
+            query.Orderings = [.. query.Ties];
+        }
+    }
+
+    private SqlQuery Positioned(SqlQuery source)
+    {
+        if (source is not SelectQuery { Ties.Count: > 0, Orderings.Count: 0 } query)
+        {
+            return source;
+        }
+        if (query.Distinct)
+        {
+            query.Distinct = false;
+            Sequenced(query);
+            return Distinguished(query, query.Shape);
+        }
+        if (query.GroupBy is not null)
+        {
+            Sequenced(query);
+        }
+        return query;
+    }
+
     private SqlQuery Skip(SqlQuery source, int count)
     {
         if (count <= 0)
         {
             return source;
         }
-        SelectQuery query = Open(source, Barrier.Bound);
+        SelectQuery query = Open(Positioned(source), Barrier.Bound);
         query.Offset = (query.Offset ?? 0) + count;
         if (query.Limit is long limit)
         {
@@ -375,7 +407,7 @@ internal sealed partial class Translator
 
     private SelectQuery Take(SqlQuery source, int count)
     {
-        SelectQuery query = Open(source, Barrier.Bound);
+        SelectQuery query = Open(Positioned(source), Barrier.Bound);
         query.Limit = Math.Min(query.Limit ?? long.MaxValue, Math.Max(count, 0));
         return query;
     }
@@ -497,6 +529,10 @@ internal sealed partial class Translator
     private SelectQuery Reverse(SqlQuery source, MethodInfo method)
     {
         SelectQuery query = Open(source, Barrier.Paging);
+        if (!query.Distinct && query.GroupBy is null)
+        {
+            Sequenced(query);
+        }
         if (query.Orderings.Count == 0)
         {
             throw Unsupported.Method(method);

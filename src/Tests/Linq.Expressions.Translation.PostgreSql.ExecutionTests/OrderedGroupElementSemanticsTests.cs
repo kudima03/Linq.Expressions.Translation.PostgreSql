@@ -246,9 +246,7 @@ public sealed class OrderedGroupElementSemanticsTests(Database database)
     // The distinct values of 1 (paid), 2 (open) and 9 (paid) in the order of Id are
     // paid, open: the last is open, where the last of all values is paid.
     // SQL: (ARRAY_AGG(t0."IsPaid" ORDER BY t0."Id" DESC))[1], true instead of false.
-    [Fact(
-        Skip = "#134: Last of the distinct values of an ordered group is the value of the last element"
-    )]
+    [Fact]
     public void ReadsLastOfDistinctValues()
     {
         database.AssertSameRows(
@@ -411,9 +409,7 @@ public sealed class OrderedGroupElementSemanticsTests(Database database)
     // the one of the greatest Id in a descending source and the last the one of the
     // least. SQL: (ARRAY_AGG(t0."Id" ORDER BY t0."CustomerId" DESC))[1] for Last, the
     // source order lost: for the customer 1 both First and Last are 9, Last should be 1.
-    [Fact(
-        Skip = "#134: First of a sorted group breaks ties in no order instead of the source's order"
-    )]
+    [Fact]
     public void BreaksTiesInSourceOrder()
     {
         database.AssertSameRows(

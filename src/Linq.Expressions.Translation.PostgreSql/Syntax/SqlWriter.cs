@@ -2,9 +2,24 @@ using System.Text;
 
 namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 
-internal sealed class SqlWriter
+internal sealed class SqlWriter(bool emits = false)
 {
     private readonly StringBuilder _text = new();
+
+    // Whether what is written is the statement, or a part of it, and not the text
+    // of an expression that is only compared with another.
+    public bool Emits { get; } = emits;
+
+    // A writer for a part of what this one writes, to be appended to it.
+    public SqlWriter Part()
+    {
+        return new SqlWriter(Emits);
+    }
+
+    public SqlWriter Append(SqlWriter part)
+    {
+        return Append(part.ToString());
+    }
 
     public static string Text(SqlExpression expression)
     {
