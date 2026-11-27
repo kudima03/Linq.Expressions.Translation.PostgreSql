@@ -221,6 +221,43 @@ internal sealed partial class Translator
         return Restored(extreme, extreme.Nullable);
     }
 
+    // Max or Min of an array written in the query: of its elements, or of new T[n],
+    // which is n times the default of T.
+    private SqlExpression Listed(NewArrayExpression array, MethodCallExpression call)
+    {
+        return array.NodeType == ExpressionType.NewArrayInit
+            ? Extremes(array, call)
+            : Defaults(array, call);
+    }
+
+    // The extreme of n defaults is the default, null for a nullable T, and of no
+    // element nothing: NULL, as an aggregate over no row is where .NET throws.
+    private SqlExpression Defaults(NewArrayExpression array, MethodCallExpression call)
+    {
+        Type element = array.Type.GetElementType()!;
+        if (
+            call.Arguments.Count > 1
+            || array.Expressions.Count != 1
+            || !ScalarTypes.IsScalar(element)
+        )
+        {
+            throw Unsupported.Method(call.Method);
+        }
+        SqlConstant missing = new(null, call.Type);
+        return element.IsValueType && Nullable.GetUnderlyingType(element) is null
+            ? new SqlCase(
+                [
+                    new SqlWhen(
+                        Compare(">", Sql(array.Expressions[0]), Integer(0)),
+                        new SqlConstant(ScalarTypes.Default(element), element)
+                    ),
+                ],
+                missing,
+                call.Type
+            )
+            : missing;
+    }
+
     // new[] { a, b, ... }.Max() is GREATEST(a, b, ...) and Min() is LEAST(...): both
     // skip NULLs and are NULL when every value is, as Max and Min of a nullable or a
     // reference type are.

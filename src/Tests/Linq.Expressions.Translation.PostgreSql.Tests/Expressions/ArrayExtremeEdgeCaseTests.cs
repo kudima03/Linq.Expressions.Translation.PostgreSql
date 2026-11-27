@@ -88,9 +88,7 @@ public sealed record ArrayExtremeEdgeCaseTests
     // in C# 14, a parameter-free call that folds into its value as Enumerable.Max
     // does. Observed: NotSupportedException "The method 'MemoryExtensions.Max' is not
     // supported." for both selectors.
-    [Fact(
-        Skip = "#128: Max/Min of a captured array through MemoryExtensions is refused instead of folded"
-    )]
+    [Fact]
     public void FoldsSpanMaxOfCapturedArray()
     {
         int[] values = [3, 9, 4];

@@ -115,7 +115,22 @@ internal sealed partial class Translator
                 ? new SqlCast(constant, ScalarTypes.Number(type), value.Type)
             : constant.Value is null && Names.TryGetValue(type, out string? name)
                 ? new SqlCast(constant, name, value.Type)
+            : Element(type) is string element
+                ? new SqlCast(constant, element + "[]", value.Type)
             : value;
+    }
+
+    // The type of the elements of an array constant, which is of no type when it is
+    // null or empty; a byte[] is a bytea.
+    private static string? Element(Type type)
+    {
+        Type? element =
+            type.IsArray && type != typeof(byte[])
+                ? ScalarTypes.Underlying(type.GetElementType()!)
+                : null;
+        return element is null ? null
+            : ScalarTypes.IsNumber(element) ? ScalarTypes.Number(element)
+            : Names.GetValueOrDefault(element);
     }
 
     private static readonly Dictionary<Type, string> Names = new()

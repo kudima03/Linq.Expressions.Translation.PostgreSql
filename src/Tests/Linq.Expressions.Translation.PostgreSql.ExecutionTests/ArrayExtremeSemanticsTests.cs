@@ -275,9 +275,7 @@ public sealed class ArrayExtremeSemanticsTests(Database database)
 
     // new int[n] is n zeros, whose Max is 0, and new int?[n] n nulls, whose Max is
     // null. Observed: GREATEST(t0."Id"), the length taken for the only element.
-    [Fact(
-        Skip = "#128: Max/Min of new T[n] is GREATEST(n)/LEAST(n), the array's length read as its element"
-    )]
+    [Fact]
     public void TakesExtremesOfArraysOfDefaults()
     {
         database.AssertSameRows(

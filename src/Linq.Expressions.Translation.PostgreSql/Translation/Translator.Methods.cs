@@ -71,7 +71,7 @@ internal sealed partial class Translator
             : owner == typeof(MemoryExtensions)
             && name is nameof(Enumerable.Max) or nameof(Enumerable.Min)
             && Unspanned(call.Arguments[0]) is NewArrayExpression values
-                ? Extremes(values, call)
+                ? Listed(values, call)
             : name == nameof(Enumerable.Contains) && owner != typeof(string)
                 ? Membership(call)
             : name == nameof(long.Parse) && call.Object is null ? Parsed(call)
@@ -128,12 +128,11 @@ internal sealed partial class Translator
     private Shape Enumerated(MethodCallExpression call)
     {
         if (
-            call.Arguments[0]
-                is NewArrayExpression { NodeType: ExpressionType.NewArrayInit } values
+            call.Arguments[0] is NewArrayExpression values
             && call.Method.Name is nameof(Enumerable.Max) or nameof(Enumerable.Min)
         )
         {
-            return new ScalarShape(Extremes(values, call));
+            return new ScalarShape(Listed(values, call));
         }
         // An operator over a query or an in-memory sequence is the subquery of its
         // Queryable form; a collection searched for an item is a list of values.

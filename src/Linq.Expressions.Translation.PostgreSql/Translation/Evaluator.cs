@@ -50,6 +50,64 @@ internal sealed class Evaluator(HashSet<Expression> candidates) : ExpressionVisi
             : base.VisitBinary(node);
     }
 
+    // Max and Min of a captured array bind to MemoryExtensions over a span of it,
+    // which is no value an expression can be folded into: once the array is a
+    // constant, they are folded as Enumerable.Max and Enumerable.Min would be.
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        Expression visited = base.VisitMethodCall(node);
+        if (
+            visited
+                is not MethodCallExpression
+                {
+                    Arguments: [MethodCallExpression span]
+                } call
+            || call.Method.DeclaringType != typeof(MemoryExtensions)
+            || call.Method.Name is not (nameof(Enumerable.Max) or nameof(Enumerable.Min))
+            || span.Method.Name != "op_Implicit"
+            || span.Arguments is not [ConstantExpression { Value: Array items }]
+        )
+        {
+            return visited;
+        }
+        // Where it may not be reached, an extreme that fails is left as it is.
+        try
+        {
+            return Expression.Constant(
+                Extreme(items, call.Method.Name == nameof(Enumerable.Max)),
+                call.Type
+            );
+        }
+        catch (InvalidOperationException) when (_lazy)
+        {
+            return visited;
+        }
+    }
+
+    // The greatest or the least of the values, nulls skipped, as the default comparer
+    // orders them; of no value, null for a type that has it and a failure otherwise.
+    private static object? Extreme(Array items, bool greatest)
+    {
+        object? extreme = null;
+        foreach (object item in items.Cast<object?>().OfType<object>())
+        {
+            int order = extreme is null
+                ? 1
+                : System.Collections.Comparer.DefaultInvariant.Compare(item, extreme);
+            if (extreme is null || (greatest ? order > 0 : order < 0))
+            {
+                extreme = item;
+            }
+        }
+        Type element = items.GetType().GetElementType()!;
+        return
+            extreme is null
+            && element.IsValueType
+            && Nullable.GetUnderlyingType(element) is null
+            ? throw new InvalidOperationException("Sequence contains no elements")
+            : extreme;
+    }
+
     private Expression Lazily(Expression node)
     {
         bool lazy = _lazy;
