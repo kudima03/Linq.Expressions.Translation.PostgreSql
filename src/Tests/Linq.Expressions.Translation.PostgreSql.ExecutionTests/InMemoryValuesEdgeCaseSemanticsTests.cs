@@ -467,23 +467,21 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         );
     }
 
-    [Fact(Skip = "#130: a TimeOnly literal drops the ticks below a microsecond")]
-    public void KeepsTicksOfTimeOnly()
+    // PostgreSQL's time keeps microseconds: TIME '00:00:00' and TIME '23:59:59.999999'
+    // for new TimeOnly(1) and TimeOnly.MaxValue would be read back as other times, so
+    // the 100 ns ticks are refused, as those of a DateTime constant are.
+    [Fact]
+    public void RefusesTicksOfTimeOnly()
     {
-        // VALUES (TIME '00:00:00'), (TIME '23:59:59.999999') for new TimeOnly(1) and
-        // TimeOnly.MaxValue: the 100 ns ticks are truncated silently, where a DateTime
-        // constant with them is refused.
-        database.AssertSameRows(
-            new[] { new TimeOnly(1), TimeOnly.MaxValue }.AsQueryable()
-        );
+        AssertRefused(new[] { new TimeOnly(1), TimeOnly.MaxValue }.AsQueryable());
     }
 
-    [Fact(Skip = "#130: a TimeSpan literal drops the ticks below a microsecond")]
-    public void KeepsTicksOfTimeSpan()
+    // PostgreSQL rounds INTERVAL 'PT0.0000001S' to zero, which Distinct would take for
+    // the other row, so the 100 ns ticks are refused.
+    [Fact]
+    public void RefusesTicksOfTimeSpan()
     {
-        // VALUES (INTERVAL 'PT0.0000001S'), (INTERVAL 'PT0S'): PostgreSQL rounds the
-        // interval to microseconds, so both rows are zero and Distinct keeps one.
-        database.AssertSameRows(
+        AssertRefused(
             new[] { TimeSpan.FromTicks(1), TimeSpan.Zero }.AsQueryable().Distinct()
         );
     }
@@ -950,5 +948,13 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         database.AssertSameRows(
             Customers.SelectMany(c => Enumerable.Range(1, 2), (c, n) => new { c.Id, n })
         );
+    }
+
+    private static void AssertRefused<T>(IQueryable<T> query)
+    {
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query.Expression).TextValue
+        );
+        Assert.Contains("microsecond", exception.Message, StringComparison.Ordinal);
     }
 }

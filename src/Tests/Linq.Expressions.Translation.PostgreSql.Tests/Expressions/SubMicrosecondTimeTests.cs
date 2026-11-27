@@ -9,9 +9,7 @@ public sealed record SubMicrosecondTimeTests
 {
     // #130: TimeOnly.MaxValue renders as TIME '23:59:59.999999', the seventh digit
     // dropped by HH:mm:ss.FFFFFF.
-    [Fact(
-        Skip = "#130: a TimeOnly constant finer than a microsecond is truncated, not refused"
-    )]
+    [Fact]
     public void RefusesTimeConstantFinerThanMicrosecond()
     {
         Expression query = Orders
@@ -25,9 +23,7 @@ public sealed record SubMicrosecondTimeTests
     // #130: VALUES (TIME '23:59:59.999999'), (TIME '00:00:01') joined to the time
     // column matches the stored 23:59:59.999999 and 00:00:01, which the values
     // differ from.
-    [Fact(
-        Skip = "#130: VALUES of TimeOnly finer than a microsecond are truncated, not refused"
-    )]
+    [Fact]
     public void RefusesTimeValuesFinerThanMicrosecond()
     {
         Expression query = Orders
@@ -47,9 +43,7 @@ public sealed record SubMicrosecondTimeTests
     }
 
     // #130: INTERVAL 'PT0.0000015S', which PostgreSQL rounds to 00:00:00.000002.
-    [Fact(
-        Skip = "#130: a TimeSpan constant finer than a microsecond is rounded, not refused"
-    )]
+    [Fact]
     public void RefusesIntervalConstantFinerThanMicrosecond()
     {
         Expression query = Orders
@@ -61,9 +55,7 @@ public sealed record SubMicrosecondTimeTests
 
     // #130: VALUES (INTERVAL 'PT0.0000001S'), (INTERVAL 'PT0.0000015S'), which
     // PostgreSQL rounds to 00:00:00 and 00:00:00.000002.
-    [Fact(
-        Skip = "#130: VALUES of TimeSpan finer than a microsecond are rounded, not refused"
-    )]
+    [Fact]
     public void RefusesIntervalValuesFinerThanMicrosecond()
     {
         Expression query = new[] { TimeSpan.FromTicks(1), TimeSpan.FromTicks(15) }

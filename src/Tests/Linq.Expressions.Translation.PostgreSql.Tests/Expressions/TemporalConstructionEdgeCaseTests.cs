@@ -114,7 +114,7 @@ public sealed record TemporalConstructionEdgeCaseTests
             // Ticks and day numbers.
             {
                 o => new TimeOnly(o.Points * 10),
-                "MAKE_TIME(CASE WHEN ((t0.\"Points\" * 10) >= 0) AND ((t0.\"Points\" * 10) <= 863999999999) THEN 0 ELSE -1 END, 0, 0) + (((t0.\"Points\" * 10) / 10) * INTERVAL '1 microsecond')"
+                "MAKE_TIME(CASE WHEN ((t0.\"Points\" * 10) >= 0) AND ((t0.\"Points\" * 10) <= 863999999999) AND (((t0.\"Points\" * 10) % 10) = 0) THEN 0 ELSE -1 END, 0, 0) + (((t0.\"Points\" * 10) / 10) * INTERVAL '1 microsecond')"
             },
             {
                 o => DateOnly.FromDayNumber(o.Id).ToDateTime(new TimeOnly(o.Quantity, 0)),

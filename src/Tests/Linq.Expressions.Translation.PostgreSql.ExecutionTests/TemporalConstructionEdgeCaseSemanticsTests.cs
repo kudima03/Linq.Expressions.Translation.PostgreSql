@@ -918,38 +918,43 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
         );
     }
 
-    // A count of ticks below a microsecond is truncated, as PostgreSQL keeps none.
+    // A count of ticks below a microsecond fails, as PostgreSQL keeps none and would
+    // read the time back as another one.
     [Fact]
-    public void TruncatesTicksBelowMicrosecond()
+    public void FailsForTicksBelowMicrosecond()
     {
-        ResultSet result = database.Query(
-            new PostgreSqlQuery(
-                First.Select(o => new TimeOnly((o.Id * 10_000_000L) + 9)).Expression
-            ).TextValue
+        XunitException exception = Assert.Throws<XunitException>(() =>
+            database.Query(
+                new PostgreSqlQuery(
+                    First.Select(o => new TimeOnly((o.Id * 10_000_000L) + 9)).Expression
+                ).TextValue
+            )
         );
 
-        object?[] row = Assert.Single(result.Rows);
-        Assert.Equal(new TimeOnly(0, 0, 1), row[0]);
+        Assert.Contains("out of range", exception.Message, StringComparison.Ordinal);
     }
 
     // A TimeOnly constant finer than a microsecond is not what PostgreSQL compares:
-    // .NET orders 00:00:00 before 00:00:00.0000005 where TIME '00:00:00' is equal.
-    // Observed: the constant renders as TIME '00:00:00', truncated, where a DateTime
-    // constant finer than a microsecond is refused with NotSupportedException.
-    [Fact(
-        Skip = "#130: a TimeOnly constant finer than a microsecond is truncated silently"
-    )]
-    public void ComparesTimeConstantFinerThanMicrosecond()
+    // .NET orders 00:00:00 before 00:00:00.0000005 where TIME '00:00:00' is equal, so
+    // the constant is refused, as a DateTime constant finer than a microsecond is.
+    [Fact]
+    public void RefusesTimeConstantFinerThanMicrosecond()
     {
-        database.AssertSameRows(
-            Orders.Select(o => new
-            {
-                o.Id,
-                Later = o.DeliveryTime >= new TimeOnly(5),
-                Before = o.DeliveryTime
-                    < new TimeOnly(23, 59, 59).Add(TimeSpan.FromTicks(9_999_995)),
-            })
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(
+                Orders
+                    .Select(o => new
+                    {
+                        o.Id,
+                        Later = o.DeliveryTime >= new TimeOnly(5),
+                        Before = o.DeliveryTime
+                            < new TimeOnly(23, 59, 59).Add(TimeSpan.FromTicks(9_999_995)),
+                    })
+                    .Expression
+            ).TextValue
         );
+
+        Assert.Contains("microsecond", exception.Message, StringComparison.Ordinal);
     }
 
     private void AssertFails(IQueryable<object> failing)

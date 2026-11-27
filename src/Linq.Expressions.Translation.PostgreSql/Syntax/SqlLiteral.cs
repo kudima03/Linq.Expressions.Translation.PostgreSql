@@ -31,7 +31,7 @@ internal static class SqlLiteral
             DateOnly day =>
                 $"DATE '{day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}'",
             TimeOnly time =>
-                $"TIME '{time.ToString(Seconds, CultureInfo.InvariantCulture)}'",
+                $"TIME '{Whole(time).ToString(Seconds, CultureInfo.InvariantCulture)}'",
             TimeSpan span => $"INTERVAL '{Duration(span)}'",
             byte[] bytes => $"BYTEA '\\x{Convert.ToHexString(bytes).ToLowerInvariant()}'",
             Array items => Items(items),
@@ -126,13 +126,28 @@ internal static class SqlLiteral
             : $"TIMESTAMP '{Precise(moment)}'";
     }
 
+    // A time of day or a duration of a whole number of microseconds, as its type.
+    private static TimeOnly Whole(TimeOnly time)
+    {
+        _ = Whole(time.Ticks, "times");
+        return time;
+    }
+
     private static string Precise(DateTime moment)
     {
-        return moment.Ticks % 10 != 0
+        _ = Whole(moment.Ticks, "timestamps");
+        return moment.ToString("yyyy-MM-dd " + Seconds, CultureInfo.InvariantCulture);
+    }
+
+    // PostgreSQL keeps microseconds: a value finer than one would be read back as
+    // another value, truncated or rounded.
+    private static long Whole(long ticks, string type)
+    {
+        return ticks % TimeSpan.TicksPerMicrosecond != 0
             ? throw new NotSupportedException(
-                "PostgreSQL timestamps are limited to microsecond precision."
+                $"PostgreSQL {type} are limited to microsecond precision."
             )
-            : moment.ToString("yyyy-MM-dd " + Seconds, CultureInfo.InvariantCulture);
+            : ticks;
     }
 
     private static string Offset(DateTimeOffset moment)
@@ -144,6 +159,7 @@ internal static class SqlLiteral
 
     private static string Duration(TimeSpan span)
     {
+        _ = Whole(span.Ticks, "intervals");
         string date = span.Days == 0 ? string.Empty : $"{span.Days}D";
         decimal seconds =
             (decimal)(span.Ticks % TimeSpan.TicksPerMinute) / TimeSpan.TicksPerSecond;

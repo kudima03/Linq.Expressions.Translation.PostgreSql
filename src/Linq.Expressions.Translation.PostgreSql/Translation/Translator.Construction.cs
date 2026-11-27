@@ -115,13 +115,30 @@ internal sealed partial class Translator
     }
 
     // new TimeOnly(ticks): the ticks of a time of day are under a day, and a time
-    // plus an interval wraps around midnight.
+    // plus an interval wraps around midnight. PostgreSQL keeps microseconds, so ticks
+    // that are not a whole number of them fail, as a constant finer than a
+    // microsecond is refused, instead of being read back as another time.
     private static SqlBinary ClockOfTicks(SqlExpression ticks)
     {
         SqlFunction midnight = new(
             "MAKE_TIME",
             [
-                Guarded(Integer(0), [Within(ticks, 0, TimeSpan.TicksPerDay - 1)], -1),
+                Guarded(
+                    Integer(0),
+                    [
+                        Within(ticks, 0, TimeSpan.TicksPerDay - 1),
+                        Compare(
+                            "=",
+                            Calculate(
+                                "%",
+                                ticks,
+                                Integer((int)TimeSpan.TicksPerMicrosecond)
+                            ),
+                            Integer(0)
+                        ),
+                    ],
+                    -1
+                ),
                 Integer(0),
                 Integer(0),
             ],

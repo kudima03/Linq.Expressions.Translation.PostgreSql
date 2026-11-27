@@ -14,9 +14,7 @@ public sealed class SubMicrosecondTimeSemanticsTests(Database database)
     // #130: MAKE_TIME(...) + ((ticks / 10) * INTERVAL '1 microsecond') drops the
     // ticks below a microsecond, so 15 ticks read back as 00:00:00.000001 where .NET
     // gives 00:00:00.0000015.
-    [Fact(
-        Skip = "#130: new TimeOnly(ticks) of computed ticks truncates the ticks below a microsecond instead of refusing them"
-    )]
+    [Fact]
     public void RefusesTimeOfTicksFinerThanMicrosecond()
     {
         IQueryable<TimeOnly> query = First.Select(o => new TimeOnly(o.Id * 15L));
@@ -29,9 +27,7 @@ public sealed class SubMicrosecondTimeSemanticsTests(Database database)
     }
 
     // #130: the same ticks below a microsecond added to a time of day.
-    [Fact(
-        Skip = "#130: new TimeOnly(ticks) of computed ticks truncates the ticks below a microsecond instead of refusing them"
-    )]
+    [Fact]
     public void RefusesTimeOfDayWithTicksFinerThanMicrosecond()
     {
         AssertRefused(
