@@ -240,7 +240,7 @@ public sealed class ArrayExtremeSemanticsTests(Database database)
     // U+E000..U+FFFF, where COLLATE "C" compares code points.
     // Observed: GREATEST('😀', U+FFFD) is '😀' where .NET's Max is U+FFFD.
     [Fact(
-        Skip = "Bug: Max/Min with StringComparer.Ordinal order surrogate pairs after U+E000..U+FFFF (code point, not UTF-16 order)"
+        Skip = "#128: Max/Min with StringComparer.Ordinal order surrogate pairs after U+E000..U+FFFF (code point, not UTF-16 order)"
     )]
     public void TakesOrdinalExtremesOfSurrogatePairs()
     {
@@ -278,7 +278,7 @@ public sealed class ArrayExtremeSemanticsTests(Database database)
     // new int[n] is n zeros, whose Max is 0, and new int?[n] n nulls, whose Max is
     // null. Observed: GREATEST(t0."Id"), the length taken for the only element.
     [Fact(
-        Skip = "Bug: Max/Min of new T[n] is GREATEST(n)/LEAST(n), the array's length read as its element"
+        Skip = "#128: Max/Min of new T[n] is GREATEST(n)/LEAST(n), the array's length read as its element"
     )]
     public void TakesExtremesOfArraysOfDefaults()
     {

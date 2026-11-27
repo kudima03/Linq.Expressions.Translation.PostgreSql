@@ -89,7 +89,7 @@ public sealed record ArrayExtremeEdgeCaseTests
     // does. Observed: NotSupportedException "The method 'MemoryExtensions.Max' is not
     // supported." for both selectors.
     [Fact(
-        Skip = "Bug: Max/Min of a captured array through MemoryExtensions is refused instead of folded"
+        Skip = "#128: Max/Min of a captured array through MemoryExtensions is refused instead of folded"
     )]
     public void FoldsSpanMaxOfCapturedArray()
     {

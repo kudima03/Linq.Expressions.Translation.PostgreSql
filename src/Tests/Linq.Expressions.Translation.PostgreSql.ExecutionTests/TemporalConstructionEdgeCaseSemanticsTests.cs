@@ -146,7 +146,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // range check: -1 tick is 0001-01-01 (the year 1), -10 ticks or -1 day a date in
     // 1 BC and DateTime.MaxValue.Ticks + 1 the year 10000.
     [Theory(
-        Skip = "Bug: new DateTime(ticks) does not fail on the server for ticks out of range"
+        Skip = "#128: new DateTime(ticks) does not fail on the server for ticks out of range"
     )]
     [MemberData(nameof(TicksPastBounds))]
     public void FailsForTicksOutOfRange(Func<IQueryable<Order>, IQueryable<object>> query)
@@ -180,7 +180,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // Observed: the statement succeeds with the year 10000, or -1 for the year
     // before 1 (1 BC), as date and timestamp arithmetic reaches far past 9999.
     [Theory(
-        Skip = "Bug: date and timestamp arithmetic does not fail past 9999-12-31 or before 0001-01-01"
+        Skip = "#128: date and timestamp arithmetic does not fail past 9999-12-31 or before 0001-01-01"
     )]
     [MemberData(nameof(ShiftedPastBounds))]
     public void FailsWhenShiftedPastBound(
@@ -350,7 +350,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // the statement, though no row reaches the branch.
     // Observed: "time field value out of range: -1:00:60" for the first of them.
     [Fact(
-        Skip = "Bug: a constant part out of range fails the statement at planning time, even in a branch no row reaches"
+        Skip = "#128: a constant part out of range fails the statement at planning time, even in a branch no row reaches"
     )]
     public void LeavesUnreachedConstantPartsOutOfRange()
     {
@@ -371,7 +371,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     }
 
     [Fact(
-        Skip = "Bug: a constant part out of range fails the statement at planning time, even in a branch no row reaches"
+        Skip = "#128: a constant part out of range fails the statement at planning time, even in a branch no row reaches"
     )]
     public void LeavesUnreachedFoldedPartsOutOfRange()
     {
@@ -505,7 +505,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // negative. Observed: time - time is a negative interval for an earlier time,
     // 09:00 - 12:02 is -03:02:00 where .NET gives 20:58:00.
     [Fact(
-        Skip = "Bug: TimeOnly subtraction is time - time, negative where .NET wraps around midnight"
+        Skip = "#128: TimeOnly subtraction is time - time, negative where .NET wraps around midnight"
     )]
     public void SubtractsTimesAroundMidnight()
     {
@@ -656,7 +656,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // day and date PostgreSQL reads in the session zone (America/New_York), so Hour
     // of 2024-01-01 02:00 UTC is 21 instead of 2.
     [Fact(
-        Skip = "Bug: a DateTime constructed with DateTimeKind.Utc is a timestamptz, read in the session time zone"
+        Skip = "#128: a DateTime constructed with DateTimeKind.Utc is a timestamptz, read in the session time zone"
     )]
     public void ReadsMembersOfUtcTimestampsAsWritten()
     {
@@ -694,7 +694,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // Observed: the timestamptz compares with the timestamp column and the TIMESTAMP
     // constant through the session zone, five hours later.
     [Fact(
-        Skip = "Bug: a DateTime constructed with DateTimeKind.Utc compares with a DateTime through the session time zone"
+        Skip = "#128: a DateTime constructed with DateTimeKind.Utc compares with a DateTime through the session time zone"
     )]
     public void ComparesUtcTimestampsByTicks()
     {
@@ -722,7 +722,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // Observed: timestamptz - timestamp converts the timestamp through the session
     // zone, and adding a day across the change to daylight saving time adds 23 hours.
     [Fact(
-        Skip = "Bug: arithmetic on a DateTime constructed with DateTimeKind.Utc follows the session time zone"
+        Skip = "#128: arithmetic on a DateTime constructed with DateTimeKind.Utc follows the session time zone"
     )]
     public void ComputesWithUtcTimestampsByTicks()
     {
@@ -748,7 +748,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // Observed: UNION and GREATEST resolve timestamptz and timestamp to timestamptz,
     // so the column's values shift by the session zone's offset.
     [Fact(
-        Skip = "Bug: a DateTime constructed with DateTimeKind.Utc shifts a DateTime it is combined with by the session time zone"
+        Skip = "#128: a DateTime constructed with DateTimeKind.Utc shifts a DateTime it is combined with by the session time zone"
     )]
     public void CombinesUtcTimestampsWithColumns()
     {
@@ -937,7 +937,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // Observed: the constant renders as TIME '00:00:00', truncated, where a DateTime
     // constant finer than a microsecond is refused with NotSupportedException.
     [Fact(
-        Skip = "Bug: a TimeOnly constant finer than a microsecond is truncated silently"
+        Skip = "#128: a TimeOnly constant finer than a microsecond is truncated silently"
     )]
     public void ComparesTimeConstantFinerThanMicrosecond()
     {

@@ -274,7 +274,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // Observed: 42804: recursive query "t1" column 2 has type real in
     // non-recursive term but type double precision overall (t2."Value" * 2).
     [Fact(
-        Skip = "Bug: float arithmetic of the step is double precision, not the seed's real"
+        Skip = "#128: float arithmetic of the step is double precision, not the seed's real"
     )]
     public void ScalesRealsTypedByARealColumn()
     {
@@ -296,7 +296,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // Observed: 42804: recursive query "t1" column 2 has type real in
     // non-recursive term but type double precision overall (t2."Value" + 0.5).
     [Fact(
-        Skip = "Bug: float arithmetic of the step is double precision, not the seed's real"
+        Skip = "#128: float arithmetic of the step is double precision, not the seed's real"
     )]
     public void AddsRealConstantsInTheStep()
     {
@@ -313,7 +313,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
 
     // Observed: 42804: recursive query "t1" column 3 has type text in
     // non-recursive term but type text[] overall (the seed writes NULL AS "Tags").
-    [Fact(Skip = "Bug: a null array constant of the seed is not cast to its array type")]
+    [Fact(Skip = "#128: a null array constant of the seed is not cast to its array type")]
     public void ReadsArraysFromANullSeedColumn()
     {
         database.AssertSameRows(
@@ -348,7 +348,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // Observed: 42804: recursive query "t1" column 3 has type text in
     // non-recursive term but type text[] overall (the seed writes '{}' AS "Tags").
     [Fact(
-        Skip = "Bug: an empty array constant of the seed is not cast to its array type"
+        Skip = "#128: an empty array constant of the seed is not cast to its array type"
     )]
     public void ReadsArraysFromAnEmptyArraySeedColumn()
     {
@@ -643,7 +643,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
 
     // Observed: ArgumentException: An item with the same key has already been
     // added. Key: Id (the step's columns are matched ignoring case).
-    [Fact(Skip = "Bug: columns whose names differ in case only throw ArgumentException")]
+    [Fact(Skip = "#128: columns whose names differ in case only throw ArgumentException")]
     public void KeepsColumnsWhoseNamesDifferInCaseOnly()
     {
         database.AssertSameRows(
@@ -1202,7 +1202,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // INNER JOIN (WITH RECURSIVE t2 AS (... WHERE t1."Id" = t0."Id" ...)) AS t5
     // ON TRUE, without LATERAL.
     [Fact(
-        Skip = "Bug: a correlated recursion flattened by SelectMany is joined without LATERAL"
+        Skip = "#128: a correlated recursion flattened by SelectMany is joined without LATERAL"
     )]
     public void FlattensARecursionFromACorrelatedSeed()
     {
@@ -1244,7 +1244,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // FROM t1 AS t2 INNER JOIN (WITH RECURSIVE t4 AS (... = t2."Value" ...)) AS t6
     // ON TRUE, without LATERAL.
     [Fact(
-        Skip = "Bug: a correlated recursion flattened by SelectMany is joined without LATERAL"
+        Skip = "#128: a correlated recursion flattened by SelectMany is joined without LATERAL"
     )]
     public void FlattensARecursionCorrelatedWithTheLevelInTheStep()
     {
@@ -1322,7 +1322,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // Observed: the statement returns no row, as WHERE FALSE around the derived
     // table lets PostgreSQL skip the recursion; LINQ to Objects fails.
     [Fact(
-        Skip = "Bug: the depth limit does not fail when the query around it filters out every row"
+        Skip = "#128: the depth limit does not fail when the query around it filters out every row"
     )]
     public void FailsBeyondTheMaximumDepthUnderAFalseFilter()
     {
@@ -1331,7 +1331,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
 
     // Observed: the statement returns no row, as the join with an empty side lets
     // PostgreSQL skip the recursion; LINQ to Objects reads the outer rows and fails.
-    [Fact(Skip = "Bug: the depth limit does not fail when joined with an empty side")]
+    [Fact(Skip = "#128: the depth limit does not fail when joined with an empty side")]
     public void FailsBeyondTheMaximumDepthWhenJoinedWithNoRows()
     {
         AssertTooDeep(

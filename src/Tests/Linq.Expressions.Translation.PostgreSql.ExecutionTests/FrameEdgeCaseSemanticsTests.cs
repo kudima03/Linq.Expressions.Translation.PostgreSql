@@ -160,7 +160,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     // its Min returns it; PostgreSQL orders NaN above every number, so MAX is NaN
     // and MIN skips it. Observed for order 10 (frame 9, 10, 11): Max NaN, Min 1.5;
     // .NET gives Max 2.5 and Min NaN.
-    [Fact(Skip = "Bug: Min and Max of doubles over a frame order NaN as PostgreSQL does")]
+    [Fact(Skip = "#128: Min and Max of doubles over a frame order NaN as PostgreSQL does")]
     public void TakesTheExtremesOfDoublesWithNaNAsDotNet()
     {
         database.AssertSameRows(
@@ -184,7 +184,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     // Observed for order 10 (NaN): Before 12 where .NET gives 1, and the frame
     // from UNBOUNDED PRECEDING to 1 PRECEDING holds every row where .NET holds only
     // the NaN row (and order 12, -2.5, finds 0 rows where .NET finds the NaN row).
-    [Fact(Skip = "Bug: a window ordered by a double sorts NaN last, .NET sorts it first")]
+    [Fact(Skip = "#128: a window ordered by a double sorts NaN last, .NET sorts it first")]
     public void OrdersAWindowByADoubleWithNaNAsDotNet()
     {
         database.AssertSameRows(
@@ -210,7 +210,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     // In .NET NaN > 2 is false; in PostgreSQL NaN is greater than every number, so
     // FILTER (WHERE "Weight" > 2) counts order 10. Observed for orders 9, 10 and 11
     // (frames holding order 10): one row more than .NET counts.
-    [Fact(Skip = "Bug: a frame filter comparing a double counts NaN as greater")]
+    [Fact(Skip = "#128: a frame filter comparing a double counts NaN as greater")]
     public void FiltersTheRowsOfAFrameByADoubleWithNaN()
     {
         database.AssertSameRows(
@@ -258,7 +258,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     // ERROR: RANGE with offset PRECEDING/FOLLOWING is not supported for column type
     // integer and offset type numeric (the offset 0.5 is a numeric literal).
     [Fact(
-        Skip = "Bug: a fractional RANGE offset over an integer key fails in PostgreSQL"
+        Skip = "#128: a fractional RANGE offset over an integer key fails in PostgreSQL"
     )]
     public void RangesByAFractionOverAnIntegerKey()
     {
@@ -275,7 +275,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
 
     // ERROR: RANGE with offset PRECEDING/FOLLOWING is not supported for column type
     // bigint and offset type numeric.
-    [Fact(Skip = "Bug: a fractional RANGE offset over a bigint key fails in PostgreSQL")]
+    [Fact(Skip = "#128: a fractional RANGE offset over a bigint key fails in PostgreSQL")]
     public void RangesByAFractionOverABigintKey()
     {
         database.AssertSameRows(
@@ -292,7 +292,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     // ERROR: RANGE with offset PRECEDING/FOLLOWING is not supported for column type
     // integer and offset type numeric (79228162514264337593543950335 is no bigint).
     [Fact(
-        Skip = "Bug: a RANGE offset beyond bigint over an integer key fails in PostgreSQL"
+        Skip = "#128: a RANGE offset beyond bigint over an integer key fails in PostgreSQL"
     )]
     public void RangesByTheLargestDecimalOverAnIntegerKey()
     {
@@ -340,7 +340,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     }
 
     // ERROR: bigint out of range (9223372036854775808 PRECEDING).
-    [Fact(Skip = "Bug: Rows(long.MinValue, ...) writes an offset beyond bigint")]
+    [Fact(Skip = "#128: Rows(long.MinValue, ...) writes an offset beyond bigint")]
     public void CountsRowsFromTheSmallestLong()
     {
         database.AssertSameRows(
@@ -376,7 +376,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
 
     // ERROR: interval field value out of range: "2147483648 months", whatever the
     // rows: the statement does not plan even over no row.
-    [Fact(Skip = "Bug: RangeMonths(int.MinValue, ...) writes an interval out of range")]
+    [Fact(Skip = "#128: RangeMonths(int.MinValue, ...) writes an interval out of range")]
     public void PlansAFrameFromTheSmallestMonthOffset()
     {
         string sql = new PostgreSqlQuery(
@@ -714,7 +714,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     // for the first row, which the translator takes for non-nullable: observed
     // '#' || MAX(...) is NULL and MIN(...) <> 'A-001' is NULL, where .NET gives "#"
     // and true.
-    [Fact(Skip = "Bug: Min/Max of strings over a maybe-empty frame is taken as non-null")]
+    [Fact(Skip = "#128: Min/Max of strings over a maybe-empty frame is taken as non-null")]
     public void ComposesTheExtremeStringOfAFrameThatMayBeEmpty()
     {
         database.AssertSameRows(
@@ -758,7 +758,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
 
     // ERROR: aggregate functions are not allowed in FILTER, from
     // COUNT(*) FILTER (WHERE CAST(COUNT(*) AS integer) > 1) OVER (...) ... GROUP BY.
-    [Fact(Skip = "Bug: a frame filter on a group aggregate puts an aggregate in FILTER")]
+    [Fact(Skip = "#128: a frame filter on a group aggregate puts an aggregate in FILTER")]
     public void FiltersTheGroupsOfAFrameByTheirAggregates()
     {
         database.AssertSameRows(
@@ -873,7 +873,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
 
     // ERROR: window function calls cannot be nested, from
     // MAX(CAST(COALESCE(SUM(t0."Quantity") OVER (...), 0) AS integer)) OVER ().
-    [Fact(Skip = "Bug: an aggregate over an Over's rows in its projection nests windows")]
+    [Fact(Skip = "#128: an aggregate over an Over's rows in its projection nests windows")]
     public void AggregatesTheRowsOfAnOverBesideThem()
     {
         IQueryable<RunningQuantity> running = Trees.Over(

@@ -594,7 +594,7 @@ public sealed class StringAggregationEdgeCaseSemanticsTests(Database database)
     // 42803: column "t0.Id" must appear in the GROUP BY clause or be used in an
     // aggregate function.
     [Fact(
-        Skip = "Bug: an aggregate of a subquery over outer values only is evaluated in the outer query"
+        Skip = "#128: an aggregate of a subquery over outer values only is evaluated in the outer query"
     )]
     public void JoinsOuterValuesOfSubqueries()
     {
@@ -613,7 +613,7 @@ public sealed class StringAggregationEdgeCaseSemanticsTests(Database database)
     // SELECT t0."Id", (SELECT COALESCE(STRING_AGG(t0."Region", ','), '') FROM "Order"
     // AS t1 WHERE t1."CustomerId" = t0."Id") FROM "Customer" AS t0 fails with 42803.
     [Fact(
-        Skip = "Bug: an aggregate of a GroupJoin group over outer values only is evaluated in the outer query"
+        Skip = "#128: an aggregate of a GroupJoin group over outer values only is evaluated in the outer query"
     )]
     public void JoinsOuterValuesOfGroupJoinGroups()
     {
@@ -807,7 +807,7 @@ public sealed class StringAggregationEdgeCaseSemanticsTests(Database database)
     // groups come in that order (ORDER BY MAX(t0."Id") DESC), but STRING_AGG has no
     // ORDER BY: "A-001,A-002,a-003" instead of "a-003,A-002,A-001".
     [Fact(
-        Skip = "Bug: string.Join of a group ignores the order of the source before GroupBy"
+        Skip = "#128: string.Join of a group ignores the order of the source before GroupBy"
     )]
     public void JoinsGroupsOfOrderedSourceInSourceOrder()
     {
@@ -827,7 +827,7 @@ public sealed class StringAggregationEdgeCaseSemanticsTests(Database database)
     // STRING_AGG(t0."Number", CAST(CAST(COUNT(*) AS integer) AS text) ORDER BY t0."Id")
     // fails with 42803: aggregate function calls cannot be nested.
     [Fact(
-        Skip = "Bug: a separator that aggregates the group is nested in STRING_AGG, which PostgreSQL rejects"
+        Skip = "#128: a separator that aggregates the group is nested in STRING_AGG, which PostgreSQL rejects"
     )]
     public void JoinsWithSeparatorsOfGroupAggregates()
     {
@@ -894,7 +894,7 @@ public sealed class StringAggregationEdgeCaseSemanticsTests(Database database)
     // "The test root only captures expression trees.", a real provider would run the
     // query on the client while translating.
     [Fact(
-        Skip = "Bug: string.Join of a captured IQueryable enumerates it instead of translating a subquery"
+        Skip = "#128: string.Join of a captured IQueryable enumerates it instead of translating a subquery"
     )]
     public void JoinsCapturedQueriesAsSubqueries()
     {
