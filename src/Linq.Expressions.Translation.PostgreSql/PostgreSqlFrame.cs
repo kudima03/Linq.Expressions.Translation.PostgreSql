@@ -12,11 +12,19 @@ namespace Linq.Expressions.Translation.PostgreSql;
 // seconds) or a number of calendar months, which no .NET type holds.
 public sealed record PostgreSqlFrame
 {
-    private PostgreSqlFrame(string textValue, FrameKind kind, bool includesCurrentRow)
+    private PostgreSqlFrame(
+        string textValue,
+        FrameKind kind,
+        bool includesCurrentRow,
+        decimal? start,
+        decimal? end
+    )
     {
         TextValue = textValue;
         Kind = kind;
         IncludesCurrentRow = includesCurrentRow;
+        Start = start;
+        End = end;
     }
 
     // The frame clause, e.g. ROWS BETWEEN 3 PRECEDING AND CURRENT ROW.
@@ -27,9 +35,21 @@ public sealed record PostgreSqlFrame
     // Whether the current row is always in its frame, which is never empty then.
     internal bool IncludesCurrentRow { get; }
 
+    // The offsets of the bounds, in the unit of the frame.
+    internal decimal? Start { get; }
+
+    internal decimal? End { get; }
+
+    // An offset of more rows than a bigint counts, long.MinValue, is of every row.
     public static PostgreSqlFrame Rows(long? start, long? end)
     {
-        return Framed("ROWS", start, end, Number, FrameKind.Rows);
+        return Framed(
+            "ROWS",
+            start,
+            end,
+            rows => Number(Math.Min(rows, long.MaxValue)),
+            FrameKind.Rows
+        );
     }
 
     public static PostgreSqlFrame Range(decimal? start, decimal? end)
@@ -48,13 +68,14 @@ public sealed record PostgreSqlFrame
         );
     }
 
+    // The months of an interval end at int.MaxValue, which stands for int.MinValue.
     public static PostgreSqlFrame RangeMonths(int? start, int? end)
     {
         return Framed(
             "RANGE",
             start,
             end,
-            months => $"INTERVAL '{Number(months)} months'",
+            months => $"INTERVAL '{Number(Math.Min(months, int.MaxValue))} months'",
             FrameKind.IntervalRange
         );
     }
@@ -98,7 +119,9 @@ public sealed record PostgreSqlFrame
                 kind == FrameKind.Rows || Math.Abs(first) == 1 || Math.Abs(last) == 1
                     ? kind
                     : FrameKind.Range,
-                first <= 0 && last >= 0
+                first <= 0 && last >= 0,
+                start,
+                end
             );
     }
 

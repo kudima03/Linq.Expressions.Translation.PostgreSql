@@ -918,4 +918,90 @@ public sealed record FrameEdgeCaseTests
             new PostgreSqlQuery(query).TextValue
         );
     }
+
+    public static TheoryData<decimal?, decimal?, string> WholeBounds =>
+        new()
+        {
+            { -1.5m, 0.5m, "1 PRECEDING AND 0 FOLLOWING" },
+            { 0.2m, 2.5m, "1 FOLLOWING AND 2 FOLLOWING" },
+            { -2.5m, -0.2m, "2 PRECEDING AND 1 PRECEDING" },
+            { -0.8m, -0.2m, "0 PRECEDING AND 1 PRECEDING" },
+            { null, 1.5m, "UNBOUNDED PRECEDING AND 1 FOLLOWING" },
+            { -1.5m, null, "1 PRECEDING AND UNBOUNDED FOLLOWING" },
+            { -1.5m, 0m, "1 PRECEDING AND CURRENT ROW" },
+            { -3m, 2m, "3 PRECEDING AND 2 FOLLOWING" },
+            { decimal.MinValue, 0m, "9223372036854775807 PRECEDING AND CURRENT ROW" },
+        };
+
+    // #123: PostgreSQL takes an integer offset over an integer key, so a fraction is
+    // the next whole offset inside the frame, which holds the same keys, and an
+    // offset past a bigint is the largest one.
+    [Theory]
+    [MemberData(nameof(WholeBounds))]
+    public void RangesByWholeOffsetsOverAnIntegerKey(
+        decimal? start,
+        decimal? end,
+        string bounds
+    )
+    {
+        Expression query = Trees
+            .Over(
+                Orders,
+                null,
+                rows => rows.OrderBy(o => o.Points),
+                PostgreSqlFrame.Range(start, end),
+                (o, w) => w.Rows.Count()
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                $"""
+                SELECT CAST(COUNT(*) OVER (ORDER BY t0."Points" RANGE BETWEEN {bounds}) AS integer)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // A fraction is kept over a key that has fractions.
+    [Fact]
+    public void RangesByAFractionOverADecimalKey()
+    {
+        Expression query = Trees
+            .Over(
+                Orders,
+                null,
+                rows => rows.OrderBy(o => o.Total),
+                PostgreSqlFrame.Range(-1.5m, 0.5m),
+                (o, w) => w.Rows.Count()
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(COUNT(*) OVER (ORDER BY t0."Total" RANGE BETWEEN 1.5 PRECEDING AND 0.5 FOLLOWING) AS integer)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // More rows than a bigint counts are every row, and the months of an interval
+    // end at int.MaxValue.
+    [Fact]
+    public void WritesTheLargestOffsetsPostgreSqlTakes()
+    {
+        Assert.Equal(
+            "ROWS BETWEEN 9223372036854775807 PRECEDING AND CURRENT ROW",
+            PostgreSqlFrame.Rows(long.MinValue, 0).TextValue
+        );
+        Assert.Equal(
+            "RANGE BETWEEN INTERVAL '2147483647 months' PRECEDING AND CURRENT ROW",
+            PostgreSqlFrame.RangeMonths(int.MinValue, 0).TextValue
+        );
+    }
 }

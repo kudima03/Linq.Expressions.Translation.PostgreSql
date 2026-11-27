@@ -261,9 +261,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
 
     // ERROR: RANGE with offset PRECEDING/FOLLOWING is not supported for column type
     // integer and offset type numeric (the offset 0.5 is a numeric literal).
-    [Fact(
-        Skip = "#123: a fractional RANGE offset over an integer key fails in PostgreSQL"
-    )]
+    [Fact]
     public void RangesByAFractionOverAnIntegerKey()
     {
         database.AssertSameRows(
@@ -279,7 +277,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
 
     // ERROR: RANGE with offset PRECEDING/FOLLOWING is not supported for column type
     // bigint and offset type numeric.
-    [Fact(Skip = "#123: a fractional RANGE offset over a bigint key fails in PostgreSQL")]
+    [Fact]
     public void RangesByAFractionOverABigintKey()
     {
         database.AssertSameRows(
@@ -295,9 +293,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
 
     // ERROR: RANGE with offset PRECEDING/FOLLOWING is not supported for column type
     // integer and offset type numeric (79228162514264337593543950335 is no bigint).
-    [Fact(
-        Skip = "#128: a RANGE offset beyond bigint over an integer key fails in PostgreSQL"
-    )]
+    [Fact]
     public void RangesByTheLargestDecimalOverAnIntegerKey()
     {
         database.AssertSameRows(
@@ -344,7 +340,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     }
 
     // ERROR: bigint out of range (9223372036854775808 PRECEDING).
-    [Fact(Skip = "#128: Rows(long.MinValue, ...) writes an offset beyond bigint")]
+    [Fact]
     public void CountsRowsFromTheSmallestLong()
     {
         database.AssertSameRows(
@@ -380,7 +376,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
 
     // ERROR: interval field value out of range: "2147483648 months", whatever the
     // rows: the statement does not plan even over no row.
-    [Fact(Skip = "#128: RangeMonths(int.MinValue, ...) writes an interval out of range")]
+    [Fact]
     public void PlansAFrameFromTheSmallestMonthOffset()
     {
         string sql = new PostgreSqlQuery(

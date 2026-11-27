@@ -69,12 +69,8 @@ internal sealed partial class Translator
             : throw new NotSupportedException(
                 "The frame of a window must be a constant, not computed for each row."
             );
-        if (frame is not null)
-        {
-            Framed(frame, order);
-        }
         WindowShape window = new(
-            new SqlWindow(partition, order, frame?.TextValue),
+            new SqlWindow(partition, order, frame is null ? null : Framed(frame, order)),
             query.Shape,
             frame?.IncludesCurrentRow ?? true
         );
@@ -147,25 +143,50 @@ internal sealed partial class Translator
             );
     }
 
-    // A RANGE with an offset needs exactly one key of a type the offset can be added
-    // to.
-    private static void Framed(PostgreSqlFrame frame, List<Ordering> order)
+    // The frame clause. A RANGE with an offset needs exactly one key of a type the
+    // offset can be added to.
+    private static string Framed(PostgreSqlFrame frame, List<Ordering> order)
     {
         if (frame.Kind is not (FrameKind.NumericRange or FrameKind.IntervalRange))
         {
-            return;
+            return frame.TextValue;
         }
         Type? key = order.Count == 1 ? ScalarTypes.Underlying(order[0].Key.Type) : null;
-        if (
-            key is null
+        return key is null
             || (frame.Kind == FrameKind.NumericRange && !ScalarTypes.IsNumber(key))
             || (frame.Kind == FrameKind.IntervalRange && !Spanned.Contains(key))
-        )
+                ? throw new NotSupportedException(
+                    "A RANGE frame with an offset needs the window to be ordered by exactly one key, a number for a numeric offset and a date, a time or a duration for an interval."
+                )
+            : frame.Kind == FrameKind.NumericRange && !Fractional.Contains(key)
+                ? "RANGE BETWEEN "
+                    + Whole(frame.Start, true)
+                    + " AND "
+                    + Whole(frame.End, false)
+            : frame.TextValue;
+    }
+
+    // A bound of a RANGE over an integer key. PostgreSQL takes an integer offset
+    // there, no numeric one: the keys from x + start to x + end are the integers from
+    // the next whole offset inside the frame, and an offset past a bigint is the
+    // largest one, which reaches every key.
+    private static string Whole(decimal? offset, bool start)
+    {
+        if (offset is not decimal value)
         {
-            throw new NotSupportedException(
-                "A RANGE frame with an offset needs the window to be ordered by exactly one key, a number for a numeric offset and a date, a time or a duration for an interval."
-            );
+            return start ? "UNBOUNDED PRECEDING" : "UNBOUNDED FOLLOWING";
         }
+        if (value == 0)
+        {
+            return "CURRENT ROW";
+        }
+        decimal distance = Math.Min(
+            start == (value < 0)
+                ? Math.Floor(Math.Abs(value))
+                : Math.Ceiling(Math.Abs(value)),
+            long.MaxValue
+        );
+        return SqlLiteral.Number(distance) + (value < 0 ? " PRECEDING" : " FOLLOWING");
     }
 
     // PostgreSqlWindow<TSource>.Rows, the rows of the frame.

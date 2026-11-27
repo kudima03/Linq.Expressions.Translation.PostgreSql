@@ -90,7 +90,7 @@ public sealed record FrameTests
             PostgreSqlFrame.RangeMonths(-1, 0).TextValue
         );
         Assert.Equal(
-            "RANGE BETWEEN INTERVAL '2147483648 months' PRECEDING AND INTERVAL '12 months' FOLLOWING",
+            "RANGE BETWEEN INTERVAL '2147483647 months' PRECEDING AND INTERVAL '12 months' FOLLOWING",
             PostgreSqlFrame.RangeMonths(int.MinValue, 12).TextValue
         );
         Assert.Equal(

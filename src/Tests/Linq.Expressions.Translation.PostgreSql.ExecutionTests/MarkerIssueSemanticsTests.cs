@@ -10,9 +10,7 @@ public sealed class MarkerIssueSemanticsTests(Database database)
 {
     // #123: the issue's frame, within a partition over a bigint key; over an integer
     // key, Range(-1.5, 0.5) holds the keys from 1 before to the current one.
-    [Fact(
-        Skip = "#123: a fractional RANGE offset over a bigint key fails in PostgreSQL (a refusal is an acceptable fix)"
-    )]
+    [Fact]
     public void SumsAFractionalRangeWithinAPartitionOverABigintKey()
     {
         database.AssertSameRows(
