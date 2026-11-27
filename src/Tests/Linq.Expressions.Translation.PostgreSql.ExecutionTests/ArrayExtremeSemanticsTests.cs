@@ -240,7 +240,7 @@ public sealed class ArrayExtremeSemanticsTests(Database database)
     // U+E000..U+FFFF, where COLLATE "C" compares code points.
     // Observed: GREATEST('😀', U+FFFD) is '😀' where .NET's Max is U+FFFD.
     [Fact(
-        Skip = "#128: Max/Min with StringComparer.Ordinal order surrogate pairs after U+E000..U+FFFF (code point, not UTF-16 order)"
+        Skip = "#133: Max/Min with StringComparer.Ordinal order surrogate pairs after U+E000..U+FFFF (code point, not UTF-16 order)"
     )]
     public void TakesOrdinalExtremesOfSurrogatePairs()
     {
