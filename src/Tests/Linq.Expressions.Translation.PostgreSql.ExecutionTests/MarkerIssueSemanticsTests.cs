@@ -28,9 +28,7 @@ public sealed class MarkerIssueSemanticsTests(Database database)
 
     // #124: the aggregate of the level's filtered rows in the step's projection is a
     // window aggregate of the step, as with a relational comparison.
-    [Fact(
-        Skip = "#124: an equality with an aggregate of the level throws KeyNotFoundException"
-    )]
+    [Fact]
     public void ComparesWithAWindowAggregateOfTheLevelForEquality()
     {
         database.AssertSameRows(
@@ -51,9 +49,7 @@ public sealed class MarkerIssueSemanticsTests(Database database)
     }
 
     // #124: the count of the level's filtered rows as the test of a conditional.
-    [Fact(
-        Skip = "#124: an equality with an aggregate of the level throws KeyNotFoundException"
-    )]
+    [Fact]
     public void TestsACountOfTheLevelForEqualityInAConditional()
     {
         database.AssertSameRows(

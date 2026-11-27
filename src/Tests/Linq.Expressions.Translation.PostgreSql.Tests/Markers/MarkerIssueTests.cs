@@ -52,9 +52,7 @@ public sealed record MarkerIssueTests
 
     // #124: Observed: KeyNotFoundException: The given key 'walk' was not present in
     // the dictionary (IsCorrelation looks the level parameter up in the bindings).
-    [Theory(
-        Skip = "#124: an equality reading the level parameter throws KeyNotFoundException"
-    )]
+    [Theory]
     [MemberData(nameof(Refused))]
     public void RefusesAnEqualityReadingTheLevelInAStepPostgreSqlRejects(
         Func<Expression> query

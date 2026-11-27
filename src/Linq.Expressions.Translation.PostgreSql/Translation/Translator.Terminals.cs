@@ -409,6 +409,7 @@ internal sealed partial class Translator
         return new SqlScalarSubquery(Take(source, count), call.Type);
     }
 
+    // The level of a recursion is a source, not a row: it is of no scope.
     private bool IsCorrelation(params Expression[] operands)
     {
         Parameters parameters = new();
@@ -417,7 +418,8 @@ internal sealed partial class Translator
             _ = parameters.Visit(operand);
         }
         return parameters
-                .Found.Select(parameter => _bindings[parameter].Scope)
+                .Found.Where(_bindings.ContainsKey)
+                .Select(parameter => _bindings[parameter].Scope)
                 .Distinct()
                 .Count() > 1;
     }
