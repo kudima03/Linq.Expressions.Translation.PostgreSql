@@ -19,6 +19,41 @@ internal sealed class SqlWriter
         return this;
     }
 
+    // PostgreSQL keeps the first 63 bytes of an identifier, so two column names that
+    // share them are one name to it, an ambiguous one.
+    public static void Distinguish(IEnumerable<string> names)
+    {
+        Dictionary<string, string> kept = [];
+        foreach (string name in names.Distinct())
+        {
+            string prefix = Kept(name);
+            if (!kept.TryAdd(prefix, name))
+            {
+                throw new NotSupportedException(
+                    $"The columns '{kept[prefix]}' and '{name}' share their first {IdentifierLength} bytes, which is all PostgreSQL keeps of a name: project fewer nested members."
+                );
+            }
+        }
+    }
+
+    private const int IdentifierLength = 63;
+
+    private static string Kept(string name)
+    {
+        int bytes = 0;
+        int length = 0;
+        foreach (Rune rune in name.EnumerateRunes())
+        {
+            bytes += rune.Utf8SequenceLength;
+            if (bytes > IdentifierLength)
+            {
+                break;
+            }
+            length += rune.Utf16SequenceLength;
+        }
+        return name[..length];
+    }
+
     public SqlWriter Identifier(string name)
     {
         return Append("\"" + name.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"");

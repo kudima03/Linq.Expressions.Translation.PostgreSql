@@ -168,13 +168,13 @@ public sealed class MarkerIssueSemanticsTests(Database database)
     }
 
     // #125: twelve nested value tuples under DISTINCT; the paths of the innermost
-    // members share their first 63 bytes ("item2." eleven times and more).
-    [Fact(
-        Skip = "#125: derived-table column paths past 63 bytes collide in PostgreSQL (a refusal is an acceptable fix)"
-    )]
-    public void ReadsNestedValueTuplesWhosePathsExceedTheIdentifierLength()
+    // members share their first 63 bytes ("item2." eleven times and more), which is
+    // all PostgreSQL keeps of a name, also of a column of the result: the columns
+    // are refused, where the statement failed on an ambiguous one.
+    [Fact]
+    public void RefusesNestedValueTuplesWhosePathsExceedTheIdentifierLength()
     {
-        database.AssertSameRows(
+        AssertRefused(
             Nest(
                     Nest(
                         Nest(
@@ -212,12 +212,10 @@ public sealed class MarkerIssueSemanticsTests(Database database)
 
     // #125: eleven windows over one another; every Over nests the row once more, so
     // the paths of the first row's columns share their first 63 bytes.
-    [Fact(
-        Skip = "#125: derived-table column paths past 63 bytes collide in PostgreSQL (a refusal is an acceptable fix)"
-    )]
-    public void StacksWindowsUntilTheirPathsExceedTheIdentifierLength()
+    [Fact]
+    public void RefusesWindowsStackedUntilTheirPathsExceedTheIdentifierLength()
     {
-        database.AssertSameRows(
+        AssertRefused(
             Counted(
                     Counted(
                         Counted(
@@ -267,6 +265,14 @@ public sealed class MarkerIssueSemanticsTests(Database database)
                 )
                 .Where(t => t.Item2 > 0)
         );
+    }
+
+    private static void AssertRefused<T>(IQueryable<T> query)
+    {
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query.Expression).TextValue
+        );
+        Assert.Contains("63 bytes", exception.Message, StringComparison.Ordinal);
     }
 
     private static IQueryable<ValueTuple<int, T>> Nest<T>(IQueryable<T> source)

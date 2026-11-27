@@ -57,7 +57,9 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
                 .Join(DistinctOn, key => writer.Render(key, SqlMode.Value))
                 .Append(") ");
         }
-        _ = writer.Join([.. Shape.Columns(), .. Hidden], column => column.Render(writer));
+        List<ProjectionColumn> columns = [.. Shape.Columns(), .. Hidden];
+        SqlWriter.Distinguish(columns.Select(column => column.Name).OfType<string>());
+        _ = writer.Join(columns, column => column.Render(writer));
         if (From is not null)
         {
             _ = writer.Append(" FROM ");
