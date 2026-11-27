@@ -643,7 +643,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
 
     // Observed: ArgumentException: An item with the same key has already been
     // added. Key: Id (the step's columns are matched ignoring case).
-    [Fact(Skip = "#128: columns whose names differ in case only throw ArgumentException")]
+    [Fact(Skip = "#142: columns whose names differ in case only throw ArgumentException")]
     public void KeepsColumnsWhoseNamesDifferInCaseOnly()
     {
         database.AssertSameRows(
@@ -1202,7 +1202,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // INNER JOIN (WITH RECURSIVE t2 AS (... WHERE t1."Id" = t0."Id" ...)) AS t5
     // ON TRUE, without LATERAL.
     [Fact(
-        Skip = "#128: a correlated recursion flattened by SelectMany is joined without LATERAL"
+        Skip = "#143: a correlated recursion flattened by SelectMany is joined without LATERAL"
     )]
     public void FlattensARecursionFromACorrelatedSeed()
     {
@@ -1244,7 +1244,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // FROM t1 AS t2 INNER JOIN (WITH RECURSIVE t4 AS (... = t2."Value" ...)) AS t6
     // ON TRUE, without LATERAL.
     [Fact(
-        Skip = "#128: a correlated recursion flattened by SelectMany is joined without LATERAL"
+        Skip = "#143: a correlated recursion flattened by SelectMany is joined without LATERAL"
     )]
     public void FlattensARecursionCorrelatedWithTheLevelInTheStep()
     {

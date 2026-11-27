@@ -262,7 +262,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     // ERROR: RANGE with offset PRECEDING/FOLLOWING is not supported for column type
     // integer and offset type numeric (the offset 0.5 is a numeric literal).
     [Fact(
-        Skip = "#128: a fractional RANGE offset over an integer key fails in PostgreSQL"
+        Skip = "#123: a fractional RANGE offset over an integer key fails in PostgreSQL"
     )]
     public void RangesByAFractionOverAnIntegerKey()
     {
@@ -279,7 +279,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
 
     // ERROR: RANGE with offset PRECEDING/FOLLOWING is not supported for column type
     // bigint and offset type numeric.
-    [Fact(Skip = "#128: a fractional RANGE offset over a bigint key fails in PostgreSQL")]
+    [Fact(Skip = "#123: a fractional RANGE offset over a bigint key fails in PostgreSQL")]
     public void RangesByAFractionOverABigintKey()
     {
         database.AssertSameRows(
