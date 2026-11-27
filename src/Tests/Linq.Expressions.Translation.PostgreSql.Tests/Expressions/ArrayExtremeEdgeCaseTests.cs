@@ -1,5 +1,3 @@
-#pragma warning disable xUnit1004 // a translation defect is kept as a skipped test
-
 using System.Text;
 
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Expressions;

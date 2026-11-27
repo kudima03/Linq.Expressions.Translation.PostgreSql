@@ -1,5 +1,4 @@
 #pragma warning disable CA1861 // the constant arrays are the sources under test
-#pragma warning disable xUnit1004 // the skipped tests show translator bugs
 
 namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 

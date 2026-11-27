@@ -136,9 +136,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
                     (object)new DateTime(DateTime.MaxValue.Ticks + o.Id).Year
                 ),
             orders =>
-                orders.Select(o =>
-                    (object)new DateTime(-o.Id, DateTimeKind.Utc).Year
-                ),
+                orders.Select(o => (object)new DateTime(-o.Id, DateTimeKind.Utc).Year),
         ];
 
     // new DateTime(ticks) throws for a count of ticks before 0001-01-01 or after
@@ -203,8 +201,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
                 Moment = new DateTime(o.CreatedAt.Ticks) == o.CreatedAt,
                 Time = new TimeOnly(o.DeliveryTime.Ticks) == o.DeliveryTime,
                 Day = o.ShippedOn == null
-                    || DateOnly.FromDayNumber(o.ShippedOn.Value.DayNumber)
-                        == o.ShippedOn,
+                    || DateOnly.FromDayNumber(o.ShippedOn.Value.DayNumber) == o.ShippedOn,
                 new DateTime(o.CreatedAt.Ticks).Ticks,
             })
         );
@@ -672,10 +669,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
                 new DateTime(2024, 1, 1, o.Quantity, 0, 0, DateTimeKind.Utc).Date,
                 Joined = o.ShippedOn == null
                     ? 0
-                    : o.ShippedOn.Value.ToDateTime(
-                        o.DeliveryTime,
-                        DateTimeKind.Utc
-                    ).Hour,
+                    : o.ShippedOn.Value.ToDateTime(o.DeliveryTime, DateTimeKind.Utc).Hour,
                 Built = o.ShippedOn == null
                     ? 0
                     : new DateTime(

@@ -186,9 +186,7 @@ public sealed record RecursionEdgeCaseTests
     {
         Expression query = Customers
             .Select(c =>
-                Employees
-                    .WithRecursive(level => level.Where(e => e.Id < 0), c.Id)
-                    .Count()
+                Employees.WithRecursive(level => level.Where(e => e.Id < 0), c.Id).Count()
             )
             .Expression;
 
