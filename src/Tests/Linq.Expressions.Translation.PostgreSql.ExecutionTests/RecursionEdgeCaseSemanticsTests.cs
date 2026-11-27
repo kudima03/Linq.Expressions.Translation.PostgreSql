@@ -1206,9 +1206,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // Observed: 42P01: invalid reference to FROM-clause entry for table "t0":
     // INNER JOIN (WITH RECURSIVE t2 AS (... WHERE t1."Id" = t0."Id" ...)) AS t5
     // ON TRUE, without LATERAL.
-    [Fact(
-        Skip = "#143: a correlated recursion flattened by SelectMany is joined without LATERAL"
-    )]
+    [Fact]
     public void FlattensARecursionFromACorrelatedSeed()
     {
         IQueryable<Below> query = Employees.SelectMany(
@@ -1248,9 +1246,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // Observed: 42P01: invalid reference to FROM-clause entry for table "t2":
     // FROM t1 AS t2 INNER JOIN (WITH RECURSIVE t4 AS (... = t2."Value" ...)) AS t6
     // ON TRUE, without LATERAL.
-    [Fact(
-        Skip = "#143: a correlated recursion flattened by SelectMany is joined without LATERAL"
-    )]
+    [Fact]
     public void FlattensARecursionCorrelatedWithTheLevelInTheStep()
     {
         IQueryable<int> query = Trees.WithRecursive(

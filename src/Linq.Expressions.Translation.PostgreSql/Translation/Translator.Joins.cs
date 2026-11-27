@@ -145,9 +145,13 @@ internal sealed partial class Translator
             left ? "LEFT JOIN"
             : simple ? "INNER JOIN"
             : "CROSS JOIN";
+        // A table is joined on the condition that reads the outer row; a derived
+        // table or a recursion reads it inside, which only LATERAL lets it do.
         return Attached(
             outer,
-            simple || !correlated ? join : join + " LATERAL",
+            correlated && inner.From is DerivedSource or RecursiveSource
+                ? join + " LATERAL"
+                : join,
             inner,
             join == "CROSS JOIN" ? null : inner.Where ?? True,
             padding

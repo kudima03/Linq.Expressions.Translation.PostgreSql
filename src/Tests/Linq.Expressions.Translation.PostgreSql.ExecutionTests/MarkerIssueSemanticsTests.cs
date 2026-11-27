@@ -108,9 +108,7 @@ public sealed class MarkerIssueSemanticsTests(Database database)
 
     // #143: the issue's walk, whose seed reads the outer row, flattened with a result
     // selector of a value tuple.
-    [Fact(
-        Skip = "#143: a correlated recursion flattened by SelectMany is joined without LATERAL"
-    )]
+    [Fact]
     public void FlattensAWalkWhoseSeedReadsTheOuterRow()
     {
         IQueryable<ValueTuple<int, int, int>> query = Customers.SelectMany(
