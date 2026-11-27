@@ -208,7 +208,32 @@ internal sealed class Evaluator(HashSet<Expression> candidates) : ExpressionVisi
                 )
             && !node.Type.IsByRefLike
             && !IsQueryOperator(node)
+            && !IsEnumeration(node)
             && !IsClock(node);
+    }
+
+    // A call that reads a query as a sequence, string.Join or ToList of a captured
+    // IQueryable: evaluated, it would run the query while the statement is written.
+    // It is left in the tree, where the query is a subquery.
+    private static bool IsEnumeration(Expression node)
+    {
+        return node is MethodCallExpression call
+            && !typeof(IQueryable).IsAssignableFrom(call.Type)
+            && call.Arguments.Prepend(call.Object)
+                .OfType<Expression>()
+                .Any(argument =>
+                    typeof(IQueryable).IsAssignableFrom(
+                        (
+                            argument
+                                is UnaryExpression
+                                {
+                                    NodeType: ExpressionType.Convert
+                                } conversion
+                                ? conversion.Operand
+                                : argument
+                        ).Type
+                    )
+                );
     }
 
     private static bool IsClock(Expression node)

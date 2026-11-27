@@ -3,6 +3,8 @@ namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 internal sealed class SqlIsNull(SqlExpression operand, bool negated)
     : SqlExpression(typeof(bool))
 {
+    public override IEnumerable<SqlExpression> Operands => [operand];
+
     public override bool IsCompound(SqlMode mode)
     {
         return true;

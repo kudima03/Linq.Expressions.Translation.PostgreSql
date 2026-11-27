@@ -6,6 +6,8 @@ internal sealed class SqlIn(
     bool negated
 ) : SqlMembership(operand.Nullable)
 {
+    public override IEnumerable<SqlExpression> Operands => [operand, .. values];
+
     protected override void RenderMembership(SqlWriter writer)
     {
         _ = writer

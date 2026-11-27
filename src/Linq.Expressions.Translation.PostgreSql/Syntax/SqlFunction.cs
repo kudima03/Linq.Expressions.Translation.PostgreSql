@@ -7,6 +7,8 @@ internal sealed class SqlFunction(
     bool nullable
 ) : SqlExpression(type)
 {
+    public override IEnumerable<SqlExpression> Operands => arguments;
+
     public override bool Nullable => nullable;
 
     // One of the arguments, or the day of a DateTime, is of the kind it was.

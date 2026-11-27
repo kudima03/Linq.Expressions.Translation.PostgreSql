@@ -12,6 +12,15 @@ internal sealed class SqlOccurrences(
     Type type
 ) : SqlExpression(type)
 {
+    public override IEnumerable<SqlExpression> Operands =>
+        [
+            value,
+            .. order.Select(ordering => ordering.Key),
+            .. new[] { filter }.OfType<SqlExpression>(),
+        ];
+
+    public override bool IsAggregate => true;
+
     public override bool Nullable => last;
 
     public override void Render(SqlWriter writer, SqlMode mode)

@@ -9,6 +9,15 @@ internal sealed class SqlFirst(
     SqlExpression? filter = null
 ) : SqlExpression(value.Type)
 {
+    public override IEnumerable<SqlExpression> Operands =>
+        [
+            value,
+            .. order.Select(ordering => ordering.Key),
+            .. new[] { filter }.OfType<SqlExpression>(),
+        ];
+
+    public override bool IsAggregate => true;
+
     public override bool Nullable => value.Nullable || filter is not null;
 
     public override SqlKind TimeKind => value.TimeKind;

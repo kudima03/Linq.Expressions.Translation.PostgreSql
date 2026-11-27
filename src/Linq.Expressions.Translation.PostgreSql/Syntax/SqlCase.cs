@@ -6,6 +6,12 @@ internal sealed class SqlCase(
     Type type
 ) : SqlExpression(type)
 {
+    public override IEnumerable<SqlExpression> Operands =>
+        [
+            .. Whens.SelectMany(branch => new[] { branch.Condition, branch.Result }),
+            Otherwise,
+        ];
+
     // The value is one of the branches, so it is nullable when one of them is.
     public override bool Nullable =>
         Otherwise.Nullable || Whens.Any(branch => branch.Result.Nullable);

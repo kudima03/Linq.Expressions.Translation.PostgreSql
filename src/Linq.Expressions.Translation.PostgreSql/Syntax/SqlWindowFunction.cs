@@ -10,6 +10,10 @@ internal sealed class SqlWindowFunction(
     bool nullable
 ) : SqlExpression(type)
 {
+    public override IEnumerable<SqlExpression> Operands => [.. arguments, .. window.Keys];
+
+    public override bool IsWindow => true;
+
     public override bool Nullable => nullable;
 
     // Whether the function yields a value of one of its rows, not a number of its

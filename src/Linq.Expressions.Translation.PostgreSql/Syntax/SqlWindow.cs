@@ -7,6 +7,10 @@ internal sealed class SqlWindow(
     string? frame
 )
 {
+    // The keys of the partition and of the order.
+    public IEnumerable<SqlExpression> Keys =>
+        [.. partition, .. order.Select(ordering => ordering.Key)];
+
     public void Render(SqlWriter writer)
     {
         _ = writer.Append(" OVER (");

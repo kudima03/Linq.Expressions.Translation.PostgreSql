@@ -5,6 +5,8 @@ namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 // are written, and is converted to the UTC offset only where it is read.
 internal sealed class SqlUtc(SqlExpression operand) : SqlExpression(operand.Type)
 {
+    public override IEnumerable<SqlExpression> Operands => [Operand];
+
     public SqlExpression Operand { get; } = operand;
 
     public override bool Nullable => Operand.Nullable;

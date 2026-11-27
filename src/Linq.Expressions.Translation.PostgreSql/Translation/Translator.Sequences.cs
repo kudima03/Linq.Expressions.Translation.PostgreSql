@@ -331,7 +331,8 @@ internal sealed partial class Translator
         }
         SqlExpression separator = Separator(call.Arguments[0]);
         Expression argument = call.Arguments[1];
-        return argument is NewArrayExpression or ConstantExpression { Value: not null }
+        return IsQueried(argument) ? Aggregated(Query(argument), separator)
+            : argument is NewArrayExpression or ConstantExpression { Value: not null }
                 ? Interleaved(argument, separator)
             : argument.Type.IsAssignableTo(typeof(IQueryable))
                 ? Aggregated(Query(argument), separator)
@@ -406,12 +407,11 @@ internal sealed partial class Translator
     // The values a subquery yields, in its order, joined in one row.
     private SqlExpression Aggregated(SqlQuery source, SqlExpression separator)
     {
-        SelectQuery query = Open(source, Barrier.Aggregation);
+        SelectQuery rows = Open(source, Barrier.Aggregation);
+        (SelectQuery query, SqlExpression value) = Owning(rows, Scalar(rows.Shape), true);
         List<Ordering> order = query.IsOrdered ? query.Orderings : [];
         query.Orderings = [];
-        query.Shape = new ScalarShape(
-            Aggregated(Scalar(query.Shape), separator, false, order, null)
-        );
+        query.Shape = new ScalarShape(Aggregated(value, separator, false, order, null));
         return new SqlRequired(
             new SqlScalarSubquery(query, typeof(string)),
             typeof(string)
@@ -505,6 +505,35 @@ internal sealed partial class Translator
         SqlExpression? filter
     )
     {
+        // A separator that aggregates the rows cannot stand inside STRING_AGG, an
+        // aggregate itself: the values are aggregated into an array and joined
+        // outside it, a NULL as the empty string.
+        if (separator.Any(part => part.IsAggregate))
+        {
+            return new SqlFunction(
+                "COALESCE",
+                [
+                    new SqlFunction(
+                        "ARRAY_TO_STRING",
+                        [
+                            new SqlOrderedAggregate(
+                                "ARRAY_AGG",
+                                [value],
+                                distinct,
+                                order,
+                                filter,
+                                typeof(string[])
+                            ),
+                            separator,
+                            Text(string.Empty),
+                        ],
+                        typeof(string)
+                    ),
+                    Text(string.Empty),
+                ],
+                typeof(string)
+            );
+        }
         SqlExpression text = value.Nullable
             ? new SqlFunction("COALESCE", [value, Text(string.Empty)], typeof(string))
             : value;

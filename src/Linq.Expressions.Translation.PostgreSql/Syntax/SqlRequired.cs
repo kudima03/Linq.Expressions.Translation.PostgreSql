@@ -5,6 +5,8 @@ namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 // the value. The operand renders as it is.
 internal sealed class SqlRequired(SqlExpression operand, Type type) : SqlExpression(type)
 {
+    public override IEnumerable<SqlExpression> Operands => [Operand];
+
     public SqlExpression Operand { get; } = operand;
 
     public override bool Nullable => false;

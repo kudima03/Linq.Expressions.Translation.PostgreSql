@@ -9,6 +9,8 @@ internal sealed class SqlBinary(
     bool nullable
 ) : SqlExpression(type)
 {
+    public override IEnumerable<SqlExpression> Operands => [Left, Right];
+
     // PostgreSQL binds these tighter than a prefix ~, so ~a + 1 means ~(a + 1).
     private static readonly HashSet<string> Arithmetic = ["+", "-", "*", "/", "%"];
 

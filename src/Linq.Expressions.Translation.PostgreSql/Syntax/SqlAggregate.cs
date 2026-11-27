@@ -10,6 +10,13 @@ internal sealed class SqlAggregate(
     SqlWindow? window = null
 ) : SqlExpression(type)
 {
+    public override IEnumerable<SqlExpression> Operands =>
+        [.. new[] { argument, filter }.OfType<SqlExpression>(), .. window?.Keys ?? []];
+
+    public override bool IsAggregate => !IsWindow;
+
+    public override bool IsWindow => windowed || window is not null;
+
     // MIN and MAX of a reference type are NULL when every value is NULL or filtered out.
     public override bool Nullable =>
         System.Nullable.GetUnderlyingType(Type) is not null

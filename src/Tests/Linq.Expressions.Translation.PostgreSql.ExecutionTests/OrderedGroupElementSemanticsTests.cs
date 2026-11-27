@@ -568,9 +568,7 @@ public sealed class OrderedGroupElementSemanticsTests(Database database)
 
     // MAX(t0."Name" COLLATE "C") inside the subquery has outer-level arguments only,
     // so PostgreSQL evaluates it as an aggregate of the outer query (42803).
-    [Fact(
-        Skip = "#128: an aggregate of a subquery over outer values only is evaluated in the outer query"
-    )]
+    [Fact]
     public void TakesOrdinalExtremesOfOuterValues()
     {
         database.AssertSameRows(

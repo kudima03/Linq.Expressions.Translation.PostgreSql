@@ -338,17 +338,55 @@ internal sealed partial class Translator
         SelectQuery query = Unordered(Open(source, Barrier.Aggregation, false));
         if (IsOrdinallyCompared(call))
         {
-            query.Shape = new ScalarShape(Ordinal(Scalar(query.Shape), null, call));
+            (query, SqlExpression text) = Owning(query, Scalar(query.Shape), false);
+            query.Shape = new ScalarShape(Ordinal(text, null, call));
             return new SqlScalarSubquery(query, call.Type);
         }
-        SqlExpression value =
+        (query, SqlExpression value) = Owning(
+            query,
             call.Arguments.Count > 1
                 ? Scalar(Bind(Lambda(call, 1), query.Shape))
-                : Scalar(query.Shape);
+                : Scalar(query.Shape),
+            false
+        );
         query.Shape = new ScalarShape(
             Aggregate(call.Method.Name, value, call.Type, false, null)
         );
         return new SqlScalarSubquery(query, call.Type);
+    }
+
+    // An aggregate whose argument reads nothing of its own SELECT but a column of a
+    // query around it is, to PostgreSQL, an aggregate of that query, where it does
+    // not belong: the value is then a column of a derived table of the rows, which
+    // the aggregate reads as its own.
+    private (SelectQuery Query, SqlExpression Value) Owning(
+        SelectQuery query,
+        SqlExpression value,
+        bool ordered
+    )
+    {
+        HashSet<string> own =
+        [
+            .. query
+                .Joins.Select(join => join.Source)
+                .Prepend(query.From)
+                .OfType<SqlSource>()
+                .Select(source => source.Alias),
+        ];
+        bool foreign = false;
+        bool native = value.Any(part =>
+        {
+            string? alias = (part as SqlColumn)?.Alias ?? (part as SqlPosition)?.Alias;
+            foreign |= alias is not null && !own.Contains(alias);
+            return alias is not null && own.Contains(alias);
+        });
+        if (native || !foreign)
+        {
+            return (query, value);
+        }
+        query.Shape = new ScalarShape(value);
+        SelectQuery rows = Wrap(query, ordered);
+        return (rows, Scalar(rows.Shape));
     }
 
     // COUNT(DISTINCT x) skips NULL, which Distinct() keeps as one of the values.

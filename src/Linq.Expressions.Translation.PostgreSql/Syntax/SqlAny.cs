@@ -5,6 +5,8 @@ namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 internal sealed class SqlAny(SqlExpression value, SqlExpression array)
     : SqlMembership(true)
 {
+    public override IEnumerable<SqlExpression> Operands => [value, array];
+
     protected override void RenderMembership(SqlWriter writer)
     {
         _ = writer
