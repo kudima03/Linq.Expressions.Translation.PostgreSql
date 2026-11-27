@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using System.Reflection;
 using Linq.Expressions.Translation.PostgreSql.Mapping;
 using Linq.Expressions.Translation.PostgreSql.Shapes;
 using Linq.Expressions.Translation.PostgreSql.Syntax;
@@ -376,7 +375,7 @@ internal sealed partial class Translator
         bool foreign = false;
         bool native = value.Any(part =>
         {
-            string? alias = (part as SqlColumn)?.Alias ?? (part as SqlPosition)?.Alias;
+            string? alias = (part as SqlColumn)?.Alias;
             foreign |= alias is not null && !own.Contains(alias);
             return alias is not null && own.Contains(alias);
         });

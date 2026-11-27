@@ -115,7 +115,7 @@ internal sealed class SqlWriter(bool emits = false)
         return
             operand is SqlConstant { Value: double or float } constant
             && SqlLiteral.Digits(constant.Value) is null
-            ? Append(SqlLiteral.Quoted(System.Convert.ToDouble(constant.Value, null)))
+            ? Append(SqlLiteral.Quoted(Convert.ToDouble(constant.Value, null)))
             : Unified(operand, true);
     }
 

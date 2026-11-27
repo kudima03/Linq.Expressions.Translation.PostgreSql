@@ -207,10 +207,6 @@ internal sealed partial class Translator
         MethodCallExpression call
     )
     {
-        if (value.Type != typeof(string))
-        {
-            throw Unsupported.Method(call.Method);
-        }
         SqlAggregate extreme = new(
             call.Method.Name.ToUpperInvariant(),
             CodeUnits(value),
@@ -218,7 +214,9 @@ internal sealed partial class Translator
             filter,
             typeof(string)
         );
-        return Restored(extreme, extreme.Nullable);
+        return value.Type != typeof(string)
+            ? throw Unsupported.Method(call.Method)
+            : Restored(extreme, extreme.Nullable);
     }
 
     // Max or Min of an array written in the query: of its elements, or of new T[n],

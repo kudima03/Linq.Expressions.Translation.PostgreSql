@@ -255,12 +255,9 @@ internal sealed partial class Translator
         // A Utc one is the instant of its UTC time, as its offset is zero.
         if (target == typeof(DateTimeOffset))
         {
-            return value.TimeKind switch
-            {
-                SqlKind.Utc => Instant(value, to),
-                SqlKind.Mixed => throw Unkinded(),
-                _ => value,
-            };
+            return value.TimeKind == SqlKind.Utc ? Instant(value, to)
+                : value.TimeKind == SqlKind.Mixed ? throw Unkinded()
+                : value;
         }
         // A conversion to a byte or an unsigned integer wraps in C#, which a cast to
         // the wider PostgreSQL type does not: only the conversion of a signed integer

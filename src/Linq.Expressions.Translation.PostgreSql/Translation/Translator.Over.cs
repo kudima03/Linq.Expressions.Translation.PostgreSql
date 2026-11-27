@@ -401,9 +401,8 @@ internal sealed partial class Translator
         // PostgreSQL nests no window function in another. A default that is one is
         // read beside the function, where there is no row, which a value that is
         // never NULL tells: COALESCE(LAG(value, offset) OVER (...), default).
-        if (fallback.Any(part => part.IsWindow))
-        {
-            return value.Nullable
+        return fallback.Any(part => part.IsWindow)
+            ? value.Nullable
                 ? throw new NotSupportedException(
                     $"A default of '{name}' that is a window function is read where '{name}' is NULL, which tells a missing row only for a value that is never NULL."
                 )
@@ -421,17 +420,16 @@ internal sealed partial class Translator
                     ],
                     call.Type,
                     fallback.Nullable
-                );
-        }
-        return Missing(
-            name,
-            fallback is SqlConstant { Value: null }
-                ? [value, offset]
-                : [value, offset, fallback],
-            window,
-            call,
-            value.Nullable || fallback.Nullable
-        );
+                )
+            : Missing(
+                name,
+                fallback is SqlConstant { Value: null }
+                    ? [value, offset]
+                    : [value, offset, fallback],
+                window,
+                call,
+                value.Nullable || fallback.Nullable
+            );
     }
 
     // FIRST_VALUE and LAST_VALUE are NULL where the frame is empty.

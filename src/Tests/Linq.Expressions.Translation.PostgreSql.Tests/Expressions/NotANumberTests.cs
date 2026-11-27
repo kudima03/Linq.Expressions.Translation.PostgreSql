@@ -13,8 +13,8 @@ public sealed record NotANumberTests
             {
                 Same = o.Weight == o.Weight * 1,
                 Other = o.Weight != o.Weight * 1,
-                Lifted = (double?)o.Priority * o.Weight == (double?)o.Priority * 2.5,
-                Unlike = (double?)o.Priority * o.Weight != (double?)o.Priority * 2.5,
+                Lifted = o.Priority * o.Weight == o.Priority * 2.5,
+                Unlike = o.Priority * o.Weight != o.Priority * 2.5,
             })
             .Expression;
 
@@ -65,8 +65,8 @@ public sealed record NotANumberTests
         Expression query = Orders
             .OrderBy(o => o.Weight)
             .ThenByDescending(o => o.Weight * 2)
-            .ThenBy(o => (double?)o.Priority * o.Weight)
-            .ThenByDescending(o => (double?)o.Priority * o.Weight)
+            .ThenBy(o => o.Priority * o.Weight)
+            .ThenByDescending(o => o.Priority * o.Weight)
             .Select(o => o.Id)
             .Expression;
 

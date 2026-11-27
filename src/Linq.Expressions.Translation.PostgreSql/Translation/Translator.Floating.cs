@@ -53,11 +53,8 @@ internal sealed partial class Translator
         bool negated
     )
     {
-        if (!MayBeNaN(left) || !MayBeNaN(right))
-        {
-            return comparison;
-        }
-        return left.Nullable
+        return !MayBeNaN(left) || !MayBeNaN(right) ? comparison
+            : left.Nullable
                 ? Logical(
                     negated ? "OR" : "AND",
                     comparison,
@@ -77,37 +74,32 @@ internal sealed partial class Translator
         bool nullsLast
     )
     {
-        if (!MayBeNaN(value))
-        {
-            return [new Ordering(value, descending, nullsLast)];
-        }
-        if (!value.Nullable)
-        {
-            return
+        return !MayBeNaN(value) ? [new Ordering(value, descending, nullsLast)]
+            : !value.Nullable
+                ?
+                [
+                    new Ordering(
+                        new SqlFunction("NULLIF", [value, NaN], value.Type, true),
+                        descending,
+                        descending
+                    ),
+                ]
+            :
             [
                 new Ordering(
-                    new SqlFunction("NULLIF", [value, NaN], value.Type, true),
-                    descending,
-                    descending
+                    new SqlBinary(
+                        "=",
+                        SqlBinaryKind.Arithmetic,
+                        value,
+                        NaN,
+                        typeof(bool?),
+                        true
+                    ),
+                    !descending,
+                    nullsLast
                 ),
+                new Ordering(value, descending, nullsLast),
             ];
-        }
-        return
-        [
-            new Ordering(
-                new SqlBinary(
-                    "=",
-                    SqlBinaryKind.Arithmetic,
-                    value,
-                    NaN,
-                    typeof(bool?),
-                    true
-                ),
-                !descending,
-                nullsLast
-            ),
-            new Ordering(value, descending, nullsLast),
-        ];
     }
 
     // Max of floating-point values is NaN only when every value is, and Min is NaN

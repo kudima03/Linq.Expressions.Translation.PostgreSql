@@ -219,21 +219,16 @@ internal sealed class Evaluator(HashSet<Expression> candidates) : ExpressionVisi
     {
         return node is MethodCallExpression call
             && !typeof(IQueryable).IsAssignableFrom(call.Type)
-            && call.Arguments.Prepend(call.Object)
-                .OfType<Expression>()
-                .Any(argument =>
-                    typeof(IQueryable).IsAssignableFrom(
-                        (
-                            argument
-                                is UnaryExpression
-                                {
-                                    NodeType: ExpressionType.Convert
-                                } conversion
-                                ? conversion.Operand
-                                : argument
-                        ).Type
-                    )
-                );
+            && call.Arguments.Prepend(call.Object).OfType<Expression>().Any(IsQuery);
+    }
+
+    private static bool IsQuery(Expression argument)
+    {
+        Expression source = argument
+            is UnaryExpression { NodeType: ExpressionType.Convert } conversion
+            ? conversion.Operand
+            : argument;
+        return typeof(IQueryable).IsAssignableFrom(source.Type);
     }
 
     private static bool IsClock(Expression node)

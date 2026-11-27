@@ -7,10 +7,10 @@ internal sealed class SqlCast(SqlExpression operand, string target, Type type)
 
     public SqlExpression Operand { get; } = operand;
 
-    public override bool Nullable => operand.Nullable;
+    public override bool Nullable => Operand.Nullable;
 
     public override void Render(SqlWriter writer, SqlMode mode)
     {
-        _ = writer.Append("CAST(").Cast(operand).Append(" AS " + target + ")");
+        _ = writer.Append("CAST(").Cast(Operand).Append(" AS " + target + ")");
     }
 }
