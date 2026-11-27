@@ -195,6 +195,70 @@ public sealed record InMemorySequenceTests
         );
     }
 
+    // #139: a row of the sequence whose members equal those of the tuple, a null
+    // member equal to a null one.
+    [Fact]
+    public void TestsTupleInSequenceOfTuples()
+    {
+        ValueTuple<int?, string>[] pairs = [new(1, "a"), new(null, "b")];
+        Expression query = Orders
+            .Where(o =>
+                pairs.Contains(new ValueTuple<int?, string>(o.Priority, o.Number))
+            )
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE EXISTS (SELECT 1 FROM (VALUES (1, CAST('a' AS text)), (NULL, 'b')) AS t1 ("Item1", "Item2") WHERE (t0."Priority" IS NOT DISTINCT FROM t1."Item1") AND (t0."Number" = t1."Item2"))
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // #139: the same over a query of tuples.
+    [Fact]
+    public void TestsTupleInQueryOfTuples()
+    {
+        Expression query = Customers
+            .Where(c =>
+                Orders
+                    .Select(o => new ValueTuple<int, bool>(o.CustomerId, o.IsPaid))
+                    .Contains(new ValueTuple<int, bool>(c.Id, c.IsActive))
+            )
+            .Select(c => c.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Customer" AS t0
+                WHERE EXISTS (SELECT 1 FROM "Order" AS t1 WHERE (t0."Id" = t1."CustomerId") AND (t0."IsActive" = t1."IsPaid"))
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // An object is searched among objects of its members, not among entities.
+    [Fact]
+    public void RefusesObjectAmongEntities()
+    {
+        Expression query = Orders
+            .Where(o => Customers.Contains(new Customer { Id = o.CustomerId }))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Contains", exception.Message, StringComparison.Ordinal);
+    }
+
     public static TheoryData<Func<Expression>> LoneSurrogates()
     {
         string reversed = "\udc00\ud800";

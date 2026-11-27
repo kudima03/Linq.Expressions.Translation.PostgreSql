@@ -220,7 +220,27 @@ internal sealed partial class Translator
 
     private SqlExpression Membership(SqlQuery source, MethodCallExpression call)
     {
-        return Membership(source, call.Arguments[0], Sql(call.Arguments[1]));
+        Shape item = Shape(call.Arguments[1]);
+        return item is ObjectShape composite
+            ? Contained(source, composite)
+            : Membership(source, call.Arguments[0], Scalar(item));
+    }
+
+    // Contains of a tuple or an object of values among the rows of a sequence of
+    // them: a row whose members equal its members, compared as the default comparer
+    // compares them, where null equals null.
+    private SqlExists Contained(SqlQuery source, ObjectShape item)
+    {
+        SelectQuery query = Restricted(source, false);
+        Restrict(
+            query,
+            query.Shape is ObjectShape row && row.Members.Count == item.Members.Count
+                ? Members(item, row)
+                : throw new NotSupportedException(
+                    "Contains of a tuple or an object is translated over a sequence of tuples or objects of the same members."
+                )
+        );
+        return new SqlExists(Existing(query));
     }
 
     // Contains matches a null item with a NULL of the sequence, which IN never does.

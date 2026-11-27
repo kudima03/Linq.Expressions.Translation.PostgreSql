@@ -442,7 +442,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #139
-    [Fact(Skip = "#139: Contains of a tuple in a sequence of tuples is refused")]
+    [Fact]
     public void FiltersOnTupleInSequenceOfTuples()
     {
         (int, string)[] pairs = [(1, "Ann"), (2, "x"), (12, "Ann")];
@@ -470,7 +470,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #139
-    [Fact(Skip = "#139: Contains of a tuple in a sequence of tuples is refused")]
+    [Fact]
     public void SelectsTupleMembershipAsValue()
     {
         (int, string)[] pairs = [(1, "Ann"), (2, "x")];
@@ -485,7 +485,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #139: tuples are equal when their null members are, as EqualityComparer has it.
-    [Fact(Skip = "#139: Contains of a tuple in a sequence of tuples is refused")]
+    [Fact]
     public void MatchesNullMembersOfTuples()
     {
         ValueTuple<int?, int>[] keys = [new(null, 1), new(3, 0), new(null, 99)];

@@ -903,7 +903,12 @@ internal sealed partial class Translator
         (Expression source, Expression item) = call.Object is null
             ? (Unspanned(call.Arguments[0]), call.Arguments[1])
             : (call.Object, call.Arguments[0]);
-        SqlExpression value = Sql(item);
+        Shape shape = Shape(item);
+        if (shape is ObjectShape composite)
+        {
+            return Contained(Query(source), composite);
+        }
+        SqlExpression value = Scalar(shape);
         return IsQueried(source)
             ? Membership(Query(source), source, value)
             : Membership(Sql(source), value);
