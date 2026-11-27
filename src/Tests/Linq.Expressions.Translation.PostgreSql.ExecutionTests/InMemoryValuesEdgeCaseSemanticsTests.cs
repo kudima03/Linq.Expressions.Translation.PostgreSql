@@ -93,7 +93,7 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         database.AssertSameResult(Rows([true, false, true]), q => q.Count(b => b));
     }
 
-    [Fact(Skip = "#128: Max of a double column with NaN is NaN where .NET skips NaN")]
+    [Fact(Skip = "#132: Max of a double column with NaN is NaN where .NET skips NaN")]
     public void TakesMaximumOfDoublesWithNaN()
     {
         // SELECT MAX(...) is NaN, as PostgreSQL orders NaN above every number; LINQ's
@@ -101,14 +101,14 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         database.AssertSameResult(Rows([1, double.NaN, 2]), q => q.Max());
     }
 
-    [Fact(Skip = "#128: Min of a double column with NaN skips NaN where .NET returns it")]
+    [Fact(Skip = "#132: Min of a double column with NaN skips NaN where .NET returns it")]
     public void TakesMinimumOfDoublesWithNaN()
     {
         // SELECT MIN(...) is 1; LINQ's Min of 1, NaN, 2 is NaN.
         database.AssertSameResult(Rows([1, double.NaN, 2]), q => q.Min());
     }
 
-    [Fact(Skip = "#128: OrderBy of doubles sorts NaN last where .NET sorts it first")]
+    [Fact(Skip = "#132: OrderBy of doubles sorts NaN last where .NET sorts it first")]
     public void OrdersDoublesWithNaNAsDotNet()
     {
         // ORDER BY t0."Value" yields -Infinity, -1, 1, NaN; LINQ yields NaN first.
@@ -119,7 +119,7 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         );
     }
 
-    [Fact(Skip = "#128: comparisons of a double NaN are true in SQL, false in .NET")]
+    [Fact(Skip = "#132: comparisons of a double NaN are true in SQL, false in .NET")]
     public void ComparesNaNAsDotNet()
     {
         // NaN = NaN and NaN > 0 are TRUE in PostgreSQL and false in C#.
@@ -181,7 +181,7 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         );
     }
 
-    [Fact(Skip = "#128: a -0.0 double literal is the numeric -0, which loses its sign")]
+    [Fact(Skip = "#131: a -0.0 double literal is the numeric -0, which loses its sign")]
     public void KeepsSignOfNegativeZero()
     {
         // VALUES (CAST(-0 AS double precision)), (1.5): the numeric -0 is 0, so its

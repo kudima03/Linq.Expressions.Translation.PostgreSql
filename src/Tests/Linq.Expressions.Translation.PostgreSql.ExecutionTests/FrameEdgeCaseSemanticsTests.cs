@@ -161,7 +161,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     // and MIN skips it. Observed for order 10 (frame 9, 10, 11): Max NaN, Min 1.5;
     // .NET gives Max 2.5 and Min NaN.
     [Fact(
-        Skip = "#128: Min and Max of doubles over a frame order NaN as PostgreSQL does"
+        Skip = "#132: Min and Max of doubles over a frame order NaN as PostgreSQL does"
     )]
     public void TakesTheExtremesOfDoublesWithNaNAsDotNet()
     {
@@ -187,7 +187,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     // from UNBOUNDED PRECEDING to 1 PRECEDING holds every row where .NET holds only
     // the NaN row (and order 12, -2.5, finds 0 rows where .NET finds the NaN row).
     [Fact(
-        Skip = "#128: a window ordered by a double sorts NaN last, .NET sorts it first"
+        Skip = "#132: a window ordered by a double sorts NaN last, .NET sorts it first"
     )]
     public void OrdersAWindowByADoubleWithNaNAsDotNet()
     {
@@ -214,7 +214,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     // In .NET NaN > 2 is false; in PostgreSQL NaN is greater than every number, so
     // FILTER (WHERE "Weight" > 2) counts order 10. Observed for orders 9, 10 and 11
     // (frames holding order 10): one row more than .NET counts.
-    [Fact(Skip = "#128: a frame filter comparing a double counts NaN as greater")]
+    [Fact(Skip = "#132: a frame filter comparing a double counts NaN as greater")]
     public void FiltersTheRowsOfAFrameByADoubleWithNaN()
     {
         database.AssertSameRows(

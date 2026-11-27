@@ -1548,7 +1548,7 @@ public sealed class WindowCompositionSemanticsTests(Database database)
     // PostgreSQL sorts NaN after every number, .NET before: order 10 (NaN) is numbered
     // 12 instead of 1.
     [Fact(
-        Skip = "#128: a window ordered by a double sorts NaN last, while Over documents the order of .NET, where NaN is the smallest"
+        Skip = "#132: a window ordered by a double sorts NaN last, while Over documents the order of .NET, where NaN is the smallest"
     )]
     public void OrdersByDoublesAsDotNetDoes()
     {

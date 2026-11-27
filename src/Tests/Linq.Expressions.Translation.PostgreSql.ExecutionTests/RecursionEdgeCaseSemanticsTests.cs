@@ -274,7 +274,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // Observed: 42804: recursive query "t1" column 2 has type real in
     // non-recursive term but type double precision overall (t2."Value" * 2).
     [Fact(
-        Skip = "#128: float arithmetic of the step is double precision, not the seed's real"
+        Skip = "#131: float arithmetic of the step is double precision, not the seed's real"
     )]
     public void ScalesRealsTypedByARealColumn()
     {
@@ -296,7 +296,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // Observed: 42804: recursive query "t1" column 2 has type real in
     // non-recursive term but type double precision overall (t2."Value" + 0.5).
     [Fact(
-        Skip = "#128: float arithmetic of the step is double precision, not the seed's real"
+        Skip = "#131: float arithmetic of the step is double precision, not the seed's real"
     )]
     public void AddsRealConstantsInTheStep()
     {
