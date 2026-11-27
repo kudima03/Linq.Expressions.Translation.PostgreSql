@@ -160,7 +160,9 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     // its Min returns it; PostgreSQL orders NaN above every number, so MAX is NaN
     // and MIN skips it. Observed for order 10 (frame 9, 10, 11): Max NaN, Min 1.5;
     // .NET gives Max 2.5 and Min NaN.
-    [Fact(Skip = "#128: Min and Max of doubles over a frame order NaN as PostgreSQL does")]
+    [Fact(
+        Skip = "#128: Min and Max of doubles over a frame order NaN as PostgreSQL does"
+    )]
     public void TakesTheExtremesOfDoublesWithNaNAsDotNet()
     {
         database.AssertSameRows(
@@ -184,7 +186,9 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     // Observed for order 10 (NaN): Before 12 where .NET gives 1, and the frame
     // from UNBOUNDED PRECEDING to 1 PRECEDING holds every row where .NET holds only
     // the NaN row (and order 12, -2.5, finds 0 rows where .NET finds the NaN row).
-    [Fact(Skip = "#128: a window ordered by a double sorts NaN last, .NET sorts it first")]
+    [Fact(
+        Skip = "#128: a window ordered by a double sorts NaN last, .NET sorts it first"
+    )]
     public void OrdersAWindowByADoubleWithNaNAsDotNet()
     {
         database.AssertSameRows(
@@ -714,7 +718,9 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     // for the first row, which the translator takes for non-nullable: observed
     // '#' || MAX(...) is NULL and MIN(...) <> 'A-001' is NULL, where .NET gives "#"
     // and true.
-    [Fact(Skip = "#128: Min/Max of strings over a maybe-empty frame is taken as non-null")]
+    [Fact(
+        Skip = "#128: Min/Max of strings over a maybe-empty frame is taken as non-null"
+    )]
     public void ComposesTheExtremeStringOfAFrameThatMayBeEmpty()
     {
         database.AssertSameRows(
@@ -873,7 +879,9 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
 
     // ERROR: window function calls cannot be nested, from
     // MAX(CAST(COALESCE(SUM(t0."Quantity") OVER (...), 0) AS integer)) OVER ().
-    [Fact(Skip = "#128: an aggregate over an Over's rows in its projection nests windows")]
+    [Fact(
+        Skip = "#128: an aggregate over an Over's rows in its projection nests windows"
+    )]
     public void AggregatesTheRowsOfAnOverBesideThem()
     {
         IQueryable<RunningQuantity> running = Trees.Over(
