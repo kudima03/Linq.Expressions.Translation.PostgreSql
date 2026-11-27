@@ -644,7 +644,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // Observed: ArgumentException: An item with the same key has already been
     // added. Key: Id (the step's columns are matched ignoring case). The result is
     // renamed after the recursion, as the materializer matches names ignoring case.
-    [Fact(Skip = "#142: columns whose names differ in case only throw ArgumentException")]
+    [Fact]
     public void KeepsColumnsWhoseNamesDifferInCaseOnly()
     {
         database.AssertSameRows(

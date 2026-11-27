@@ -167,29 +167,31 @@ internal sealed partial class Translator
             );
         }
         _ = Unordered(step);
-        Dictionary<string, SqlExpression> values = step
-            .Shape.Columns()
-            .ToDictionary(
-                column => column.Name ?? "Value",
-                column => column.Value,
-                StringComparer.OrdinalIgnoreCase
-            );
+        List<ProjectionColumn> columns = step.Shape.Columns();
         step.Shape =
             level.Shape is ScalarShape
                 ? new ScalarShape(Scalar(step.Shape), "Value")
-                : level.Shape.Map(
-                    (_, name) =>
-                        values.TryGetValue(name!, out SqlExpression? value)
-                            ? value
-                            : throw new NotSupportedException(
-                                $"The step of WITH RECURSIVE yields no column '{name}' of the seed."
-                            ),
-                    null
-                );
-        return values.Count == level.Shape.Columns().Count
+                : level.Shape.Map((_, name) => Named(columns, name!), null);
+        return columns.Count == level.Shape.Columns().Count
             ? step
             : throw new NotSupportedException(
                 "The step of WITH RECURSIVE yields the columns of the seed, and no others."
+            );
+    }
+
+    // A column of the step by the name of the seed's: PostgreSQL's quoted names are
+    // case-sensitive, so the exact name first, and only then the one that differs in
+    // case, as a constructor parameter does from its member (item1 sets Item1).
+    private static SqlExpression Named(List<ProjectionColumn> columns, string name)
+    {
+        ProjectionColumn? column =
+            columns.FirstOrDefault(column => column.Name == name)
+            ?? columns.FirstOrDefault(column =>
+                string.Equals(column.Name, name, StringComparison.OrdinalIgnoreCase)
+            );
+        return column?.Value
+            ?? throw new NotSupportedException(
+                $"The step of WITH RECURSIVE yields no column '{name}' of the seed."
             );
     }
 

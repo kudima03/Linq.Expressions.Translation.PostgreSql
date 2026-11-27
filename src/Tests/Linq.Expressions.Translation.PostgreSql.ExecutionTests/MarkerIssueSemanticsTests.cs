@@ -92,7 +92,7 @@ public sealed class MarkerIssueSemanticsTests(Database database)
 
     // #142: the issue's record, whose members Id and ID are two columns. The rows are
     // read through other names, as the materializer matches names ignoring case.
-    [Fact(Skip = "#142: columns whose names differ in case only throw ArgumentException")]
+    [Fact]
     public void KeepsAPositionalRecordWhoseMembersDifferInCaseOnly()
     {
         database.AssertSameRows(
