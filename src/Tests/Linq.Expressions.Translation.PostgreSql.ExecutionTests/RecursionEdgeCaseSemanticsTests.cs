@@ -274,7 +274,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // Observed: 42804: recursive query "t1" column 2 has type real in
     // non-recursive term but type double precision overall (t2."Value" * 2).
     [Fact(
-        Skip = "#128: float arithmetic of the step is double precision, not the seed's real"
+        Skip = "#131: float arithmetic of the step is double precision, not the seed's real"
     )]
     public void ScalesRealsTypedByARealColumn()
     {
@@ -296,7 +296,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // Observed: 42804: recursive query "t1" column 2 has type real in
     // non-recursive term but type double precision overall (t2."Value" + 0.5).
     [Fact(
-        Skip = "#128: float arithmetic of the step is double precision, not the seed's real"
+        Skip = "#131: float arithmetic of the step is double precision, not the seed's real"
     )]
     public void AddsRealConstantsInTheStep()
     {
@@ -642,16 +642,21 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     }
 
     // Observed: ArgumentException: An item with the same key has already been
-    // added. Key: Id (the step's columns are matched ignoring case).
-    [Fact(Skip = "#128: columns whose names differ in case only throw ArgumentException")]
+    // added. Key: Id (the step's columns are matched ignoring case). The result is
+    // renamed after the recursion, as the materializer matches names ignoring case.
+    [Fact(Skip = "#142: columns whose names differ in case only throw ArgumentException")]
     public void KeepsColumnsWhoseNamesDifferInCaseOnly()
     {
         database.AssertSameRows(
-            Trees.WithRecursive(
-                Employees.Where(e => e.Id == 1).Select(e => new { id = 0, e.Id }),
-                level =>
-                    level.Where(r => r.id < 2).Select(r => new { id = r.id + 1, r.Id })
-            )
+            Trees
+                .WithRecursive(
+                    Employees.Where(e => e.Id == 1).Select(e => new { id = 0, e.Id }),
+                    level =>
+                        level
+                            .Where(r => r.id < 2)
+                            .Select(r => new { id = r.id + 1, r.Id })
+                )
+                .Select(r => new { Depth = r.id, Employee = r.Id })
         );
     }
 
@@ -1202,7 +1207,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // INNER JOIN (WITH RECURSIVE t2 AS (... WHERE t1."Id" = t0."Id" ...)) AS t5
     // ON TRUE, without LATERAL.
     [Fact(
-        Skip = "#128: a correlated recursion flattened by SelectMany is joined without LATERAL"
+        Skip = "#143: a correlated recursion flattened by SelectMany is joined without LATERAL"
     )]
     public void FlattensARecursionFromACorrelatedSeed()
     {
@@ -1244,7 +1249,7 @@ public sealed class RecursionEdgeCaseSemanticsTests(Database database)
     // FROM t1 AS t2 INNER JOIN (WITH RECURSIVE t4 AS (... = t2."Value" ...)) AS t6
     // ON TRUE, without LATERAL.
     [Fact(
-        Skip = "#128: a correlated recursion flattened by SelectMany is joined without LATERAL"
+        Skip = "#143: a correlated recursion flattened by SelectMany is joined without LATERAL"
     )]
     public void FlattensARecursionCorrelatedWithTheLevelInTheStep()
     {
