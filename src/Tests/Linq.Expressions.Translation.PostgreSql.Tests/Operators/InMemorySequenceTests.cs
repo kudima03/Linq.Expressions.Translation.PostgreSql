@@ -27,7 +27,7 @@ public sealed record InMemorySequenceTests
         };
 
     // #136: bytes are smallint as the other numbers, chars are text.
-    [Theory(Skip = "#136: VALUES of byte, sbyte and char is refused")]
+    [Theory]
     [MemberData(nameof(NarrowFirstRows))]
     public void WritesSmallintForBytesAndTextForChars(Func<Expression> root, string rows)
     {
@@ -38,6 +38,64 @@ public sealed record InMemorySequenceTests
                 $"""
                 SELECT t0."Value"
                 FROM (VALUES ({rows})) AS t0 ("Value")
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    public static TheoryData<Func<Expression>, string> WideFirstRows =>
+        new()
+        {
+            { () => Root((ushort)1, ushort.MaxValue), "1), (65535" },
+            { () => Root(1U, uint.MaxValue), "CAST(1 AS bigint)), (4294967295" },
+            {
+                () => Root(1UL, ulong.MaxValue),
+                "CAST(1 AS numeric)), (18446744073709551615"
+            },
+            { () => Root<ulong?>(null, 1UL), "CAST(NULL AS numeric)), (1" },
+        };
+
+    // #122: an unsigned integer is the narrowest type that holds every value of it.
+    [Theory]
+    [MemberData(nameof(WideFirstRows))]
+    public void WritesTheNextWiderTypeForUnsignedIntegers(
+        Func<Expression> root,
+        string rows
+    )
+    {
+        Expression query = root();
+
+        Assert.Equal(
+            Sql.Valid(
+                $"""
+                SELECT t0."Value"
+                FROM (VALUES ({rows})) AS t0 ("Value")
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // A char is a text of one character: it compares with a number by its code, and a
+    // signed integer converts to a ulong by its bits, a negative one wrapping around.
+    [Fact]
+    public void ConvertsCharsAndUnsignedIntegersAsDotNetDoes()
+    {
+        char[] letters = ['a', 'b'];
+        ulong[] large = [1UL, ulong.MaxValue];
+        Expression query = Customers
+            .Join(letters, c => c.Id, l => l, (c, l) => c.Id)
+            .Join(large, id => (ulong)id, u => u, (id, u) => id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Customer" AS t0
+                INNER JOIN (VALUES (CAST('a' AS text)), ('b')) AS t1 ("Value") ON t0."Id" = ASCII(t1."Value")
+                INNER JOIN (VALUES (CAST(1 AS numeric)), (18446744073709551615)) AS t2 ("Value") ON (CAST(t0."Id" AS numeric) + CASE WHEN t0."Id" < 0 THEN 18446744073709551616 ELSE 0 END) = t2."Value"
                 """
             ),
             new PostgreSqlQuery(query).TextValue

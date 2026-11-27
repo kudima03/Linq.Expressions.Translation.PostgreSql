@@ -772,7 +772,7 @@ internal sealed partial class Translator
     {
         Type type = call.Type;
         string? target =
-            ScalarTypes.IsNumber(type) && !type.IsEnum
+            ScalarTypes.IsNumber(type) && !type.IsEnum && !ScalarTypes.IsWidened(type)
                 ? ScalarTypes.Number(type)
                 : Parsable.GetValueOrDefault(type);
         IEnumerable<Expression> options = call.Arguments.Skip(1);

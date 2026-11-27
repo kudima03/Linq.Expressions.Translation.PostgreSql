@@ -13,6 +13,7 @@ internal sealed partial class Translator
     private static readonly Dictionary<Type, string> ValueTypes = new()
     {
         [typeof(bool)] = "boolean",
+        [typeof(char)] = "text",
         [typeof(string)] = "text",
         [typeof(Guid)] = "uuid",
         [typeof(DateTime)] = "timestamp",
@@ -27,6 +28,7 @@ internal sealed partial class Translator
     private static readonly HashSet<Type> SelfTyped =
     [
         typeof(bool),
+        typeof(ushort),
         typeof(int),
         typeof(Guid),
         typeof(DateTime),

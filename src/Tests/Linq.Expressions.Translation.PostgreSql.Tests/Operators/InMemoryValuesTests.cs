@@ -710,10 +710,6 @@ public sealed record InMemoryValuesTests
         new()
         {
             {
-                c => c.Join(['a', 'b'], x => x.Id, y => y, (x, y) => x).Expression,
-                "Char"
-            },
-            {
                 c =>
                     c.Join(
                         [new[] { 1 }, [2]],

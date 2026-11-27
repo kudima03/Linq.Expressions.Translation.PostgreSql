@@ -52,6 +52,14 @@ internal sealed partial class Translator
         typeof(decimal),
     ];
 
+    private static readonly HashSet<Type> Signed =
+    [
+        typeof(sbyte),
+        typeof(short),
+        typeof(int),
+        typeof(long),
+    ];
+
     private static bool IsBoolean(Type type)
     {
         return ScalarTypes.Underlying(type) == typeof(bool);
@@ -248,17 +256,58 @@ internal sealed partial class Translator
         {
             return value;
         }
-        if (!ScalarTypes.IsNumber(target))
+        // A conversion to a byte or an unsigned integer wraps in C#, which a cast to
+        // the wider PostgreSQL type does not: only the conversion of a signed integer
+        // to a ulong is written out.
+        if (
+            !ScalarTypes.IsNumber(target)
+            || (ScalarTypes.IsWidened(target) && target != typeof(ulong))
+        )
         {
             throw new NotSupportedException(
                 $"Converting '{from.Name}' to '{to.Name}' is not supported."
             );
+        }
+        if (target == typeof(ulong) && Signed.Contains(source))
+        {
+            return Unsigned(value, to);
+        }
+        // A char is a text of one character, and its number the code of the character.
+        if (source == typeof(char))
+        {
+            SqlFunction code = new("ASCII", [value], typeof(int), value.Nullable);
+            return target == typeof(int)
+                ? code
+                : new SqlCast(code, ScalarTypes.Number(target), to);
         }
         SqlExpression operand =
             Fractional.Contains(source) && !Fractional.Contains(target)
                 ? new SqlFunction("TRUNC", [value], value.Type)
                 : value;
         return new SqlCast(operand, ScalarTypes.Number(target), to);
+    }
+
+    // (ulong)x of a negative integer is x + 2^64, as the conversion keeps the bits.
+    private static SqlBinary Unsigned(SqlExpression value, Type type)
+    {
+        SqlCast number = new(value, "numeric", type);
+        return new SqlBinary(
+            "+",
+            SqlBinaryKind.Arithmetic,
+            number,
+            new SqlCase(
+                [
+                    new SqlWhen(
+                        Compare("<", value, Integer(0)),
+                        new SqlConstant(ulong.MaxValue + 1m, typeof(decimal))
+                    ),
+                ],
+                Integer(0),
+                type
+            ),
+            type,
+            value.Nullable
+        );
     }
 
     // A nullable value C# reads as its value is never NULL where the C# evaluates.

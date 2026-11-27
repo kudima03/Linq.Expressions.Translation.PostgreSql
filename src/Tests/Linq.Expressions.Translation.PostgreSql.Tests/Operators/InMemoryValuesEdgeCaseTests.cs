@@ -828,13 +828,7 @@ public sealed record InMemoryValuesEdgeCaseTests
                 "at least one row"
             },
             { () => Enumerable.Range(1, 0).AsQueryable().Expression, "at least one row" },
-            { () => Root((byte)1, (byte)2), "Byte" },
-            { () => Root((sbyte)1, (sbyte)2), "SByte" },
-            { () => Root((ushort)1, (ushort)2), "UInt16" },
-            { () => Root(1U, 2U), "UInt32" },
-            { () => Root(1UL, 2UL), "UInt64" },
             { () => Root((Half)1, (Half)2), "Half" },
-            { () => Root(TinyStatus.Low, TinyStatus.High), "TinyStatus" },
             {
                 () =>
                     Root(

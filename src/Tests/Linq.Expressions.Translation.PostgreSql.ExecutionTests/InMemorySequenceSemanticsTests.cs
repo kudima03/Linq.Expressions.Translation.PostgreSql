@@ -21,7 +21,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #122
-    [Fact(Skip = "#122: VALUES of ushort, uint and ulong is refused")]
+    [Fact]
     public void ReadsUnsignedValuesAtTheirBoundaries()
     {
         database.AssertSameRows(new ushort[] { 0, 1, ushort.MaxValue }.AsQueryable());
@@ -32,7 +32,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #122: a ulong above long.MaxValue on a later row needs numeric for the column.
-    [Fact(Skip = "#122: VALUES of ushort, uint and ulong is refused")]
+    [Fact]
     public void TypesUlongAboveLongRangeOnLaterRow()
     {
         database.AssertSameRows(
@@ -54,7 +54,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #122
-    [Fact(Skip = "#122: VALUES of ushort, uint and ulong is refused")]
+    [Fact]
     public void JoinsUnsignedValuesWithTable()
     {
         ulong[] ulongs = [1, 2, 99];
@@ -76,7 +76,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #122
-    [Fact(Skip = "#122: VALUES of ushort, uint and ulong is refused")]
+    [Fact]
     public void ComputesWithUnsignedValues()
     {
         database.AssertSameRows(
@@ -92,7 +92,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #122
-    [Fact(Skip = "#122: VALUES of ushort, uint and ulong is refused")]
+    [Fact]
     public void ReadsTuplesOfUnsignedMembers()
     {
         (ushort Small, uint Middle, ulong Large)[] rows =
@@ -108,7 +108,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #136
-    [Fact(Skip = "#136: VALUES of byte, sbyte and char is refused")]
+    [Fact]
     public void ReadsBytesAndSBytesAtTheirBoundaries()
     {
         database.AssertSameRows(new byte[] { 0, 1, byte.MaxValue }.AsQueryable());
@@ -123,7 +123,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #136
-    [Fact(Skip = "#136: VALUES of byte, sbyte and char is refused")]
+    [Fact]
     public void JoinsBytesWithTable()
     {
         byte[] quantities = [0, 2, 7, byte.MaxValue];
@@ -138,7 +138,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #136: C# computes bytes as int, so the products exceed smallint.
-    [Fact(Skip = "#136: VALUES of byte, sbyte and char is refused")]
+    [Fact]
     public void ComputesWithBytesAsIntegers()
     {
         database.AssertSameRows(
@@ -154,7 +154,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #136
-    [Fact(Skip = "#136: VALUES of byte, sbyte and char is refused")]
+    [Fact]
     public void ReadsCharsAsText()
     {
         database.AssertSameRows(
@@ -165,7 +165,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #136: chars order by code point, as the database's C.UTF-8 orders text.
-    [Fact(Skip = "#136: VALUES of byte, sbyte and char is refused")]
+    [Fact]
     public void OrdersCharsByCodePoint()
     {
         database.AssertSameSequence(
@@ -174,7 +174,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #136
-    [Fact(Skip = "#136: VALUES of byte, sbyte and char is refused")]
+    [Fact]
     public void ReadsTuplesOfBytesAndChars()
     {
         (byte Unsigned, sbyte Signed, char Letter)[] rows =
@@ -188,6 +188,25 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
             Customers
                 .Where(c => c.Id < 3)
                 .SelectMany(c => rows, (c, r) => new { c.Id, r.Letter })
+        );
+    }
+
+    // A char compares with a number by its code, and a negative integer converts to
+    // a ulong by its bits.
+    [Fact]
+    public void ConvertsCharsAndNegativeIntegersAsDotNetDoes()
+    {
+        char[] codes = [(char)1, (char)3, 'a'];
+        ulong[] large = [2UL, ulong.MaxValue - 2];
+
+        database.AssertSameRows(
+            Customers.Join(codes, c => c.Id, l => l, (c, l) => new { c.Id, l })
+        );
+        database.AssertSameRows(
+            Customers.Join(large, c => (ulong)(c.Id - 5), u => u, (c, u) => c.Id)
+        );
+        database.AssertSameRows(
+            Customers.Join(large, c => (ulong)c.Id, u => u, (c, u) => c.Id)
         );
     }
 
