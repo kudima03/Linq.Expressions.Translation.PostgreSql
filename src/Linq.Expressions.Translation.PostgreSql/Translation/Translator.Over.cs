@@ -46,12 +46,17 @@ internal sealed partial class Translator
             : Recursive(call);
     }
 
+    // DISTINCT ON keeps its rows after the window functions of its SELECT are
+    // computed, so a window over them is one over a derived table of them.
     private SelectQuery Over(MethodCallExpression call)
     {
-        SelectQuery query = Open(
-            Query(call.Arguments[0]),
-            Barrier.Paging | Barrier.Distinct | Barrier.Projection | Barrier.Window
-        );
+        SqlQuery source = Query(call.Arguments[0]);
+        SelectQuery query = source is SelectQuery { DistinctOn: not null }
+            ? Wrap(source)
+            : Open(
+                source,
+                Barrier.Paging | Barrier.Distinct | Barrier.Projection | Barrier.Window
+            );
         List<SqlExpression> partition = Optional(call, 1) is LambdaExpression partitionBy
             ?
             [
@@ -76,7 +81,12 @@ internal sealed partial class Translator
             )
             : [];
         WindowShape window = new(
-            new SqlWindow(partition, order, frame is null ? null : Framed(frame, order)),
+            new SqlWindow(
+                partition,
+                order,
+                frame is null ? null : Framed(frame, order),
+                frame?.IncludesCurrentRow ?? true
+            ),
             query.Shape,
             frame?.IncludesCurrentRow ?? true
         );
@@ -297,7 +307,35 @@ internal sealed partial class Translator
 
     // ROW_NUMBER, RANK, ..., LAG, LEAD, FIRST_VALUE and LAST_VALUE over the
     // window of the selector of Over, in the projection of its SELECT.
-    private SqlWindowFunction WindowFunction(MethodCallExpression call)
+    // An aggregate of a table in an argument of a window function is a subquery, not
+    // a window aggregate of the SELECT, which PostgreSQL would find nested; and a
+    // window function in an argument, which nothing but a derived table of its own
+    // can compute first, is refused.
+    private SqlExpression WindowFunction(MethodCallExpression call)
+    {
+        SqlExpression function = Plain(() => Function(call));
+        return function.Any(part =>
+            part.IsWindow
+            && part.Operands.Any(operand => operand.Any(inner => inner.IsWindow))
+        )
+            ? throw new NotSupportedException(
+                $"'{call.Method.Name}' reads a window function in its arguments, and PostgreSQL nests no window function in another: compute it in an Over of its own and read its result here."
+            )
+            : function;
+    }
+
+    // What is bound without the SELECT whose projection is being bound, so that an
+    // aggregate of its rows is a subquery.
+    private T Plain<T>(Func<T> bind)
+    {
+        SelectQuery? window = _window;
+        _window = null;
+        T bound = bind();
+        _window = window;
+        return bound;
+    }
+
+    private SqlExpression Function(MethodCallExpression call)
     {
         return
             call.Method.Name == nameof(PostgreSqlWindows.Over)
@@ -351,7 +389,7 @@ internal sealed partial class Translator
 
     // LAG and LEAD read their value in another row, and their default in this one,
     // where a null default is PostgreSQL's own: NULL for a missing row.
-    private SqlWindowFunction Shifted(
+    private SqlExpression Shifted(
         string name,
         WindowShape window,
         MethodCallExpression call
@@ -360,6 +398,31 @@ internal sealed partial class Translator
         SqlExpression value = Read(window, call);
         SqlExpression offset = Sql(call.Arguments[2]);
         SqlExpression fallback = Sql(call.Arguments[3]);
+        // PostgreSQL nests no window function in another. A default that is one is
+        // read beside the function, where there is no row, which a value that is
+        // never NULL tells: COALESCE(LAG(value, offset) OVER (...), default).
+        if (fallback.Any(part => part.IsWindow))
+        {
+            return value.Nullable
+                ? throw new NotSupportedException(
+                    $"A default of '{name}' that is a window function is read where '{name}' is NULL, which tells a missing row only for a value that is never NULL."
+                )
+                : new SqlFunction(
+                    "COALESCE",
+                    [
+                        new SqlWindowFunction(
+                            name,
+                            [value, offset],
+                            window.Window,
+                            call.Type,
+                            true
+                        ),
+                        fallback,
+                    ],
+                    call.Type,
+                    fallback.Nullable
+                );
+        }
         return Missing(
             name,
             fallback is SqlConstant { Value: null }

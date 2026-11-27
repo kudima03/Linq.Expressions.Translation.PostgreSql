@@ -146,7 +146,7 @@ internal sealed partial class Translator
         }
         Shape source = Shape(call.Arguments[0]);
         return source is GroupingShape grouping ? Grouped(grouping, call)
-            : source is FrameShape frame ? Framed(frame, call)
+            : source is FrameShape frame ? Plain(() => Framed(frame, call))
             : source is GroupJoinShape group
                 ? Terminals.Contains(call.Method.Name)
                         ? new ScalarShape(Valued(Terminal(Correlated(group), call), call))

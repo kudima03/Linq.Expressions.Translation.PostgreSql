@@ -17,10 +17,24 @@ internal sealed class SqlAggregate(
 
     public override bool IsWindow => windowed || window is not null;
 
-    // MIN and MAX of a reference type are NULL when every value is NULL or filtered out.
+    // MIN and MAX of a reference type are NULL when every value is NULL or filtered
+    // out, or when the frame they are taken over holds no row.
     public override bool Nullable =>
         System.Nullable.GetUnderlyingType(Type) is not null
-        || (!Type.IsValueType && (filter is not null || argument is { Nullable: true }));
+        || (
+            !Type.IsValueType
+            && (
+                filter is not null
+                || argument is { Nullable: true }
+                || window is { IncludesCurrentRow: false }
+            )
+        );
+
+    // A window aggregate may aggregate the groups of its SELECT, but PostgreSQL
+    // allows no aggregate in its FILTER: the filter then chooses the argument, which
+    // is NULL, and skipped, for a row it leaves out.
+    private bool IsChosen =>
+        IsWindow && filter is not null && filter.Any(part => part.IsAggregate);
 
     // MIN and MAX of DateTime values are one of them.
     public override SqlKind TimeKind =>
@@ -29,11 +43,25 @@ internal sealed class SqlAggregate(
     public override void Render(SqlWriter writer, SqlMode mode)
     {
         _ = writer.Append(name + "(" + (distinct ? "DISTINCT " : string.Empty));
-        _ = argument is null
-            ? writer.Append("*")
-            : writer.Render(argument, SqlMode.Value);
+        if (IsChosen)
+        {
+            _ = writer
+                .Append("CASE WHEN ")
+                .Render(filter!, SqlMode.Predicate)
+                .Append(" THEN ");
+            _ = argument is null
+                ? writer.Append("1")
+                : writer.Render(argument, SqlMode.Value);
+            _ = writer.Append(" END");
+        }
+        else
+        {
+            _ = argument is null
+                ? writer.Append("*")
+                : writer.Render(argument, SqlMode.Value);
+        }
         _ = writer.Append(")");
-        if (filter is not null)
+        if (filter is not null && !IsChosen)
         {
             _ = writer
                 .Append(" FILTER (WHERE ")

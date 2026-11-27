@@ -710,9 +710,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
     // for the first row, which the translator takes for non-nullable: observed
     // '#' || MAX(...) is NULL and MIN(...) <> 'A-001' is NULL, where .NET gives "#"
     // and true.
-    [Fact(
-        Skip = "#128: Min/Max of strings over a maybe-empty frame is taken as non-null"
-    )]
+    [Fact]
     public void ComposesTheExtremeStringOfAFrameThatMayBeEmpty()
     {
         database.AssertSameRows(
@@ -756,7 +754,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
 
     // ERROR: aggregate functions are not allowed in FILTER, from
     // COUNT(*) FILTER (WHERE CAST(COUNT(*) AS integer) > 1) OVER (...) ... GROUP BY.
-    [Fact(Skip = "#128: a frame filter on a group aggregate puts an aggregate in FILTER")]
+    [Fact]
     public void FiltersTheGroupsOfAFrameByTheirAggregates()
     {
         database.AssertSameRows(
@@ -871,9 +869,7 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
 
     // ERROR: window function calls cannot be nested, from
     // MAX(CAST(COALESCE(SUM(t0."Quantity") OVER (...), 0) AS integer)) OVER ().
-    [Fact(
-        Skip = "#128: an aggregate over an Over's rows in its projection nests windows"
-    )]
+    [Fact]
     public void AggregatesTheRowsOfAnOverBesideThem()
     {
         IQueryable<RunningQuantity> running = Trees.Over(

@@ -244,6 +244,7 @@ internal sealed partial class Translator
             && select.Joins.Count == 0
             && !select.KeepsOrder
             && !select.Distinct
+            && !select.Windowed
             && select.GroupBy is null;
     }
 

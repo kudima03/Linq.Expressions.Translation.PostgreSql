@@ -768,9 +768,7 @@ public sealed class WindowCompositionSemanticsTests(Database database)
     // SELECT t0."Id" AS "Customer", t1."Id", ROW_NUMBER() OVER (PARTITION BY
     // t1."CustomerId" ORDER BY t1."Total" DESC, t1."Id") AS "Rank" FROM "Customer" AS t0
     // CROSS JOIN "Order" AS t1 WHERE t0."Id" <= 2
-    [Fact(
-        Skip = "#128: a windowed inner sequence of SelectMany is cross joined without a derived table, so its window counts the joined rows"
-    )]
+    [Fact]
     public void CrossJoinsTheWindow()
     {
         database.AssertSameRows(
@@ -876,9 +874,7 @@ public sealed class WindowCompositionSemanticsTests(Database database)
     }
 
     // 42P20: window function calls cannot be nested: MAX(ROW_NUMBER() OVER (...)) OVER ()
-    [Fact(
-        Skip = "#128: an aggregate over a windowed query in a later projection of it nests the window function in a window aggregate"
-    )]
+    [Fact]
     public void AggregatesAWindowFunctionBesideItInALaterProjection()
     {
         IQueryable<RankedOrder> ranked = Ranked;
@@ -895,9 +891,7 @@ public sealed class WindowCompositionSemanticsTests(Database database)
 
     // 42P20: window functions are not allowed in FILTER:
     // COUNT(*) FILTER (WHERE ROW_NUMBER() OVER (...) = 1) OVER ()
-    [Fact(
-        Skip = "#128: a filtered aggregate over a windowed query in a later projection of it puts the window function in FILTER"
-    )]
+    [Fact]
     public void CountsByAWindowFunctionBesideItInALaterProjection()
     {
         IQueryable<RankedOrder> ranked = Ranked;
@@ -1015,9 +1009,7 @@ public sealed class WindowCompositionSemanticsTests(Database database)
     // The correlated window becomes an INNER JOIN, its window over every joined row:
     // SELECT t0."Name", t1."Id", ROW_NUMBER() OVER (ORDER BY t1."Id") AS "Number", ...
     // FROM "Customer" AS t0 INNER JOIN "Order" AS t1 ON t1."CustomerId" = t0."Id"
-    [Fact(
-        Skip = "#128: a correlated Over in SelectMany is inner joined, so its window is over all joined rows instead of the rows of each outer element"
-    )]
+    [Fact]
     public void SelectsManyFromACorrelatedWindow()
     {
         database.AssertSameRows(
@@ -1625,9 +1617,7 @@ public sealed class WindowCompositionSemanticsTests(Database database)
     // The join is computed before the window: SELECT t0."Name", t1."Id",
     // ROW_NUMBER() OVER (ORDER BY t1."Id") ... FROM "Customer" AS t0 INNER JOIN
     // "Order" AS t1 ... numbers the joined orders only.
-    [Fact(
-        Skip = "#128: a windowed inner sequence of Join is joined without a derived table, so its window is computed over the joined rows only"
-    )]
+    [Fact]
     public void JoinsAWindowOverEveryRow()
     {
         database.AssertSameRows(
@@ -1669,9 +1659,7 @@ public sealed class WindowCompositionSemanticsTests(Database database)
     }
 
     // The correlation filters the rows before the window numbers them.
-    [Fact(
-        Skip = "#128: a windowed inner sequence of GroupJoin is filtered by the correlation before its window is computed"
-    )]
+    [Fact]
     public void AggregatesTheMatchesOfAWindowOverEveryRow()
     {
         database.AssertSameRows(
@@ -1707,9 +1695,7 @@ public sealed class WindowCompositionSemanticsTests(Database database)
     }
 
     // The window is computed before DISTINCT ON keeps one order per customer.
-    [Fact(
-        Skip = "#128: Over over DistinctBy extends its DISTINCT ON SELECT, so the window is computed over the rows before DistinctBy"
-    )]
+    [Fact]
     public void ComputesTheWindowOverTheRowsOfDistinctBy()
     {
         database.AssertSameRows(
@@ -1734,9 +1720,7 @@ public sealed class WindowCompositionSemanticsTests(Database database)
 
     // SELECT DISTINCT ON (t0."CustomerId") t0."CustomerId", ROW_NUMBER() OVER (ORDER BY
     // t0."CustomerId" DESC) AS "Number", ... FROM "Order" AS t0
-    [Fact(
-        Skip = "#128: Over over DistinctBy extends its DISTINCT ON SELECT, so the window is computed over the rows before DistinctBy"
-    )]
+    [Fact]
     public void CountsTheRowsOfAnUnorderedDistinctBy()
     {
         database.AssertSameRows(
@@ -1822,9 +1806,7 @@ public sealed class WindowCompositionSemanticsTests(Database database)
     // SELECT t2."Id", t2."Number" FROM "Customer" AS t0 INNER JOIN (SELECT t1."Id",
     // ROW_NUMBER() OVER (ORDER BY t1."Id") AS "Number" FROM "Order" AS t1
     // WHERE t1."CustomerId" = t0."Id") AS t2 ON t2."Number" > 0 WHERE t0."IsActive"
-    [Fact(
-        Skip = "#128: a filtered correlated Over in SelectMany is joined as a derived table without LATERAL, which PostgreSQL rejects"
-    )]
+    [Fact]
     public void SelectsManyAWindowWithoutAResultSelector()
     {
         database.AssertSameRows(
@@ -1847,9 +1829,7 @@ public sealed class WindowCompositionSemanticsTests(Database database)
     // SELECT t1."Id", CAST(COUNT(*) OVER () AS integer) AS "All" FROM "Customer" AS t0
     // INNER JOIN "Order" AS t1 ON t0."Id" = t1."CustomerId" WHERE t0."Id" = 2
     // gives All = 2 instead of 12.
-    [Fact(
-        Skip = "#128: a projection with a window aggregate joined as the inner sequence counts the joined rows only"
-    )]
+    [Fact]
     public void JoinsAWindowAggregateOverEveryRow()
     {
         database.AssertSameRows(
@@ -1873,9 +1853,7 @@ public sealed class WindowCompositionSemanticsTests(Database database)
 
     // LAG(CAST(t0."Id" AS bigint), 1, ROW_NUMBER() OVER (ORDER BY t0."Id"))
     // OVER (ORDER BY t0."Id")
-    [Fact(
-        Skip = "#128: a window function in the default of Lag or Lead is nested in it, which PostgreSQL rejects (42P20: window function calls cannot be nested)"
-    )]
+    [Fact]
     public void ReadsAWindowFunctionAsTheDefaultOfAnOffset()
     {
         database.AssertSameRows(
@@ -1897,28 +1875,58 @@ public sealed class WindowCompositionSemanticsTests(Database database)
     }
 
     // LAG(t0."Id", CAST(ROW_NUMBER() OVER (ORDER BY t0."Id") AS integer) % 3, 0)
-    // OVER (...)
-    [Fact(
-        Skip = "#128: a window function in the offset of Lag is nested in it, which PostgreSQL rejects (42P20: window function calls cannot be nested)"
-    )]
-    public void ReadsAnOffsetComputedFromAWindowFunction()
+    // OVER (...) nests a window function in another, which PostgreSQL rejects (42P20)
+    // and no expression beside the function can stand for: the offset has to be
+    // computed first. It is refused, and computed in an Over of its own it is read
+    // as a column.
+    [Fact]
+    public void RefusesAnOffsetComputedFromAWindowFunction()
+    {
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(
+                Trees
+                    .Over(
+                        Orders,
+                        null,
+                        rows => rows.OrderBy(o => o.Id),
+                        null,
+                        (o, w) =>
+                            new
+                            {
+                                o.Id,
+                                Back = w.Lag(x => x.Id, (int)w.RowNumber() % 3, 0),
+                            }
+                    )
+                    .Expression
+            ).TextValue
+        );
+
+        Assert.Contains("Over of its own", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ReadsAnOffsetComputedInAnOverOfItsOwn()
     {
         database.AssertSameRows(
             Trees.Over(
-                Orders,
+                Trees.Over(
+                    Orders,
+                    null,
+                    rows => rows.OrderBy(o => o.Id),
+                    null,
+                    (o, w) => new Stepped { Id = o.Id, Offset = (int)w.RowNumber() % 3 }
+                ),
                 null,
-                rows => rows.OrderBy(o => o.Id),
+                rows => rows.OrderBy(n => n.Id),
                 null,
-                (o, w) => new { o.Id, Back = w.Lag(x => x.Id, (int)w.RowNumber() % 3, 0) }
+                (n, w) => new { n.Id, Back = w.Lag(x => x.Id, n.Offset, 0) }
             )
         );
     }
 
     // LAG(t0."Quantity", 1, CAST(COUNT(*) OVER () AS integer)) OVER (ORDER BY t0."Id"):
     // 42P20: window function calls cannot be nested
-    [Fact(
-        Skip = "#128: an aggregate of the source table in an argument of a window function becomes a nested window aggregate, which PostgreSQL rejects"
-    )]
+    [Fact]
     public void ReadsAnAggregateOfATableInTheArgumentsOfAWindowFunction()
     {
         database.AssertSameRows(
@@ -1941,9 +1949,7 @@ public sealed class WindowCompositionSemanticsTests(Database database)
 
     // COUNT(*) FILTER (WHERE t0."Quantity" < (CAST(COUNT(*) OVER () AS integer) / 3))
     // OVER (ORDER BY t0."Id"): 42P20: window functions are not allowed in FILTER
-    [Fact(
-        Skip = "#128: an aggregate of the source table in the filter of a frame aggregate becomes a window aggregate in FILTER, which PostgreSQL rejects"
-    )]
+    [Fact]
     public void FiltersTheFrameByAnAggregateOfATable()
     {
         database.AssertSameRows(
@@ -2001,9 +2007,7 @@ public sealed class WindowCompositionSemanticsTests(Database database)
 
     // SELECT DISTINCT ON (t2."CustomerId") t2."CustomerId", ROW_NUMBER() OVER (ORDER BY
     // t2."CustomerId") AS "Number", ... FROM (... UNION ALL ...) AS t2
-    [Fact(
-        Skip = "#128: Over over UnionBy extends its DISTINCT ON SELECT, so the window is computed over both sequences before UnionBy keeps one row per key"
-    )]
+    [Fact]
     public void ComputesTheWindowOverTheRowsOfUnionBy()
     {
         database.AssertSameRows(
@@ -2036,4 +2040,11 @@ public sealed class WindowCompositionSemanticsTests(Database database)
         decimal Total,
         long Rank
     );
+
+    public sealed record Stepped
+    {
+        public int Id { get; init; }
+
+        public int Offset { get; init; }
+    }
 }
