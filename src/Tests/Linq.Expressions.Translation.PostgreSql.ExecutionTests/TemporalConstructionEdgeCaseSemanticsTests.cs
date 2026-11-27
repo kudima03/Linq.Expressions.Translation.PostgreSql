@@ -656,7 +656,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // day and date PostgreSQL reads in the session zone (America/New_York), so Hour
     // of 2024-01-01 02:00 UTC is 21 instead of 2.
     [Fact(
-        Skip = "#128: a DateTime constructed with DateTimeKind.Utc is a timestamptz, read in the session time zone"
+        Skip = "#129: a DateTime constructed with DateTimeKind.Utc is a timestamptz, read in the session time zone"
     )]
     public void ReadsMembersOfUtcTimestampsAsWritten()
     {
@@ -694,7 +694,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // Observed: the timestamptz compares with the timestamp column and the TIMESTAMP
     // constant through the session zone, five hours later.
     [Fact(
-        Skip = "#128: a DateTime constructed with DateTimeKind.Utc compares with a DateTime through the session time zone"
+        Skip = "#129: a DateTime constructed with DateTimeKind.Utc compares with a DateTime through the session time zone"
     )]
     public void ComparesUtcTimestampsByTicks()
     {
@@ -722,7 +722,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // Observed: timestamptz - timestamp converts the timestamp through the session
     // zone, and adding a day across the change to daylight saving time adds 23 hours.
     [Fact(
-        Skip = "#128: arithmetic on a DateTime constructed with DateTimeKind.Utc follows the session time zone"
+        Skip = "#129: arithmetic on a DateTime constructed with DateTimeKind.Utc follows the session time zone"
     )]
     public void ComputesWithUtcTimestampsByTicks()
     {
@@ -748,7 +748,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // Observed: UNION and GREATEST resolve timestamptz and timestamp to timestamptz,
     // so the column's values shift by the session zone's offset.
     [Fact(
-        Skip = "#128: a DateTime constructed with DateTimeKind.Utc shifts a DateTime it is combined with by the session time zone"
+        Skip = "#129: a DateTime constructed with DateTimeKind.Utc shifts a DateTime it is combined with by the session time zone"
     )]
     public void CombinesUtcTimestampsWithColumns()
     {
@@ -937,7 +937,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // Observed: the constant renders as TIME '00:00:00', truncated, where a DateTime
     // constant finer than a microsecond is refused with NotSupportedException.
     [Fact(
-        Skip = "#128: a TimeOnly constant finer than a microsecond is truncated silently"
+        Skip = "#130: a TimeOnly constant finer than a microsecond is truncated silently"
     )]
     public void ComparesTimeConstantFinerThanMicrosecond()
     {

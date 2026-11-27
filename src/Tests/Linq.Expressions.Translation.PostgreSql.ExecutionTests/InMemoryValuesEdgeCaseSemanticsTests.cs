@@ -467,7 +467,7 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         );
     }
 
-    [Fact(Skip = "#128: a TimeOnly literal drops the ticks below a microsecond")]
+    [Fact(Skip = "#130: a TimeOnly literal drops the ticks below a microsecond")]
     public void KeepsTicksOfTimeOnly()
     {
         // VALUES (TIME '00:00:00'), (TIME '23:59:59.999999') for new TimeOnly(1) and
@@ -478,7 +478,7 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         );
     }
 
-    [Fact(Skip = "#128: a TimeSpan literal drops the ticks below a microsecond")]
+    [Fact(Skip = "#130: a TimeSpan literal drops the ticks below a microsecond")]
     public void KeepsTicksOfTimeSpan()
     {
         // VALUES (INTERVAL 'PT0.0000001S'), (INTERVAL 'PT0S'): PostgreSQL rounds the
