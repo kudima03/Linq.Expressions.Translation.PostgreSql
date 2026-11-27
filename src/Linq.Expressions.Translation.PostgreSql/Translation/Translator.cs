@@ -92,8 +92,9 @@ internal sealed partial class Translator
 
     // A query of its own is translated with no projection around it: an aggregate
     // in it is a window over its own rows only.
-    private SqlQuery Query(Expression expression)
+    private SqlQuery Query(Expression source)
     {
+        Expression expression = Sequence(source);
         SelectQuery? window = _window;
         _window = null;
         SqlQuery query = expression switch

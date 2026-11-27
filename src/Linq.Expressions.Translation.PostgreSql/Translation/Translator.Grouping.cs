@@ -84,7 +84,11 @@ internal sealed partial class Translator
 
     private static int ParameterCount(Expression argument)
     {
-        return ((LambdaExpression)((UnaryExpression)argument).Operand).Parameters.Count;
+        Expression lambda = argument
+            is UnaryExpression { NodeType: ExpressionType.Quote } quote
+            ? quote.Operand
+            : argument;
+        return ((LambdaExpression)lambda).Parameters.Count;
     }
 
     private Shape Grouped(GroupingShape group, MethodCallExpression call)

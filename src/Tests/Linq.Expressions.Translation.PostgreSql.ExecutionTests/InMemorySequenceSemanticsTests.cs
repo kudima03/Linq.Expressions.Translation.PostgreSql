@@ -300,7 +300,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138
-    [Fact(Skip = "#138: Enumerable.All over a captured array is refused")]
+    [Fact]
     public void TestsAllOfCapturedArray()
     {
         int[] ids = Ids;
@@ -311,7 +311,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138: only Any(x => x == item) is rewritten to Contains.
-    [Fact(Skip = "#138: Enumerable.Any with another predicate over an array is refused")]
+    [Fact]
     public void TestsAnyOfCapturedArrayWithComparison()
     {
         int[] ids = Ids;
@@ -322,7 +322,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138
-    [Fact(Skip = "#138: Enumerable.Count over a captured array is refused")]
+    [Fact]
     public void CountsCapturedArrayPerRow()
     {
         int[] ids = Ids;
@@ -333,7 +333,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138: the call is refused even when it does not read the row.
-    [Fact(Skip = "#138: Enumerable.Count over a captured array is refused")]
+    [Fact]
     public void CountsCapturedArrayWithoutReadingRow()
     {
         int[] ids = Ids;
@@ -347,7 +347,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138: every customer's Id is at least 1, so no selection is empty.
-    [Fact(Skip = "#138: Enumerable.Where over a captured array is refused")]
+    [Fact]
     public void AggregatesFilteredCapturedArrayPerRow()
     {
         int[] ids = Ids;
@@ -365,7 +365,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138
-    [Fact(Skip = "#138: Enumerable.Any over a table read as IEnumerable is refused")]
+    [Fact]
     public void TestsExistenceInTableReadAsSequence()
     {
         database.AssertSameRows(
@@ -376,7 +376,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138
-    [Fact(Skip = "#138: the query below Enumerable.Any of a sequence is refused")]
+    [Fact]
     public void TestsExistenceInQueryReadAsSequence()
     {
         IQueryable<Order> paid = Orders.Where(o => o.IsPaid);
@@ -398,7 +398,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138: ToList and AsEnumerable of a subquery are the IN of that subquery.
-    [Fact(Skip = "#138: ToList/AsEnumerable over a subquery is refused")]
+    [Fact]
     public void FiltersOnSubqueryAsListOrSequence()
     {
         database.AssertSameRows(
@@ -426,7 +426,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138
-    [Fact(Skip = "#138: AsQueryable over a query that is not a root is refused")]
+    [Fact]
     public void TestsExistenceInSubqueryMadeQueryableAgain()
     {
         database.AssertSameRows(

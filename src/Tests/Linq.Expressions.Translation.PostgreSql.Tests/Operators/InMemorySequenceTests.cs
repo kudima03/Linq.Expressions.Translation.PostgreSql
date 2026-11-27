@@ -103,7 +103,7 @@ public sealed record InMemorySequenceTests
     }
 
     // #138: the same SQL as Orders.Any(...).
-    [Fact(Skip = "#138: Enumerable.Any over a table captured as IEnumerable is refused")]
+    [Fact]
     public void TestsExistenceInTableCapturedAsSequence()
     {
         IEnumerable<Order> orders = Orders;
@@ -129,9 +129,7 @@ public sealed record InMemorySequenceTests
     }
 
     // #138: the same SQL as Orders.Where(...).Any(...).
-    [Fact(
-        Skip = "#138: the query below Enumerable.Any of a captured sequence is refused"
-    )]
+    [Fact]
     public void TestsExistenceInQueryCapturedAsSequence()
     {
         IEnumerable<Order> paid = Orders.Where(o => o.IsPaid);
@@ -157,9 +155,7 @@ public sealed record InMemorySequenceTests
     }
 
     // #138: the same SQL as the recursion's Any(...).
-    [Fact(
-        Skip = "#138: WithRecursive below Enumerable.Any of a captured sequence is refused"
-    )]
+    [Fact]
     public void TestsExistenceInRecursionCapturedAsSequence()
     {
         IEnumerable<Employee> reports = Trees.WithRecursive(

@@ -135,6 +135,16 @@ internal sealed partial class Translator
         {
             return new ScalarShape(Extremes(values, call));
         }
+        // An operator over a query or an in-memory sequence is the subquery of its
+        // Queryable form; a collection searched for an item is a list of values.
+        if (
+            Terminals.Contains(call.Method.Name)
+            && IsSequence(call.Arguments[0])
+            && (IsQueried(call.Arguments[0]) || Matched(call) is null)
+        )
+        {
+            return new ScalarShape(Subquery(call));
+        }
         Shape source = Shape(call.Arguments[0]);
         return source is GroupingShape grouping ? Grouped(grouping, call)
             : source is FrameShape frame ? Framed(frame, call)
@@ -894,7 +904,9 @@ internal sealed partial class Translator
             ? (Unspanned(call.Arguments[0]), call.Arguments[1])
             : (call.Object, call.Arguments[0]);
         SqlExpression value = Sql(item);
-        return Membership(Sql(source), value);
+        return IsQueried(source)
+            ? Membership(Query(source), source, value)
+            : Membership(Sql(source), value);
     }
 
     private static SqlExpression Membership(SqlExpression source, SqlExpression value)
