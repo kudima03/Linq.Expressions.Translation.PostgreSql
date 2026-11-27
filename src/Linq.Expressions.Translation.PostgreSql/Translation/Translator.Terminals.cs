@@ -54,11 +54,14 @@ internal sealed partial class Translator
     }
 
     // In a value position, an ...OrDefault of a non-nullable value falls back to its
-    // default where the subquery yields no row.
+    // default where the subquery yields no row, unless it is given one, which the
+    // subquery yields itself.
     private static SqlExpression Valued(SqlExpression result, MethodCallExpression call)
     {
         SqlExpression value = Single(result);
-        return call.Method.Name.EndsWith("OrDefault", StringComparison.Ordinal)
+        return
+            call.Method.Name.EndsWith("OrDefault", StringComparison.Ordinal)
+            && Fallback(call) is null
             ? Substituted(value, call.Type)
             : value;
     }
@@ -74,25 +77,35 @@ internal sealed partial class Translator
             : result;
     }
 
+    // An aggregate of the whole sequence after DefaultIfEmpty() reads the default
+    // element where there is no row, without joining it.
+    private static readonly HashSet<string> Paddable =
+    [
+        nameof(Queryable.Any),
+        nameof(Queryable.Count),
+        nameof(Queryable.LongCount),
+        nameof(Queryable.Sum),
+        nameof(Queryable.Average),
+        nameof(Queryable.Min),
+        nameof(Queryable.Max),
+    ];
+
     private SqlExpression Terminal(MethodCallExpression call)
     {
         MethodCallExpression? padding = call.Arguments[0] as MethodCallExpression;
         return
             padding
                 is { Method.Name: nameof(Queryable.DefaultIfEmpty), Arguments.Count: 1 }
-            ? Padded(Operand(padding), call, padding.Method)
+            && call.Arguments.Count == 1
+            && Paddable.Contains(call.Method.Name)
+            ? Padded(Operand(padding), call)
             : Terminal(Operand(call), call);
     }
 
-    private SqlExpression Padded(
-        SqlQuery source,
-        MethodCallExpression call,
-        MethodInfo padding
-    )
+    private SqlExpression Padded(SqlQuery source, MethodCallExpression call)
     {
         string name = call.Method.Name;
-        return call.Arguments.Count > 1 ? throw Unsupported.Method(padding)
-            : name == nameof(Queryable.Any) ? new SqlConstant(true, typeof(bool))
+        return name == nameof(Queryable.Any) ? new SqlConstant(true, typeof(bool))
             : name is nameof(Queryable.Count) or nameof(Queryable.LongCount)
                 ? Sized(
                     name,
@@ -106,12 +119,7 @@ internal sealed partial class Translator
                     )
                 )
             : name == nameof(Queryable.Sum) ? Aggregated(source, call)
-            : name
-                is nameof(Queryable.Average)
-                    or nameof(Queryable.Min)
-                    or nameof(Queryable.Max)
-                ? Substituted(Aggregated(source, call), call.Type)
-            : throw Unsupported.Method(padding);
+            : Substituted(Aggregated(source, call), call.Type);
     }
 
     private static SqlExpression Substituted(SqlExpression value, Type type)
@@ -131,15 +139,50 @@ internal sealed partial class Translator
             call.Method.GetParameters().Any(IsRejected)
             && !IsOrdinal(call)
             && !IsOrdinallyCompared(call)
+            && Position(call) is null
             ? throw Unsupported.Method(call.Method)
             : Query(call.Arguments[0]);
+    }
+
+    // The constant Index of ElementAt or ElementAtOrDefault.
+    private static Index? Position(MethodCallExpression call)
+    {
+        return
+            call.Method.Name
+                is nameof(Queryable.ElementAt)
+                    or nameof(Queryable.ElementAtOrDefault)
+            && call.Arguments[1] is ConstantExpression { Value: Index index }
+            ? index
+            : null;
+    }
+
+    // The default given to FirstOrDefault, LastOrDefault or SingleOrDefault, their
+    // last argument when it is no predicate.
+    private static Expression? Fallback(MethodCallExpression call)
+    {
+        return
+            call.Arguments.Count > 1
+            && call.Method.Name
+                is nameof(Queryable.FirstOrDefault)
+                    or nameof(Queryable.LastOrDefault)
+                    or nameof(Queryable.SingleOrDefault)
+            && !IsPredicate(call.Arguments[^1])
+            ? call.Arguments[^1]
+            : null;
+    }
+
+    private static bool IsPredicate(Expression argument)
+    {
+        return argument
+            is LambdaExpression
+                or UnaryExpression { NodeType: ExpressionType.Quote };
     }
 
     // Counting and testing the rows of a one-row root leave its element unread,
     // unless their predicate reads it.
     private SqlExpression Terminal(SqlQuery source, MethodCallExpression call)
     {
-        bool filtered = call.Arguments.Count > 1;
+        bool filtered = call.Arguments.Count > 1 && IsPredicate(call.Arguments[1]);
         if (!Countable.Contains(call.Method.Name))
         {
             _ = Sourced(source);
@@ -173,8 +216,21 @@ internal sealed partial class Translator
                 1,
                 call
             ),
+            // An Index counted from the end is counted from the start of the inverted
+            // order: ^1 is its first element.
+            nameof(Queryable.ElementAt)
+            or nameof(Queryable.ElementAtOrDefault)
+                when Position(call) is Index { IsFromEnd: true } index => Element(
+                Positioned(Reverse(source, call.Method), index.Value - 1),
+                1,
+                call
+            ),
             nameof(Queryable.ElementAt) or nameof(Queryable.ElementAtOrDefault) =>
-                Element(Positioned(source, Count(call.Arguments[1])), 1, call),
+                Element(
+                    Positioned(source, Position(call)?.Value ?? Count(call.Arguments[1])),
+                    1,
+                    call
+                ),
             nameof(Queryable.First) or nameof(Queryable.FirstOrDefault) => Element(
                 filtered ? Where(source, Lambda(call, 1)) : source,
                 1,
@@ -451,13 +507,21 @@ internal sealed partial class Translator
         return query;
     }
 
+    // The first rows of a query; with a default given, that default where there is
+    // none, as DefaultIfEmpty yields it.
     private SqlScalarSubquery Element(
         SqlQuery source,
         int count,
         MethodCallExpression call
     )
     {
-        return new SqlScalarSubquery(Take(source, count), call.Type);
+        SelectQuery rows = Take(source, count);
+        return new SqlScalarSubquery(
+            Fallback(call) is Expression fallback
+                ? Defaulted(rows, Sql(fallback), call.Type, false)
+                : rows,
+            call.Type
+        );
     }
 
     // The level of a recursion is a source, not a row: it is of no scope.

@@ -269,38 +269,109 @@ internal sealed partial class Translator
     // else is wrapped into.
     private Shape Absent(Shape shape, MethodCallExpression padding)
     {
+        return Absent(
+            shape,
+            padding.Arguments.Count > 1 ? Sql(padding.Arguments[1]) : null,
+            padding.Method.GetGenericArguments()[0],
+            null
+        );
+    }
+
+    // The same with the default and the type of the element at hand, and a column
+    // that is TRUE in every row the source yields, when it exposes one.
+    private static Shape Absent(
+        Shape shape,
+        SqlExpression? fallback,
+        Type type,
+        SqlExpression? present
+    )
+    {
         Shape nullified = shape.Map(
             (value, name) => ((SqlColumn)Own(value)).AsNullable(),
             null
         );
-        SqlExpression? fallback =
-            padding.Arguments.Count > 1 ? Sql(padding.Arguments[1]) : null;
         if (fallback is not null and not SqlConstant { Value: null })
         {
-            return Padded(shape, nullified, fallback);
+            return Padded(shape, nullified, fallback, present);
         }
-        Shape defaulted = Defaulted(nullified, padding.Method.GetGenericArguments()[0]);
+        Shape defaulted = Defaulted(nullified, type);
         return defaulted is ObjectShape composite
             ? composite.Present(Presence(shape))
             : defaulted;
     }
 
     // An explicit default replaces a value that is NULL only without a match; a value
-    // that may be NULL in a match could not tell the two apart.
-    private static Shape Padded(Shape shape, Shape nullified, SqlExpression fallback)
+    // that may be NULL in a match cannot tell the two apart, unless a column of the
+    // source that is TRUE in every row does.
+    private static Shape Padded(
+        Shape shape,
+        Shape nullified,
+        SqlExpression fallback,
+        SqlExpression? present
+    )
     {
         return shape is ScalarShape { Value.Nullable: false }
-            ? new ScalarShape(
-                new SqlFunction(
-                    "COALESCE",
-                    [((ScalarShape)nullified).Value, fallback],
-                    fallback.Type,
-                    fallback.Nullable
+                ? new ScalarShape(
+                    new SqlFunction(
+                        "COALESCE",
+                        [((ScalarShape)nullified).Value, fallback],
+                        fallback.Type,
+                        fallback.Nullable
+                    )
                 )
-            )
+            : shape is ScalarShape && present is not null
+                ? new ScalarShape(
+                    new SqlCase(
+                        [new SqlWhen(present, ((ScalarShape)nullified).Value)],
+                        fallback,
+                        fallback.Type
+                    )
+                )
             : throw new NotSupportedException(
                 "A default of DefaultIfEmpty is only translated for a single value that is never NULL in a matching row, as NULL cannot be told from the absence of a row."
             );
+    }
+
+    // The rows of a sequence that yields at least one of them stand in a column that
+    // is TRUE in every one; a member never starts with $.
+    private const string Present = "$present";
+
+    // DefaultIfEmpty as a sequence operator: the rows of the source, or one row of
+    // the default element where it has none, which is one row left joined to them.
+    private SelectQuery Defaulted(
+        SqlQuery source,
+        SqlExpression? fallback,
+        Type type,
+        bool ordered = true
+    )
+    {
+        SelectQuery rows = Sourced(source) as SelectQuery ?? Wrap(source);
+        bool marked =
+            fallback is not null and not SqlConstant { Value: null }
+            && rows.Shape is ScalarShape { Value.Nullable: true };
+        if (marked)
+        {
+            rows.Hidden.Add(new ProjectionColumn(Present, True));
+        }
+        SelectQuery read = Wrap(rows, ordered);
+        SqlSource joined = read.From!;
+        SelectQuery padded = new(
+            new DerivedSource(
+                new SelectQuery(null, new ScalarShape(Integer(1))),
+                NextAlias()
+            ),
+            Absent(
+                read.Shape,
+                fallback,
+                type,
+                marked ? new SqlColumn(joined.Alias, Present, typeof(bool), true) : null
+            )
+        )
+        {
+            Orderings = read.Orderings,
+        };
+        padded.Joins.Add(new SqlJoin("LEFT JOIN", joined, True));
+        return padded;
     }
 
     // A value type is its default member by member, down to a member of a reference or

@@ -232,6 +232,11 @@ internal sealed partial class Translator
             nameof(Queryable.DistinctBy) => DistinctBy(source, call),
             nameof(Queryable.Reverse) => Reverse(source, call.Method),
             nameof(Queryable.Cast) or nameof(Queryable.OfType) => Cast(source, call),
+            nameof(Queryable.DefaultIfEmpty) => Defaulted(
+                source,
+                call.Arguments.Count > 1 ? Sql(call.Arguments[1]) : null,
+                call.Method.GetGenericArguments()[0]
+            ),
             nameof(Queryable.GroupBy) => GroupBy(source, call),
             nameof(Queryable.Concat)
             or nameof(Queryable.Union)
