@@ -67,9 +67,7 @@ public sealed record SubMicrosecondTimeTests
 
     // #144 (5): a captured TimeOnly of 23:59:59.9999995 used in a computed value is
     // read back as 23:59:59.999999.
-    [Fact(
-        Skip = "#144: a captured TimeOnly finer than a microsecond in a computed value is truncated, not refused"
-    )]
+    [Fact]
     public void RefusesCapturedTimeFinerThanMicrosecondInComputedValue()
     {
         TimeOnly fine = new TimeOnly(23, 59, 59).Add(TimeSpan.FromTicks(9_999_995));

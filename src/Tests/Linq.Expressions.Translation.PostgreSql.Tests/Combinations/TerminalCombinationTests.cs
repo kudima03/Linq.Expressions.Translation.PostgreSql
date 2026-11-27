@@ -21,7 +21,7 @@ public sealed record TerminalCombinationTests
             Sql.Valid(
                 """
                 SELECT t0."Name", COALESCE((
-                    SELECT AVG(t1."Total")
+                    SELECT TRIM_SCALE(ROUND(AVG(ROUND(t1."Total", 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t1."Total", 30))) / 0.79228162514264337593543950335) AS text))))
                     FROM "Order" AS t1
                     WHERE t1."CustomerId" = t0."Id"
                 ), 0) AS "Mean"

@@ -47,11 +47,11 @@ public sealed record FrameAggregateTests
             },
             {
                 (o, w) => w.Rows.Average(x => x.Total),
-                "AVG(t0.\"Total\") OVER (ORDER BY t0.\"Id\")"
+                "TRIM_SCALE(ROUND(AVG(ROUND(t0.\"Total\", 30)) OVER (ORDER BY t0.\"Id\"), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t0.\"Total\", 30)) OVER (ORDER BY t0.\"Id\")) / 0.79228162514264337593543950335) AS text))))"
             },
             {
                 (o, w) => w.Rows.Average(x => x.Quantity),
-                "AVG(CAST(t0.\"Quantity\" AS double precision)) OVER (ORDER BY t0.\"Id\")"
+                "CAST(AVG(t0.\"Quantity\") OVER (ORDER BY t0.\"Id\") AS double precision)"
             },
             {
                 (o, w) => w.Rows.Min(x => x.CreatedAt),

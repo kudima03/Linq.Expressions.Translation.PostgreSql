@@ -13,11 +13,15 @@ internal sealed class SqlFunction(
         : this(name, arguments, type, System.Nullable.GetUnderlyingType(type) is not null)
     { }
 
+    // The functions whose arguments PostgreSQL resolves to one type.
+    private static readonly HashSet<string> Unifying = ["COALESCE", "GREATEST", "LEAST"];
+
     public override void Render(SqlWriter writer, SqlMode mode)
     {
+        bool numeric = Unifying.Contains(name) && SqlWriter.IsNumeric(arguments);
         _ = writer
             .Append(name + "(")
-            .Join(arguments, argument => writer.Render(argument, SqlMode.Value))
+            .Join(arguments, argument => writer.Unified(argument, numeric))
             .Append(")");
     }
 }

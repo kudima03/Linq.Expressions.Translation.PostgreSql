@@ -512,7 +512,7 @@ public sealed record BooleanAndNullSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT AVG(t0."Total")
+                SELECT TRIM_SCALE(ROUND(AVG(ROUND(t0."Total", 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t0."Total", 30))) / 0.79228162514264337593543950335) AS text))))
                 FROM "Order" AS t0
                 WHERE FALSE
                 """

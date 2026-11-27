@@ -254,7 +254,7 @@ public sealed record ConditionalTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CASE WHEN t0."IsPaid" THEN t0."Total" * 2 ELSE t0."Total" / 2 END
+                SELECT CASE WHEN t0."IsPaid" THEN t0."Total" * 2 ELSE TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / 2, 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / 2) / 0.79228162514264337593543950335) AS text)))) END
                 FROM "Order" AS t0
                 """
             ),

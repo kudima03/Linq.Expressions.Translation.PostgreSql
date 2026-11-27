@@ -356,7 +356,9 @@ internal sealed partial class Translator
             ? Masked(binary)
             : Sql(binary.Right);
         return binary.NodeType == ExpressionType.Modulo && IsFloating(binary.Type)
-            ? Remainder(left, right, binary.Type)
+                ? Remainder(left, right, binary.Type)
+            : binary.NodeType == ExpressionType.Divide && IsDecimal(binary.Type)
+                ? Quotient(left, right, binary.Type)
             : new SqlBinary(
                 symbol,
                 kind,

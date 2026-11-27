@@ -62,7 +62,7 @@ public sealed record WindowAggregateTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Total", COALESCE(SUM(t0."Total") OVER (), 0) AS "Sum", AVG(CAST(t0."Quantity" AS double precision)) OVER () AS "Mean", MIN(t0."Priority") OVER () AS "Least"
+                SELECT t0."Total", COALESCE(SUM(t0."Total") OVER (), 0) AS "Sum", CAST(AVG(t0."Quantity") OVER () AS double precision) AS "Mean", MIN(t0."Priority") OVER () AS "Least"
                 FROM "Order" AS t0
                 """
             ),
@@ -321,7 +321,7 @@ public sealed record WindowAggregateTests
                 """
                 SELECT MAX(t1."Value")
                 FROM (
-                    SELECT t0."Total" / COALESCE(SUM(t0."Total") OVER (), 0) AS "Value"
+                    SELECT TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / COALESCE(SUM(t0."Total") OVER (), 0), 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / COALESCE(SUM(t0."Total") OVER (), 0)) / 0.79228162514264337593543950335) AS text)))) AS "Value"
                     FROM "Order" AS t0
                 ) AS t1
                 """
@@ -343,9 +343,9 @@ public sealed record WindowAggregateTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Id", t0."Total" / COALESCE(SUM(t0."Total") OVER (), 0) AS "Share"
+                SELECT t0."Id", TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / COALESCE(SUM(t0."Total") OVER (), 0), 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / COALESCE(SUM(t0."Total") OVER (), 0)) / 0.79228162514264337593543950335) AS text)))) AS "Share"
                 FROM "Order" AS t0
-                ORDER BY t0."Total" / COALESCE(SUM(t0."Total") OVER (), 0) DESC
+                ORDER BY TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / COALESCE(SUM(t0."Total") OVER (), 0), 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / COALESCE(SUM(t0."Total") OVER (), 0)) / 0.79228162514264337593543950335) AS text)))) DESC
                 LIMIT 2
                 OFFSET 1
                 """

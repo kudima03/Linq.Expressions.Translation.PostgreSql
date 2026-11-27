@@ -11,7 +11,7 @@ internal sealed class SqlIn(
         _ = writer
             .Operand(operand, SqlMode.Value)
             .Append(negated ? " NOT IN (" : " IN (")
-            .Join(values, value => writer.Render(value, SqlMode.Value))
+            .Join(values, value => writer.Unified(value, SqlWriter.IsNumeric([operand])))
             .Append(")");
     }
 }

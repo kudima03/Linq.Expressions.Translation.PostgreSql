@@ -22,6 +22,7 @@ internal static class SqlLiteral
                     CultureInfo.InvariantCulture
                 )
                 .ToString()!,
+            decimal number => Exact(number),
             double number => Floating(number, "double precision"),
             float number => Floating(number, "real"),
             Guid guid => $"UUID '{guid}'",
@@ -102,6 +103,21 @@ internal static class SqlLiteral
     {
         return char.IsControl(character)
             || (char.IsWhiteSpace(character) && character != ' ');
+    }
+
+    // A whole decimal is written with its point, as a number without one is an
+    // integer to PostgreSQL, which divides integers without a remainder; the point
+    // alone keeps the scale of the decimal.
+    private static string Exact(decimal number)
+    {
+        string text = Number(number);
+        return text.Contains('.', StringComparison.Ordinal) ? text : text + ".";
+    }
+
+    // A decimal as its digits, for where a numeric operand beside it types it.
+    public static string Number(decimal number)
+    {
+        return number.ToString(CultureInfo.InvariantCulture);
     }
 
     private static string Floating(IFormattable number, string type)

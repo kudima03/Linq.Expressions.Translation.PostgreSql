@@ -30,6 +30,26 @@ internal sealed class SqlWriter
         return this;
     }
 
+    // A whole decimal constant is written with its point, as PostgreSQL takes a
+    // number without one for an integer. Among operands it resolves to one type (an
+    // operator, COALESCE, CASE, IN, VALUES, a cast), a numeric one beside it types
+    // it, and it is written as its digits alone.
+    public static bool IsNumeric(IEnumerable<SqlExpression> operands)
+    {
+        return operands.Any(operand =>
+            operand is not SqlConstant
+            && (Nullable.GetUnderlyingType(operand.Type) ?? operand.Type)
+                == typeof(decimal)
+        );
+    }
+
+    public SqlWriter Unified(SqlExpression operand, bool numeric)
+    {
+        return numeric && operand is SqlConstant { Value: decimal number }
+            ? Append(SqlLiteral.Number(number))
+            : Render(operand, SqlMode.Value);
+    }
+
     public SqlWriter Operand(SqlExpression operand, SqlMode mode)
     {
         return operand.IsCompound(mode)

@@ -157,7 +157,7 @@ public sealed record LiteralTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT 10
+                SELECT 10.
                 FROM "Order" AS t0
                 """
             ),
@@ -205,7 +205,7 @@ public sealed record LiteralTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT 79228162514264337593543950335
+                SELECT 79228162514264337593543950335.
                 FROM "Order" AS t0
                 """
             ),

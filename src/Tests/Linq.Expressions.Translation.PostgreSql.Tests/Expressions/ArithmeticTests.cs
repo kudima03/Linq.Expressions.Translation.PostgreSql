@@ -122,7 +122,7 @@ public sealed record ArithmeticTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Total" / t0."Total"
+                SELECT TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / t0."Total", 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / t0."Total") / 0.79228162514264337593543950335) AS text))))
                 FROM "Order" AS t0
                 """
             ),
@@ -138,7 +138,7 @@ public sealed record ArithmeticTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Total" / 3
+                SELECT TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / 3, 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / 3) / 0.79228162514264337593543950335) AS text))))
                 FROM "Order" AS t0
                 """
             ),
@@ -492,7 +492,7 @@ public sealed record ArithmeticTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Total" / CAST(t0."Quantity" AS numeric)
+                SELECT TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / CAST(t0."Quantity" AS numeric), 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / CAST(t0."Quantity" AS numeric)) / 0.79228162514264337593543950335) AS text))))
                 FROM "Order" AS t0
                 """
             ),

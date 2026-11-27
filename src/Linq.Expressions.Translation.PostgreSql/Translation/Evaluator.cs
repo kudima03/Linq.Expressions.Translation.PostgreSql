@@ -29,9 +29,14 @@ internal sealed class Evaluator(HashSet<Expression> candidates) : ExpressionVisi
         return candidates.Contains(node!) ? Evaluated(node!) : base.Visit(node);
     }
 
+    // A constant test decides the conditional: only the branch it takes is
+    // translated, as the other one is never reached, whatever it would do.
     protected override Expression VisitConditional(ConditionalExpression node)
     {
-        return node.Update(Visit(node.Test)!, Lazily(node.IfTrue), Lazily(node.IfFalse));
+        Expression test = Visit(node.Test)!;
+        return test is ConstantExpression { Value: bool taken }
+            ? Visit(taken ? node.IfTrue : node.IfFalse)!
+            : node.Update(test, Lazily(node.IfTrue), Lazily(node.IfFalse));
     }
 
     protected override Expression VisitBinary(BinaryExpression node)

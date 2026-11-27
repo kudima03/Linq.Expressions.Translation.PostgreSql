@@ -1,14 +1,17 @@
 #pragma warning disable CA1861 // the constant arrays are the sources under test
 
-using Xunit.Sdk;
-
 namespace Linq.Expressions.Translation.PostgreSql.ExecutionTests;
 
 // System.Decimal against numeric: whole decimal constants, a null digits argument,
-// the range of decimal (an overflow fails), rounding of sums to 28 significant
-// digits, and the scale of quotients, products and averages, which .NET keeps to 28
-// significant digits. Decimals compare to 10 places in Canonical, so a difference
-// past them is compared in the query against the exact .NET value.
+// and the places of quotients and averages, which .NET keeps to the 96 bits of a
+// decimal and the translation computes to. Sums and products are exact in numeric,
+// which has neither the 96 bits nor the range of a decimal: where a decimal rounds
+// or overflows, PostgreSQL goes on with the exact value. Fitting them to a decimal
+// would wrap every SUM and every product of decimals into the rounding a quotient
+// needs, and an overflow inside a sum depends on the order of its rows, which SQL
+// does not have; so they are left exact, and the tests say what that gives.
+// Decimals compare to 10 places in Canonical, so a difference past them is compared
+// in the query against the exact .NET value.
 [Collection(SharedDatabase.Name)]
 public sealed class DecimalPrecisionSemanticsTests(Database database)
 {
@@ -28,7 +31,7 @@ public sealed class DecimalPrecisionSemanticsTests(Database database)
     // #144: CASE WHEN ... THEN 250 ELSE -250 END is an integer, so x / 100 divides
     // integers: -2 and 2 instead of -2.5 and 2.5; rounded half to even, the
     // statement fails (function mod(double precision, integer) does not exist).
-    [Fact(Skip = "#144: a whole decimal constant is an integer literal, divided as one")]
+    [Fact]
     public void DividesWholeDecimalConstantsAsDecimals()
     {
         database.AssertSameRows(
@@ -55,7 +58,7 @@ public sealed class DecimalPrecisionSemanticsTests(Database database)
 
     // #144: a whole decimal constant projected through a derived table is an integer
     // column.
-    [Fact(Skip = "#144: a whole decimal constant is an integer literal, divided as one")]
+    [Fact]
     public void DividesAProjectedWholeDecimalConstantAsADecimal()
     {
         database.AssertSameRows(
@@ -75,7 +78,7 @@ public sealed class DecimalPrecisionSemanticsTests(Database database)
     // #144: a null digits argument makes the rounded value null. digits.Value fails
     // to evaluate, so it is deferred, and the deferred constant is refused
     // (NotSupportedException: [DeferredConstant].Value).
-    [Fact(Skip = "#144: Math.Round with the digits of a null captured int? is refused")]
+    [Fact]
     public void RoundsToNullDigitsAsNull()
     {
         int? digits = null;
@@ -91,33 +94,43 @@ public sealed class DecimalPrecisionSemanticsTests(Database database)
         );
     }
 
-    // #144: Math.Round(decimal.MaxValue / 10^28) * 10^28 is 8 * 10^28, past the range
-    // of decimal: .NET throws, numeric goes on (divided by 10 the result is back in
-    // range).
-    [Fact(Skip = "#144: decimal arithmetic past decimal.MaxValue does not fail")]
-    public void FailsToMultiplyPastTheRangeOfDecimal()
+    // Math.Round(decimal.MaxValue / 10^28) * 10^28 is 8 * 10^28, past the range of
+    // decimal: .NET throws, numeric goes on, and divided by 10 the result is back
+    // in range.
+    [Fact]
+    public void MultipliesPastTheRangeOfDecimalExactly()
     {
-        AssertOverflows(
-            new[] { decimal.MaxValue, 1m }
-                .AsQueryable()
-                .Select(x => Math.Round(x / Step) * Step / 10m)
-        );
+        IQueryable<decimal> query = new[] { decimal.MaxValue, 1m }
+            .AsQueryable()
+            .Select(x => Math.Round(x / Step) * Step / 10m);
+
+        AssertOverflowsInMemory(query);
+        Assert.Equal([0m, Step / 10m * 8m], Decimals(query.Expression));
     }
 
-    // #144: decimal.MaxValue + decimal.MaxValue overflows before -decimal.MaxValue is
-    // added.
-    [Fact(Skip = "#144: a decimal sum past decimal.MaxValue does not fail")]
-    public void FailsToSumPastTheRangeOfDecimal()
+    // decimal.MaxValue + decimal.MaxValue overflows in .NET before -decimal.MaxValue
+    // is added; the sum of the three is decimal.MaxValue whatever their order, which
+    // is what SUM gives.
+    [Fact]
+    public void SumsPastTheRangeOfDecimalExactly()
     {
-        AssertOverflows(
-            Rows([decimal.MaxValue, decimal.MaxValue, -decimal.MaxValue]),
-            q => q.Sum()
+        IQueryable<decimal> rows = Rows([
+            decimal.MaxValue,
+            decimal.MaxValue,
+            -decimal.MaxValue,
+        ]);
+        Expression executed = rows.Executed(q => q.Sum());
+
+        IQueryProvider provider = new EnumerableQuery<decimal>([]);
+        _ = Assert.Throws<OverflowException>(() =>
+            provider.Execute<decimal>(InMemory.Rewrite(executed))
         );
+        Assert.Equal([decimal.MaxValue], Decimals(executed));
     }
 
-    // #144: the same in a group.
-    [Fact(Skip = "#144: a decimal sum past decimal.MaxValue does not fail")]
-    public void FailsToSumAGroupPastTheRangeOfDecimal()
+    // The same in a group.
+    [Fact]
+    public void SumsAGroupPastTheRangeOfDecimalExactly()
     {
         (int Key, decimal Value)[] rows =
         [
@@ -125,63 +138,76 @@ public sealed class DecimalPrecisionSemanticsTests(Database database)
             (1, decimal.MaxValue),
             (1, -decimal.MaxValue),
         ];
+        IQueryable<decimal> query = rows.AsQueryable()
+            .GroupBy(r => r.Key)
+            .Select(g => g.Sum(r => r.Value));
 
-        AssertOverflows(
-            rows.AsQueryable()
-                .GroupBy(r => r.Key)
-                .Select(g => new { g.Key, Total = g.Sum(r => r.Value) })
-        );
+        AssertOverflowsInMemory(query);
+        Assert.Equal([decimal.MaxValue], Decimals(query.Expression));
     }
 
-    // #144: the running sum of a window reaches 2 * decimal.MaxValue on the second
-    // row (divided by 4 it is back in range).
-    [Fact(Skip = "#144: a decimal sum past decimal.MaxValue does not fail")]
-    public void FailsToSumAWindowPastTheRangeOfDecimal()
+    // The running sum of a window reaches 2 * decimal.MaxValue - 1 on the second
+    // row, where .NET throws; divided by 4 it is back in range, a quarter and two
+    // halves of decimal.MaxValue rounded to its 29 digits.
+    [Fact]
+    public void SumsAWindowPastTheRangeOfDecimalExactly()
     {
-        AssertOverflows(
-            Trees.Over(
-                new[] { decimal.MaxValue, decimal.MaxValue - 1m, 1m }.AsQueryable(),
-                null,
-                rows => rows.OrderDescending(),
-                PostgreSqlFrame.Rows(null, 0),
-                (v, w) => new { Value = v, Running = w.Rows.Sum(r => r) / 4m }
-            )
+        IQueryable<decimal> query = Trees.Over(
+            new[] { decimal.MaxValue, decimal.MaxValue - 1m, 1m }.AsQueryable(),
+            null,
+            rows => rows.OrderDescending(),
+            PostgreSqlFrame.Rows(null, 0),
+            (v, w) => w.Rows.Sum(r => r) / 4m
+        );
+
+        AssertOverflowsInMemory(query);
+        Assert.Equal(
+            [
+                19807040628566084398385987584m,
+                39614081257132168796771975167m,
+                39614081257132168796771975168m,
+            ],
+            Decimals(query.Expression)
         );
     }
 
-    // #144: 9 + 0.0000000000000000000000000001 has 29 significant digits, rounded to
-    // 9 by .NET in any order; numeric keeps 9.0000000000000000000000000003.
-    [Fact(Skip = "#144: a decimal sum keeps more than 28 significant digits")]
-    public void RoundsTheSumOfAGroupTo28SignificantDigits()
+    // 9 + 0.0000000000000000000000000001 has 29 significant digits, which .NET
+    // rounds to 9; numeric keeps 9.0000000000000000000000000003, which is not 9.
+    [Fact]
+    public void SumsAGroupExactlyWhereADecimalRounds()
     {
         (int Key, decimal Value)[] rows = [(1, 9m), (1, Tiny), (1, Tiny), (1, Tiny)];
+        IQueryable<bool> query = rows.AsQueryable()
+            .GroupBy(r => r.Key)
+            .Select(g => g.Sum(r => r.Value) == 9m);
 
-        database.AssertSameRows(
-            rows.AsQueryable()
-                .GroupBy(r => r.Key)
-                .Select(g => new { g.Key, Nine = g.Sum(r => r.Value) == 9m })
-        );
+        Assert.Equal([true], new EnumerableQuery<bool>(query.Expression).ToList());
+        Assert.Equal([false], Values<bool>(query.Expression));
     }
 
-    // #144: the same over the rows of a window.
-    [Fact(Skip = "#144: a decimal sum keeps more than 28 significant digits")]
-    public void RoundsTheSumOfAWindowTo28SignificantDigits()
+    // The same over the rows of a window.
+    [Fact]
+    public void SumsAWindowExactlyWhereADecimalRounds()
     {
-        database.AssertSameRows(
-            Trees.Over(
-                new[] { 9m, Tiny, Tiny, Tiny }.AsQueryable(),
-                null,
-                null,
-                null,
-                (v, w) => new { Value = v, Nine = w.Rows.Sum(r => r) == 9m }
-            )
+        IQueryable<bool> query = Trees.Over(
+            new[] { 9m, Tiny, Tiny, Tiny }.AsQueryable(),
+            null,
+            null,
+            null,
+            (v, w) => w.Rows.Sum(r => r) == 9m
         );
+
+        Assert.Equal(
+            [true, true, true, true],
+            new EnumerableQuery<bool>(InMemory.Rewrite(query.Expression)).ToList()
+        );
+        Assert.Equal([false, false, false, false], Values<bool>(query.Expression));
     }
 
     // #144: 250.0000000000000000000000001 / 100 is 2.500000000000000000000000001 in
     // .NET, which rounds to 3; numeric keeps the dividend's 25 places, 2.5, which
     // rounds to 2.
-    [Fact(Skip = "#144: numeric division keeps fewer digits than System.Decimal")]
+    [Fact]
     public void DividesJustAboveAMidpointExactly()
     {
         database.AssertSameRows(
@@ -197,7 +223,7 @@ public sealed class DecimalPrecisionSemanticsTests(Database database)
 
     // #145: 1 / 3 is 0.3333333333333333333333333333 in .NET and
     // 0.33333333333333333333 in numeric.
-    [Fact(Skip = "#145: numeric division keeps about 20 significant digits, not 28")]
+    [Fact]
     public void DividesDecimalsTo28Digits()
     {
         (decimal X, decimal Y)[] rows = [(1m, 3m), (2m, 6m), (1m, 4m)];
@@ -214,28 +240,24 @@ public sealed class DecimalPrecisionSemanticsTests(Database database)
         database.AssertSameRows(rows.AsQueryable().Where(r => r.X / r.Y == Third));
     }
 
-    // #145: .NET rounds the product to 28 places; numeric keeps all 30, which cannot
-    // be read as a decimal.
-    [Fact(Skip = "#145: a numeric product keeps every decimal place, past 28")]
-    public void MultipliesDecimalsTo28Places()
+    // .NET rounds 0.111111111111111 squared to 28 places; numeric keeps all 30, which
+    // is not that value (and cannot be read as a decimal). A product of fewer places
+    // is the same in both.
+    [Fact]
+    public void MultipliesDecimalsExactlyPast28Places()
     {
-        database.AssertSameRows(
-            new[] { 0.111111111111111m, 0.5m }.AsQueryable().Select(x => x * x)
-        );
-        database.AssertSameRows(
-            new[] { 0.111111111111111m, 0.5m }
-                .AsQueryable()
-                .Select(x => new
-                {
-                    Value = x,
-                    Exact = x * x == 0.0123456790123456543209876543m,
-                })
-        );
+        IQueryable<bool> query = new[] { 0.111111111111111m, 0.5m }
+            .AsQueryable()
+            .OrderBy(x => x)
+            .Select(x => x * x == (x < 0.2m ? 0.0123456790123456543209876543m : 0.25m));
+
+        Assert.Equal([true, true], new EnumerableQuery<bool>(query.Expression).ToList());
+        Assert.Equal([false, true], Values<bool>(query.Expression));
     }
 
     // #145: the mean of 1, 0, 0 is 0.3333333333333333333333333333 in .NET and
     // 0.33333333333333333333 for AVG(numeric).
-    [Fact(Skip = "#145: AVG of numeric keeps about 20 significant digits, not 28")]
+    [Fact]
     public void AveragesDecimalsTo28Digits()
     {
         (int Key, decimal Value)[] rows =
@@ -266,7 +288,7 @@ public sealed class DecimalPrecisionSemanticsTests(Database database)
 
     // #145: the mean of 2^63 - 1, 1 and -1 as decimals is
     // 3074457345618258602.3333333333 in .NET.
-    [Fact(Skip = "#145: the decimal average of longs keeps fewer digits than .NET")]
+    [Fact]
     public void AveragesLongsAsDecimalsTo28Digits()
     {
         database.AssertSameResult(
@@ -277,7 +299,7 @@ public sealed class DecimalPrecisionSemanticsTests(Database database)
 
     // #145: the mean of 1, 2 and 2 over all rows of a window is
     // 1.6666666666666666666666666667 in .NET.
-    [Fact(Skip = "#145: the decimal average of longs keeps fewer digits than .NET")]
+    [Fact]
     public void AveragesLongsAsDecimalsOverAWindowTo28Digits()
     {
         database.AssertSameRows(
@@ -299,7 +321,7 @@ public sealed class DecimalPrecisionSemanticsTests(Database database)
 
     // #145: the mean of group 1 is 1.6666666666666666666666666667 in .NET, below
     // 1.66666666666666667; AVG(numeric) is 1.6666666666666667, above it.
-    [Fact(Skip = "#145: the decimal average of longs keeps fewer digits than .NET")]
+    [Fact]
     public void ComparesTheDecimalAverageOfAGroupTo28Digits()
     {
         (int Key, long Value)[] rows =
@@ -322,29 +344,27 @@ public sealed class DecimalPrecisionSemanticsTests(Database database)
         );
     }
 
-    // In memory the query throws OverflowException; in SQL the statement must fail.
-    private void AssertOverflows<T>(IQueryable<T> query)
+    private static void AssertOverflowsInMemory<T>(IQueryable<T> query)
     {
         _ = Assert.Throws<OverflowException>(() =>
             new EnumerableQuery<T>(InMemory.Rewrite(query.Expression)).ToList()
         );
-        _ = Assert.Throws<XunitException>(() =>
-            database.Query(new PostgreSqlQuery(query.Expression).TextValue)
-        );
     }
 
-    private void AssertOverflows<TSource, TResult>(
-        IQueryable<TSource> source,
-        Func<IQueryable<TSource>, TResult> terminal
-    )
+    // The single column of the statement, sorted.
+    private List<decimal> Decimals(Expression expression)
     {
-        Expression executed = source.Executed(terminal);
-        IQueryProvider provider = new EnumerableQuery<TResult>([]);
-        _ = Assert.Throws<OverflowException>(() =>
-            provider.Execute<TResult>(InMemory.Rewrite(executed))
-        );
-        _ = Assert.Throws<XunitException>(() =>
-            database.Query(new PostgreSqlQuery(executed).TextValue)
-        );
+        return [.. Values<decimal>(expression).Order()];
+    }
+
+    private List<T> Values<T>(Expression expression)
+    {
+        ResultSet result = database.Query(new PostgreSqlQuery(expression).TextValue);
+        return
+        [
+            .. result.Rows.Select(row =>
+                (T)Materializer.Element(typeof(T), result, row)!
+            ),
+        ];
     }
 }

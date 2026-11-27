@@ -86,7 +86,7 @@ public sealed record OneRowAggregateTests
                     SELECT COALESCE(SUM(t1."Total"), 0)
                     FROM "Order" AS t1
                 ) AS "Revenue", (
-                    SELECT AVG(t2."Total")
+                    SELECT TRIM_SCALE(ROUND(AVG(ROUND(t2."Total", 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t2."Total", 30))) / 0.79228162514264337593543950335) AS text))))
                     FROM "Order" AS t2
                 ) AS "AverageTotal"
                 """

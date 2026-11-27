@@ -337,20 +337,37 @@ internal sealed partial class Translator
                 ? new SqlCast(sum, ScalarTypes.Number(result), result)
                 : sum;
         }
-        SqlExpression argument =
-            name == nameof(Queryable.Average)
-            && Integral.Contains(ScalarTypes.Underlying(value.Type))
-                ? new SqlCast(value, "double precision", typeof(double))
-                : value;
-        return new SqlAggregate(
-            name == nameof(Queryable.Average) ? "AVG" : Extreme(name, value.Type),
-            argument,
-            distinct,
-            filter,
-            type,
-            windowed,
-            window
-        );
+        if (name != nameof(Queryable.Average))
+        {
+            return new SqlAggregate(
+                Extreme(name, value.Type),
+                value,
+                distinct,
+                filter,
+                type,
+                windowed,
+                window
+            );
+        }
+        SqlAggregate Mean(SqlExpression argument)
+        {
+            return new SqlAggregate(
+                "AVG",
+                argument,
+                distinct,
+                filter,
+                type,
+                windowed,
+                window
+            );
+        }
+        // The mean of integers is the exact sum divided once, as .NET computes it:
+        // AVG of an integer is a numeric, where the mean of the values as doubles
+        // would round each of them first. The mean of decimals has their places.
+        return Integral.Contains(ScalarTypes.Underlying(value.Type))
+                ? new SqlCast(Mean(value), "double precision", type)
+            : IsDecimal(value.Type) ? Fitted(Mean(Padded(value)))
+            : Mean(value);
     }
 
     // PostgreSQL has no MIN or MAX of boolean or uuid: booleans have BOOL_AND and

@@ -584,7 +584,7 @@ public sealed record WindowCompositionTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT NTILE(4) OVER (ORDER BY t0."Id") AS "Bucket", LAG(t0."Id", 2, -2) OVER (ORDER BY t0."Id") AS "Back", LEAD(t0."Note", 2, 'it''s') OVER (ORDER BY t0."Id") AS "Note", LAG(t0."Total" * 1.5, 1, 0) OVER (ORDER BY t0."Id") AS "Scaled"
+                SELECT NTILE(4) OVER (ORDER BY t0."Id") AS "Bucket", LAG(t0."Id", 2, -2) OVER (ORDER BY t0."Id") AS "Back", LEAD(t0."Note", 2, 'it''s') OVER (ORDER BY t0."Id") AS "Note", LAG(t0."Total" * 1.5, 1, 0.) OVER (ORDER BY t0."Id") AS "Scaled"
                 FROM "Order" AS t0
                 """
             ),

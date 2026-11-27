@@ -95,7 +95,7 @@ public sealed record InMemorySequenceTests
                 SELECT t0."Id"
                 FROM "Customer" AS t0
                 INNER JOIN (VALUES (CAST('a' AS text)), ('b')) AS t1 ("Value") ON t0."Id" = ASCII(t1."Value")
-                INNER JOIN (VALUES (CAST(1 AS numeric)), (18446744073709551615)) AS t2 ("Value") ON (CAST(t0."Id" AS numeric) + CASE WHEN t0."Id" < 0 THEN 18446744073709551616 ELSE 0 END) = t2."Value"
+                INNER JOIN (VALUES (CAST(1 AS numeric)), (18446744073709551615)) AS t2 ("Value") ON (CAST(t0."Id" AS numeric) + CASE WHEN t0."Id" < 0 THEN 18446744073709551616. ELSE 0 END) = t2."Value"
                 """
             ),
             new PostgreSqlQuery(query).TextValue

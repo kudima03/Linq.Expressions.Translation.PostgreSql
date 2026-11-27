@@ -132,7 +132,7 @@ public sealed record GroupByTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."CustomerId", AVG(t0."Total") AS "Mean"
+                SELECT t0."CustomerId", TRIM_SCALE(ROUND(AVG(ROUND(t0."Total", 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t0."Total", 30))) / 0.79228162514264337593543950335) AS text)))) AS "Mean"
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
                 """
@@ -153,7 +153,7 @@ public sealed record GroupByTests
             Sql.Valid(
                 """
                 SELECT t0."CustomerId",
-                AVG(CAST(t0."Quantity" AS double precision)) AS "Mean"
+                CAST(AVG(t0."Quantity") AS double precision) AS "Mean"
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
                 """
@@ -920,7 +920,7 @@ public sealed record GroupByTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT AVG(t1."Revenue")
+                SELECT TRIM_SCALE(ROUND(AVG(ROUND(t1."Revenue", 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t1."Revenue", 30))) / 0.79228162514264337593543950335) AS text))))
                 FROM (
                     SELECT t0."CustomerId", COALESCE(SUM(t0."Total"), 0) AS "Revenue"
                     FROM "Order" AS t0
@@ -1040,7 +1040,7 @@ public sealed record GroupByTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT AVG(DISTINCT CAST(t0."Quantity" AS double precision))
+                SELECT CAST(AVG(DISTINCT t0."Quantity") AS double precision)
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
                 """

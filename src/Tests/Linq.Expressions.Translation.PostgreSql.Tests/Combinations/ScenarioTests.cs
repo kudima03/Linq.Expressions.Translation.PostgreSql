@@ -233,7 +233,7 @@ public sealed record ScenarioTests
                 SELECT t0."Id", t0."Total"
                 FROM "Order" AS t0
                 WHERE t0."Total" > (
-                    SELECT AVG(t1."Total")
+                    SELECT TRIM_SCALE(ROUND(AVG(ROUND(t1."Total", 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t1."Total", 30))) / 0.79228162514264337593543950335) AS text))))
                     FROM "Order" AS t1
                     WHERE t1."CustomerId" = t0."CustomerId"
                 )
@@ -280,7 +280,7 @@ public sealed record ScenarioTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Id", t0."Total" / COALESCE(SUM(t0."Total") OVER (), 0) AS "Share"
+                SELECT t0."Id", TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / COALESCE(SUM(t0."Total") OVER (), 0), 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / COALESCE(SUM(t0."Total") OVER (), 0)) / 0.79228162514264337593543950335) AS text)))) AS "Share"
                 FROM "Order" AS t0
                 """
             ),
@@ -388,11 +388,11 @@ public sealed record ScenarioTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CAST(TRUNC(t0."Total" / 100) AS integer) AS "Bucket",
+                SELECT CAST(TRUNC(TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / 100, 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / 100) / 0.79228162514264337593543950335) AS text))))) AS integer) AS "Bucket",
                 CAST(COUNT(*) AS integer) AS "Count"
                 FROM "Order" AS t0
-                GROUP BY CAST(TRUNC(t0."Total" / 100) AS integer)
-                ORDER BY CAST(TRUNC(t0."Total" / 100) AS integer)
+                GROUP BY CAST(TRUNC(TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / 100, 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / 100) / 0.79228162514264337593543950335) AS text))))) AS integer)
+                ORDER BY CAST(TRUNC(TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / 100, 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / 100) / 0.79228162514264337593543950335) AS text))))) AS integer)
                 """
             ),
             new PostgreSqlQuery(query).TextValue

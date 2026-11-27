@@ -142,14 +142,14 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
 
     // #140: .NET sums the longs exactly and divides once: the mean of long.MinValue
     // and long.MaxValue is -0.5; averaged as doubles it is 0.
-    [Fact(Skip = "#140: Average of long converts every value to double before summing")]
+    [Fact]
     public void AveragesLongsFromTheirExactSum()
     {
         database.AssertSameResult(Rows([long.MinValue, long.MaxValue]), q => q.Average());
     }
 
     // #140: the same in a group.
-    [Fact(Skip = "#140: Average of long converts every value to double before summing")]
+    [Fact]
     public void AveragesTheLongsOfAGroupFromTheirExactSum()
     {
         (int Key, long Big)[] rows = [(1, long.MinValue), (1, long.MaxValue), (2, 3)];
@@ -162,7 +162,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #140: the same over the rows of a window.
-    [Fact(Skip = "#140: Average of long converts every value to double before summing")]
+    [Fact]
     public void AveragesTheLongsOfAWindowFromTheirExactSum()
     {
         database.AssertSameRows(

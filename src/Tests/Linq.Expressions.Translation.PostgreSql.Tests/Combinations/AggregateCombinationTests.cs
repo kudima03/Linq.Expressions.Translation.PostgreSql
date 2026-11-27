@@ -42,7 +42,7 @@ public sealed record AggregateCombinationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT AVG(CAST(t0."Points" AS double precision))
+                SELECT CAST(AVG(t0."Points") AS double precision)
                 FROM "Order" AS t0
                 """
             ),
@@ -58,7 +58,7 @@ public sealed record AggregateCombinationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT AVG(t0."Total")
+                SELECT TRIM_SCALE(ROUND(AVG(ROUND(t0."Total", 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t0."Total", 30))) / 0.79228162514264337593543950335) AS text))))
                 FROM "Order" AS t0
                 """
             ),
@@ -384,7 +384,7 @@ public sealed record AggregateCombinationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."IsPaid" AS "Paid", AVG(t0."Total") AS "Mean"
+                SELECT t0."IsPaid" AS "Paid", TRIM_SCALE(ROUND(AVG(ROUND(t0."Total", 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t0."Total", 30))) / 0.79228162514264337593543950335) AS text)))) AS "Mean"
                 FROM "Order" AS t0
                 GROUP BY t0."IsPaid"
                 """
@@ -425,7 +425,7 @@ public sealed record AggregateCombinationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."CustomerId" AS "Key", AVG(CAST(t0."Quantity" AS double precision)) AS "Mean"
+                SELECT t0."CustomerId" AS "Key", CAST(AVG(t0."Quantity") AS double precision) AS "Mean"
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
                 """
@@ -685,7 +685,7 @@ public sealed record AggregateCombinationTests
                 SELECT t0."CustomerId"
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
-                HAVING AVG(t0."Total") > 50.5
+                HAVING TRIM_SCALE(ROUND(AVG(ROUND(t0."Total", 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t0."Total", 30))) / 0.79228162514264337593543950335) AS text)))) > 50.5
                 """
             ),
             new PostgreSqlQuery(query).TextValue

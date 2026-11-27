@@ -248,7 +248,7 @@ public sealed record OneRowJoinTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Id", t0."Total" / t2."Value" AS "Share"
+                SELECT t0."Id", TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / t2."Value", 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / t2."Value") / 0.79228162514264337593543950335) AS text)))) AS "Share"
                 FROM "Order" AS t0
                 CROSS JOIN (
                     SELECT (

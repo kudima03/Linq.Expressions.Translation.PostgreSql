@@ -17,7 +17,7 @@ internal sealed class ValuesSource(
                 row =>
                     writer
                         .Append("(")
-                        .Join(row, cell => writer.Render(cell, SqlMode.Value))
+                        .Join(row, cell => writer.Unified(cell, true))
                         .Append(")")
             )
             .Append(") AS " + Alias + " (")

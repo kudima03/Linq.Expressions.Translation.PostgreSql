@@ -19,7 +19,7 @@ public sealed record DeferredEvaluationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CASE WHEN t0."Id" < 0 THEN (SELECT 1) / 0 ELSE t0."Total" END
+                SELECT CASE WHEN t0."Id" < 0 THEN TRIM_SCALE(ROUND(ROUND((SELECT 1.), 30) / 0, 29 - LENGTH(CAST(TRUNC(ABS(ROUND((SELECT 1.), 30) / 0) / 0.79228162514264337593543950335) AS text)))) ELSE t0."Total" END
                 FROM "Order" AS t0
                 """
             ),
@@ -38,7 +38,7 @@ public sealed record DeferredEvaluationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT COALESCE(t0."Discount", (SELECT 1) / 0)
+                SELECT COALESCE(t0."Discount", TRIM_SCALE(ROUND(ROUND((SELECT 1.), 30) / 0, 29 - LENGTH(CAST(TRUNC(ABS(ROUND((SELECT 1.), 30) / 0) / 0.79228162514264337593543950335) AS text)))))
                 FROM "Order" AS t0
                 """
             ),
@@ -97,7 +97,7 @@ public sealed record DeferredEvaluationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CASE WHEN t0."Id" < 0 THEN ((SELECT 1) / 0) + 1 ELSE t0."Total" END
+                SELECT CASE WHEN t0."Id" < 0 THEN TRIM_SCALE(ROUND(ROUND((SELECT 1.), 30) / 0, 29 - LENGTH(CAST(TRUNC(ABS(ROUND((SELECT 1.), 30) / 0) / 0.79228162514264337593543950335) AS text)))) + 1 ELSE t0."Total" END
                 FROM "Order" AS t0
                 """
             ),
@@ -119,7 +119,7 @@ public sealed record DeferredEvaluationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CASE WHEN t0."Id" < 0 THEN CASE WHEN TRUE THEN (SELECT 1) / 0 ELSE 1 END ELSE t0."Total" END
+                SELECT CASE WHEN t0."Id" < 0 THEN TRIM_SCALE(ROUND(ROUND((SELECT 1.), 30) / 0, 29 - LENGTH(CAST(TRUNC(ABS(ROUND((SELECT 1.), 30) / 0) / 0.79228162514264337593543950335) AS text)))) ELSE t0."Total" END
                 FROM "Order" AS t0
                 """
             ),

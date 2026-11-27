@@ -351,8 +351,8 @@ public sealed record GroupingCombinationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."CustomerId", COALESCE(SUM(t0."Total"),
-                0) / CAST(CAST(COUNT(*) AS integer) AS numeric) AS "Ratio"
+                SELECT t0."CustomerId", TRIM_SCALE(ROUND(ROUND(COALESCE(SUM(t0."Total"), 0), 30) / CAST(CAST(COUNT(*) AS integer) AS numeric), 29 - LENGTH(CAST(TRUNC(ABS(ROUND(COALESCE(SUM(t0."Total"),
+                0), 30) / CAST(CAST(COUNT(*) AS integer) AS numeric)) / 0.79228162514264337593543950335) AS text)))) AS "Ratio"
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
                 """
@@ -376,7 +376,7 @@ public sealed record GroupingCombinationTests
                 SELECT t0."CustomerId"
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
-                HAVING MAX(t0."Total") > (AVG(t0."Total") * 2)
+                HAVING MAX(t0."Total") > (TRIM_SCALE(ROUND(AVG(ROUND(t0."Total", 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t0."Total", 30))) / 0.79228162514264337593543950335) AS text)))) * 2)
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -497,7 +497,7 @@ public sealed record GroupingCombinationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT AVG(t1."Revenue")
+                SELECT TRIM_SCALE(ROUND(AVG(ROUND(t1."Revenue", 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t1."Revenue", 30))) / 0.79228162514264337593543950335) AS text))))
                 FROM (
                     SELECT t0."CustomerId", CAST(COUNT(*) AS integer) AS "Count",
                     COALESCE(SUM(t0."Total"), 0) AS "Revenue"
