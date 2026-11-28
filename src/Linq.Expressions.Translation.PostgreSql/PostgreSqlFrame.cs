@@ -76,7 +76,7 @@ public sealed record PostgreSqlFrame
             start,
             end,
             months => $"INTERVAL '{Number(Math.Min(months, int.MaxValue))} months'",
-            FrameKind.IntervalRange
+            FrameKind.MonthRange
         );
     }
 

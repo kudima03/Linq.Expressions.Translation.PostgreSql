@@ -930,12 +930,16 @@ public sealed record FrameEdgeCaseTests
             { -1.5m, null, "1 PRECEDING AND UNBOUNDED FOLLOWING" },
             { -1.5m, 0m, "1 PRECEDING AND CURRENT ROW" },
             { -3m, 2m, "3 PRECEDING AND 2 FOLLOWING" },
-            { decimal.MinValue, 0m, "9223372036854775807 PRECEDING AND CURRENT ROW" },
+            {
+                -9223372036854775807m,
+                9223372036854775807m,
+                "9223372036854775807 PRECEDING AND 9223372036854775807 FOLLOWING"
+            },
         };
 
     // #123: PostgreSQL takes an integer offset over an integer key, so a fraction is
-    // the next whole offset inside the frame, which holds the same keys, and an
-    // offset past a bigint is the largest one.
+    // the next whole offset inside the frame, which holds the same keys; the largest
+    // bigint is an offset of a bigint key as it is.
     [Theory]
     [MemberData(nameof(WholeBounds))]
     public void RangesByWholeOffsetsOverAnIntegerKey(
@@ -1002,6 +1006,304 @@ public sealed record FrameEdgeCaseTests
         Assert.Equal(
             "RANGE BETWEEN INTERVAL '2147483647 months' PRECEDING AND CURRENT ROW",
             PostgreSqlFrame.RangeMonths(int.MinValue, 0).TextValue
+        );
+    }
+
+    public static TheoryData<decimal?, decimal?, string> BoundsPastBigint =>
+        new()
+        {
+            {
+                -decimal.MaxValue,
+                0m,
+                "79228162514264337593543950335 PRECEDING AND CURRENT ROW"
+            },
+            {
+                -1m,
+                9223372036854775808m,
+                "1 PRECEDING AND 9223372036854775808 FOLLOWING"
+            },
+            {
+                -9223372036854775807.5m,
+                null,
+                "9223372036854775807 PRECEDING AND UNBOUNDED FOLLOWING"
+            },
+            // A frame that starts past every key holds no row, which no UNBOUNDED says.
+            {
+                decimal.MaxValue - 1,
+                decimal.MaxValue,
+                "79228162514264337593543950334 FOLLOWING AND 79228162514264337593543950335 FOLLOWING"
+            },
+        };
+
+    // #153: two bigint keys are up to 2^64 - 1 apart, further than the largest bigint
+    // offset reaches, which PostgreSQL adds to the key of each row: over the key
+    // -9223372036854775808, 9223372036854775807 FOLLOWING ends at -1. The key is
+    // ordered as a numeric, which takes any offset and sorts as the bigint does.
+    [Theory]
+    [MemberData(nameof(BoundsPastBigint))]
+    public void RangesByAnOffsetPastBigintOverABigintKeyOrderedAsNumeric(
+        decimal? start,
+        decimal? end,
+        string bounds
+    )
+    {
+        Expression query = Trees
+            .Over(
+                Orders,
+                null,
+                rows => rows.OrderBy(o => o.Points),
+                PostgreSqlFrame.Range(start, end),
+                (o, w) => w.Rows.Count()
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                $"""
+                SELECT CAST(COUNT(*) OVER (ORDER BY CAST(t0."Points" AS numeric) RANGE BETWEEN {bounds}) AS integer)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // UNBOUNDED would reach the rows whose key is NULL, and from them every row,
+    // which an offset never does: the key keeps its direction and its nulls, for
+    // every function of the window.
+    [Fact]
+    public void RangesByAnOffsetPastBigintOverADescendingNullableBigintKey()
+    {
+        Expression query = Trees
+            .Over(
+                Orders,
+                o => o.CustomerId,
+                rows => rows.OrderByDescending(o => (long?)o.Priority),
+                PostgreSqlFrame.Range(-decimal.MaxValue, 0.5m),
+                (o, w) => new { Count = w.Rows.Count(), Rank = w.Rank() }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(COUNT(*) OVER (PARTITION BY t0."CustomerId" ORDER BY CAST(CAST(t0."Priority" AS bigint) AS numeric) DESC NULLS LAST RANGE BETWEEN 79228162514264337593543950335 PRECEDING AND 0 FOLLOWING) AS integer) AS "Count", RANK() OVER (PARTITION BY t0."CustomerId" ORDER BY CAST(CAST(t0."Priority" AS bigint) AS numeric) DESC NULLS LAST RANGE BETWEEN 79228162514264337593543950335 PRECEDING AND 0 FOLLOWING) AS "Rank"
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // The keys of an integer narrower than a bigint are all within the largest
+    // bigint offset, which PostgreSQL adds to them without overflow.
+    [Fact]
+    public void RangesByTheLargestBigintOffsetOverANarrowerIntegerKey()
+    {
+        Expression query = Trees
+            .Over(
+                Orders,
+                null,
+                rows => rows.OrderBy(o => o.Priority),
+                PostgreSqlFrame.Range(-decimal.MaxValue, 9223372036854775808m),
+                (o, w) => w.Rows.Count()
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(COUNT(*) OVER (ORDER BY t0."Priority" NULLS FIRST RANGE BETWEEN 9223372036854775807 PRECEDING AND 9223372036854775807 FOLLOWING) AS integer)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // A ulong is a numeric, which takes the offset as it is.
+    [Fact]
+    public void RangesByAnOffsetPastBigintOverAnUnsignedLongKey()
+    {
+        Expression query = Trees
+            .Over(
+                new ulong[] { 0, 5, ulong.MaxValue }.AsQueryable(),
+                null,
+                rows => rows.Order(),
+                PostgreSqlFrame.Range(-decimal.MaxValue, 1.5m),
+                (x, w) => new { Key = x, Count = w.Rows.Count() }
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Value" AS "Key", CAST(COUNT(*) OVER (ORDER BY t0."Value" RANGE BETWEEN 79228162514264337593543950335 PRECEDING AND 1 FOLLOWING) AS integer) AS "Count"
+                FROM (VALUES (CAST(0 AS numeric)), (5), (18446744073709551615)) AS t0 ("Value")
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    public static TheoryData<int?, int?, string> MonthBounds =>
+        new()
+        {
+            { int.MinValue, 0, "INTERVAL 'infinity' PRECEDING AND CURRENT ROW" },
+            {
+                -3587869,
+                3587870,
+                "INTERVAL '3587869 months' PRECEDING AND INTERVAL 'infinity' FOLLOWING"
+            },
+            {
+                null,
+                int.MaxValue,
+                "UNBOUNDED PRECEDING AND INTERVAL 'infinity' FOLLOWING"
+            },
+            { -12, null, "INTERVAL '12 months' PRECEDING AND UNBOUNDED FOLLOWING" },
+            // A frame that starts past every key holds no row.
+            {
+                3587870,
+                int.MaxValue,
+                "INTERVAL 'infinity' FOLLOWING AND INTERVAL 'infinity' FOLLOWING"
+            },
+        };
+
+    // #153: PostgreSQL subtracts the months from the key of each row, and the first
+    // timestamp, 4714-11-24 BC, is 3587869 months before the month of the last,
+    // 294276-12-31: more months move no timestamp, the statement fails with
+    // "timestamp out of range" over any row. They are an infinite interval, which
+    // reaches every key and no row whose key is NULL.
+    [Theory]
+    [MemberData(nameof(MonthBounds))]
+    public void RangesByMonthsNoTimestampCanBeMovedByAsAnInfiniteInterval(
+        int? start,
+        int? end,
+        string bounds
+    )
+    {
+        PostgreSqlFrame frame = PostgreSqlFrame.RangeMonths(start, end);
+        Expression query = Trees
+            .Over(
+                Orders,
+                null,
+                rows => rows.OrderBy(o => o.CreatedAt),
+                frame,
+                (o, w) => w.Rows.Count()
+            )
+            .Expression;
+        Expression offsets = Trees
+            .Over(
+                Orders,
+                null,
+                rows => rows.OrderBy(o => o.PaidAt),
+                frame,
+                (o, w) => w.Rows.Count()
+            )
+            .Expression;
+        Expression dates = Trees
+            .Over(
+                Orders,
+                null,
+                rows => rows.OrderByDescending(o => o.ShippedOn),
+                frame,
+                (o, w) => w.Rows.Count()
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                $"""
+                SELECT CAST(COUNT(*) OVER (ORDER BY t0."CreatedAt" RANGE BETWEEN {bounds}) AS integer)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Equal(
+            Sql.Valid(
+                $"""
+                SELECT CAST(COUNT(*) OVER (ORDER BY t0."PaidAt" NULLS FIRST RANGE BETWEEN {bounds}) AS integer)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(offsets).TextValue
+        );
+        Assert.Equal(
+            Sql.Valid(
+                $"""
+                SELECT CAST(COUNT(*) OVER (ORDER BY t0."ShippedOn" DESC NULLS LAST RANGE BETWEEN {bounds}) AS integer)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(dates).TextValue
+        );
+    }
+
+    // PostgreSQL moves a time by no months, and an interval adds them to its own:
+    // over those keys the months stay as the frame writes them.
+    [Fact]
+    public void KeepsTheMonthsOfAFrameOverATimeOrADuration()
+    {
+        PostgreSqlFrame frame = PostgreSqlFrame.RangeMonths(int.MinValue, 3587870);
+        Expression times = Trees
+            .Over(
+                Orders,
+                null,
+                rows => rows.OrderBy(o => o.DeliveryTime),
+                frame,
+                (o, w) => w.Rows.Count()
+            )
+            .Expression;
+        Expression spans = Trees
+            .Over(
+                Orders.Select(o => new
+                {
+                    o.Id,
+                    Span = o.DeliveryTime - TimeOnly.MinValue,
+                }),
+                null,
+                rows => rows.OrderBy(o => o.Span),
+                frame,
+                (o, w) => w.Rows.Count()
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(COUNT(*) OVER (ORDER BY t0."DeliveryTime" RANGE BETWEEN INTERVAL '2147483647 months' PRECEDING AND INTERVAL '3587870 months' FOLLOWING) AS integer)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(times).TextValue
+        );
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT CAST(COUNT(*) OVER (ORDER BY t0."DeliveryTime" - TIME '00:00:00' RANGE BETWEEN INTERVAL '2147483647 months' PRECEDING AND INTERVAL '3587870 months' FOLLOWING) AS integer)
+                FROM "Order" AS t0
+                """
+            ),
+            new PostgreSqlQuery(spans).TextValue
+        );
+    }
+
+    [Fact]
+    public void RejectsMonthsOverANumber()
+    {
+        Expression query = Trees
+            .Over(
+                Orders,
+                null,
+                rows => rows.OrderBy(o => o.Points),
+                PostgreSqlFrame.RangeMonths(-1, 0),
+                (o, w) => w.Rows.Count()
+            )
+            .Expression;
+
+        _ = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
         );
     }
 }

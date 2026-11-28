@@ -481,7 +481,9 @@ public static partial class Reference
             object? bound = Moved(key, _side * sign);
             if (bound is null)
             {
-                return _side < 0 ? 0 : peers.Length;
+                return _side < 0
+                    ? Array.FindIndex(peers, row => row[0] is not null)
+                    : peers.Length;
             }
             int first = Array.FindIndex(peers, row => sign * Compare(row[0], bound) >= 0);
             return first < 0 ? peers.Length : first;
@@ -501,12 +503,13 @@ public static partial class Reference
             int sign = descending ? -1 : 1;
             object? bound = Moved(key, _side * sign);
             return bound is null
-                ? (_side > 0 ? peers.Length - 1 : -1)
+                ? (_side > 0 ? Array.FindLastIndex(peers, row => row[0] is not null) : -1)
                 : Array.FindLastIndex(peers, row => sign * Compare(row[0], bound) <= 0);
         }
 
         // The key moved by the distance towards greater (1) or smaller (-1) values;
-        // null beyond the range of its type.
+        // null beyond the range of its type, which is beyond every key: an offset
+        // reaches the keys up to there, and never a row whose key is NULL.
         private object? Moved(object key, int direction)
         {
             try
@@ -518,6 +521,7 @@ public static partial class Reference
                     DateTime moment => _months is int months
                         ? moment.AddMonths(direction * months)
                         : moment + (direction * _span!.Value),
+                    DateTimeOffset moment => moment.AddMonths(direction * _months!.Value),
                     DateOnly day => _months is int months
                         ? day.ToDateTime(TimeOnly.MinValue).AddMonths(direction * months)
                         : day.ToDateTime(TimeOnly.MinValue) + (direction * _span!.Value),
@@ -527,7 +531,8 @@ public static partial class Reference
                         + (direction * _number),
                 };
             }
-            catch (ArgumentOutOfRangeException)
+            catch (Exception exception)
+                when (exception is ArgumentOutOfRangeException or OverflowException)
             {
                 return null;
             }
@@ -543,6 +548,7 @@ public static partial class Reference
                     .ToDouble(value, CultureInfo.InvariantCulture)
                     .CompareTo((double)bound),
                 DateTime moment => moment.CompareTo((DateTime)bound),
+                DateTimeOffset moment => moment.CompareTo((DateTimeOffset)bound),
                 DateOnly day => day.ToDateTime(TimeOnly.MinValue)
                     .CompareTo((DateTime)bound),
                 TimeOnly time => time.ToTimeSpan().CompareTo((TimeSpan)bound),

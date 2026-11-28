@@ -33,6 +33,19 @@ internal sealed partial class Translator
         typeof(TimeSpan),
     ];
 
+    // The types of a key the months of an interval move: a time has no months, and
+    // an interval adds them to its own.
+    private static readonly HashSet<Type> Moments =
+    [
+        typeof(DateTime),
+        typeof(DateTimeOffset),
+        typeof(DateOnly),
+    ];
+
+    // The fewest months no timestamp can be moved by: the last one, of 294276-12-31,
+    // is 3587869 months after the month of the first, 4714-11-24 BC.
+    private const int Unreachable = 3_587_870;
+
     private static bool IsMarker(MethodCallExpression call)
     {
         return call.Method.DeclaringType == typeof(PostgreSqlWindows)
@@ -74,11 +87,7 @@ internal sealed partial class Translator
         // A RANGE with an offset measures the distance of its one key: a key that
         // may be NULL is not split in two to put NaN where .NET sorts it.
         List<Ordering> order = Optional(call, 2) is LambdaExpression orderBy
-            ? WindowOrder(
-                orderBy,
-                query.Shape,
-                frame?.Kind is FrameKind.NumericRange or FrameKind.IntervalRange
-            )
+            ? WindowOrder(orderBy, query.Shape, frame is not null && IsMeasured(frame))
             : [];
         WindowShape window = new(
             new SqlWindow(
@@ -164,50 +173,115 @@ internal sealed partial class Translator
             );
     }
 
+    // Whether the frame is a RANGE with an offset, which measures the distance of
+    // its one key.
+    private static bool IsMeasured(PostgreSqlFrame frame)
+    {
+        return frame.Kind is not (FrameKind.Rows or FrameKind.Range);
+    }
+
     // The frame clause. A RANGE with an offset needs exactly one key of a type the
-    // offset can be added to.
+    // offset can be added to. PostgreSQL adds the offset to the key of each row, in
+    // the type of the key, which fails or stops short for an offset that type cannot
+    // hold or be moved by; UNBOUNDED is no such offset, as it reaches the rows whose
+    // key is NULL, which an offset never does. The offset is written so that it
+    // reaches the keys it says: an integer one as the next whole offset inside the
+    // frame, months no timestamp can be moved by as an infinite interval, and one
+    // past a bigint over a key ordered as a numeric.
     private static string Framed(PostgreSqlFrame frame, List<Ordering> order)
     {
-        if (frame.Kind is not (FrameKind.NumericRange or FrameKind.IntervalRange))
+        if (!IsMeasured(frame))
         {
             return frame.TextValue;
         }
         Type? key = order.Count == 1 ? ScalarTypes.Underlying(order[0].Key.Type) : null;
-        return key is null
-            || (frame.Kind == FrameKind.NumericRange && !ScalarTypes.IsNumber(key))
-            || (frame.Kind == FrameKind.IntervalRange && !Spanned.Contains(key))
-                ? throw new NotSupportedException(
-                    "A RANGE frame with an offset needs the window to be ordered by exactly one key, a number for a numeric offset and a date, a time or a duration for an interval."
-                )
-            : frame.Kind == FrameKind.NumericRange && !Fractional.Contains(key)
-                ? "RANGE BETWEEN "
-                    + Whole(frame.Start, true)
-                    + " AND "
-                    + Whole(frame.End, false)
-            : frame.TextValue;
+        if (
+            key is null
+            || !(
+                frame.Kind == FrameKind.NumericRange
+                    ? ScalarTypes.IsNumber(key)
+                    : Spanned.Contains(key)
+            )
+        )
+        {
+            throw new NotSupportedException(
+                "A RANGE frame with an offset needs the window to be ordered by exactly one key, a number for a numeric offset and a date, a time or a duration for an interval."
+            );
+        }
+        if (frame.Kind == FrameKind.MonthRange && Moments.Contains(key))
+        {
+            return Ranged(frame, (months, _) => Months(Math.Abs(months)));
+        }
+        if (frame.Kind != FrameKind.NumericRange || Fractional.Contains(key))
+        {
+            return frame.TextValue;
+        }
+        // Two bigint keys are up to 2^64 - 1 apart, further than a bigint offset
+        // reaches: a numeric key takes any offset, and sorts as the bigint does.
+        if (key == typeof(long) && (IsPast(frame.Start) || IsPast(frame.End)))
+        {
+            order[0] = new Ordering(
+                new SqlCast(order[0].Key, "numeric", order[0].Key.Type),
+                order[0].Descending,
+                order[0].NullsLast
+            );
+        }
+        // The keys of a narrower integer are all within the largest bigint offset.
+        decimal limit =
+            key == typeof(long) || key == typeof(ulong)
+                ? decimal.MaxValue
+                : long.MaxValue;
+        return Ranged(
+            frame,
+            (offset, start) => SqlLiteral.Number(Math.Min(Whole(offset, start), limit))
+        );
     }
 
-    // A bound of a RANGE over an integer key. PostgreSQL takes an integer offset
-    // there, no numeric one: the keys from x + start to x + end are the integers from
-    // the next whole offset inside the frame, and an offset past a bigint is the
-    // largest one, which reaches every key.
-    private static string Whole(decimal? offset, bool start)
+    private static string Months(decimal months)
     {
-        if (offset is not decimal value)
-        {
-            return start ? "UNBOUNDED PRECEDING" : "UNBOUNDED FOLLOWING";
-        }
-        if (value == 0)
-        {
-            return "CURRENT ROW";
-        }
-        decimal distance = Math.Min(
-            start == (value < 0)
-                ? Math.Floor(Math.Abs(value))
-                : Math.Ceiling(Math.Abs(value)),
-            long.MaxValue
-        );
-        return SqlLiteral.Number(distance) + (value < 0 ? " PRECEDING" : " FOLLOWING");
+        return months >= Unreachable
+            ? "INTERVAL 'infinity'"
+            : $"INTERVAL '{SqlLiteral.Number(months)} months'";
+    }
+
+    // Whether no bigint holds the offset.
+    private static bool IsPast(decimal? offset)
+    {
+        return offset is decimal value && Math.Abs(value) > long.MaxValue;
+    }
+
+    // The offset of a bound of a RANGE over an integer key. PostgreSQL takes an
+    // integer offset there, no numeric one: the keys from x + start to x + end are
+    // the integers from the next whole offset inside the frame.
+    private static decimal Whole(decimal offset, bool start)
+    {
+        return start == (offset < 0)
+            ? Math.Floor(Math.Abs(offset))
+            : Math.Ceiling(Math.Abs(offset));
+    }
+
+    // The clause of a RANGE with its distances written for the type of the key.
+    private static string Ranged(
+        PostgreSqlFrame frame,
+        Func<decimal, bool, string> distance
+    )
+    {
+        return "RANGE BETWEEN "
+            + Reach(frame.Start, true, distance)
+            + " AND "
+            + Reach(frame.End, false, distance);
+    }
+
+    private static string Reach(
+        decimal? offset,
+        bool start,
+        Func<decimal, bool, string> distance
+    )
+    {
+        return offset is not decimal value
+                ? (start ? "UNBOUNDED PRECEDING" : "UNBOUNDED FOLLOWING")
+            : value == 0 ? "CURRENT ROW"
+            : distance(value, start) + (value < 0 ? " PRECEDING" : " FOLLOWING");
     }
 
     // PostgreSqlWindow<TSource>.Rows, the rows of the frame.
