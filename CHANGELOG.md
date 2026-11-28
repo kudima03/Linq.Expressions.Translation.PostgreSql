@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A null constant where nothing beside it types the `NULL` is written with the type of its expression (`CAST(NULL AS bigint)`): the argument of `Sum`, `Average`, `Min` and `Max` (also of a group, a subquery and a window), the value of `FirstValue`, `LastValue`, `Lag` and `Lead`, the operand of a negation, a conditional whose branches are all null and the `Value` of a null captured nullable read in a branch that may not be reached. PostgreSQL took the untyped `NULL` for a text or found no function for it (`function sum(unknown) is not unique`, `operator does not exist: text >= integer`). A `NULL` beside a value that types it is written as before.
+- A `RANGE` frame whose offset is past a `bigint` over a `bigint` key orders the key as a `numeric` (`ORDER BY CAST(key AS numeric)`), which takes the offset as it is, instead of cutting the offset to the largest `bigint`: PostgreSQL adds the offset to the key of each row, and two `bigint` keys are up to 2^64 - 1 apart, so the frames of the keys it overflowed missed rows. Over a `ulong` key, a `numeric`, the offset is no longer cut either; over a narrower integer the largest `bigint` still reaches every key.
+- `PostgreSqlFrame.RangeMonths` with 3587870 months or more, which no timestamp can be moved by (`int.MinValue` and `int.MaxValue` among them), is `INTERVAL 'infinity'` over a `DateTime`, `DateTimeOffset` or `DateOnly` key, which reaches every key on its side and no row whose key is NULL, where the statement failed with `timestamp out of range` over any row. It needs PostgreSQL 17 or later. `TextValue` and the frames over a `TimeOnly` or `TimeSpan` key are unchanged.
+
 ## [0.1.0-preview.0.10.0] - 2026-11-25
 
 ### Added
