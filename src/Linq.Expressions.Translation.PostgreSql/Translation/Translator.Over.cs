@@ -454,7 +454,7 @@ internal sealed partial class Translator
     {
         LambdaExpression value = Lambda(call, 1);
         return IsClosed(value)
-            ? Scalar(Bind(value, window.Element))
+            ? TypedNull(Scalar(Bind(value, window.Element)))
             : throw Unclosed(value);
     }
 

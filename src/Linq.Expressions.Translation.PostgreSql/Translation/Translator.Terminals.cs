@@ -433,7 +433,7 @@ internal sealed partial class Translator
 
     private static SqlExpression Aggregate(
         string name,
-        SqlExpression value,
+        SqlExpression argument,
         Type type,
         bool distinct,
         SqlExpression? filter,
@@ -441,6 +441,7 @@ internal sealed partial class Translator
         SqlWindow? window = null
     )
     {
+        SqlExpression value = TypedNull(argument);
         Type result = ScalarTypes.Underlying(type);
         if (name == nameof(Queryable.Sum))
         {

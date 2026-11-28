@@ -146,7 +146,9 @@ internal sealed partial class Translator
         return expression switch
         {
             ConstantExpression constant => new SqlConstant(constant.Value, constant.Type),
-            DeferredConstant deferred => new SqlDeferred(Node(deferred.Operand)),
+            DeferredConstant deferred => new SqlDeferred(
+                TypedNull(Node(deferred.Operand))
+            ),
             BinaryExpression binary => Binary(binary),
             UnaryExpression { NodeType: ExpressionType.ArrayLength } length =>
                 new SqlFunction("CARDINALITY", [Sql(length.Operand)], typeof(int)),
@@ -710,7 +712,7 @@ internal sealed partial class Translator
             : unary.NodeType != ExpressionType.Not ? throw Unsupported.Node(unary)
             : IsBoolean(unary.Type) ? "NOT "
             : "~";
-        return new SqlUnary(symbol, Sql(unary.Operand), unary.Type);
+        return new SqlUnary(symbol, TypedNull(Sql(unary.Operand)), unary.Type);
     }
 
     private SqlCase Conditional(ConditionalExpression conditional)
@@ -725,6 +727,26 @@ internal sealed partial class Translator
             whens.AddRange(nested.Whens);
             otherwise = nested.Otherwise;
         }
+        // Branches that are all NULL have no type to give the CASE, a text then.
+        if (IsNull(otherwise) && whens.All(branch => IsNull(branch.Result)))
+        {
+            whens[0] = new SqlWhen(whens[0].Condition, TypedNull(whens[0].Result));
+        }
         return new SqlCase(whens, otherwise, conditional.Type);
+    }
+
+    private static bool IsNull(SqlExpression value)
+    {
+        return value is SqlConstant { Value: null };
+    }
+
+    // A NULL is of no type. Where nothing beside it gives it one (the argument of an
+    // aggregate or of a window function, the operand of a negation, the branches of
+    // a conditional that are all NULL, a value read through a subquery), PostgreSQL
+    // takes it for a text or finds no function for it: it is written with the type
+    // of its expression, CAST(NULL AS bigint).
+    private static SqlExpression TypedNull(SqlExpression value)
+    {
+        return IsNull(value) ? Typed(value) : value;
     }
 }
