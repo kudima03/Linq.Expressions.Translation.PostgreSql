@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-preview.0.10.2] - 2026-11-28
+
 ### Fixed
 
 - A null constant where nothing beside it types the `NULL` is written with the type of its expression (`CAST(NULL AS bigint)`): the argument of `Sum`, `Average`, `Min` and `Max` (also of a group, a subquery and a window), the value of `FirstValue`, `LastValue`, `Lag` and `Lead`, the operand of a negation, a conditional whose branches are all null and the `Value` of a null captured nullable read in a branch that may not be reached. PostgreSQL took the untyped `NULL` for a text or found no function for it (`function sum(unknown) is not unique`, `operator does not exist: text >= integer`). A `NULL` beside a value that types it is written as before.
