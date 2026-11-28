@@ -36,29 +36,31 @@ internal sealed partial class Translator
     }
 
     // A timestamp is built from whole days and the microseconds left over, as a
-    // single interval of microseconds loses precision past 2^53 of them.
+    // single interval of microseconds loses precision past 2^53 of them. The days are
+    // counted from 0001-01-01, the year of which is 0, which no date has, for ticks
+    // before it or past 9999-12-31, where .NET throws.
     private SqlExpression Moment(NewExpression creation)
     {
         SqlExpression ticks = Sql(creation.Arguments[0]);
         SqlConstant day = new(TimeSpan.TicksPerDay, typeof(long));
+        SqlFunction origin = new(
+            "MAKE_DATE",
+            [
+                Guarded(Integer(1), [Within(ticks, 0, DateTime.MaxValue.Ticks)], 0),
+                Integer(1),
+                Integer(1),
+            ],
+            typeof(DateTime)
+        );
         SqlExpression moment = new SqlBinary(
             "+",
             SqlBinaryKind.Arithmetic,
-            Shifted(Origin, Calculate("/", ticks, day), "day"),
+            Shifted(origin, Calculate("/", ticks, day), "day"),
             Microseconds(Calculate("%", ticks, day)),
             typeof(DateTime),
             ticks.Nullable
         );
-        return Kind(creation) == DateTimeKind.Utc
-            ? new SqlBinary(
-                "AT TIME ZONE",
-                SqlBinaryKind.Arithmetic,
-                moment,
-                Text("UTC"),
-                typeof(DateTime),
-                ticks.Nullable
-            )
-            : moment;
+        return Kind(creation) == DateTimeKind.Utc ? new SqlUtc(moment) : moment;
     }
 
     private static DateTimeKind Kind(NewExpression creation)

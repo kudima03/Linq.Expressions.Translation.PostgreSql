@@ -97,7 +97,7 @@ public sealed record CapturedVariableTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE t0."Weight" > 1.5
+                WHERE (t0."Weight" > 1.5) AND (t0."Weight" <> 'NaN')
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -856,7 +856,31 @@ public sealed record CapturedVariableTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE CASE WHEN TRUE THEN t0."Quantity" > 5 ELSE t0."Quantity" > 1 END
+                WHERE t0."Quantity" > 5
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // #148: a constant test decides the conditional, so the branch it never takes,
+    // which reads the Value of a null captured nullable, is not translated.
+    [Fact]
+    public void SkipsBranchNotTakenByConstantTest()
+    {
+        int? digits = null;
+
+        Expression query = Orders
+            .Select(o =>
+                digits == null ? (decimal?)null : Math.Round(o.Total, digits.Value)
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT NULL
+                FROM "Order" AS t0
                 """
             ),
             new PostgreSqlQuery(query).TextValue

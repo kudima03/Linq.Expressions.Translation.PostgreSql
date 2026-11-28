@@ -64,7 +64,7 @@ public sealed record ArrayExtremeEdgeCaseTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT GREATEST(t0."Number" COLLATE "C", 'm' COLLATE "C") COLLATE "default"
+                SELECT REGEXP_REPLACE(GREATEST(REGEXP_REPLACE(t0."Number", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C", 'm' COLLATE "C"), E'\ud7ff([\\U00010000-\\U0010FFFF])', '\1', 'g') COLLATE "default"
                 FROM "Order" AS t0
                 """
             ),
@@ -88,9 +88,7 @@ public sealed record ArrayExtremeEdgeCaseTests
     // in C# 14, a parameter-free call that folds into its value as Enumerable.Max
     // does. Observed: NotSupportedException "The method 'MemoryExtensions.Max' is not
     // supported." for both selectors.
-    [Fact(
-        Skip = "#128: Max/Min of a captured array through MemoryExtensions is refused instead of folded"
-    )]
+    [Fact]
     public void FoldsSpanMaxOfCapturedArray()
     {
         int[] values = [3, 9, 4];
@@ -126,7 +124,7 @@ public sealed record ArrayExtremeEdgeCaseTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                ORDER BY GREATEST(t0."Number" COLLATE "C", t0."Note" COLLATE "C") COLLATE "default" COLLATE "C"
+                ORDER BY REGEXP_REPLACE(REGEXP_REPLACE(GREATEST(REGEXP_REPLACE(t0."Number", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C", REGEXP_REPLACE(t0."Note", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"), E'\ud7ff([\\U00010000-\\U0010FFFF])', '\1', 'g') COLLATE "default", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"
                 """
             ),
             new PostgreSqlQuery(query).TextValue

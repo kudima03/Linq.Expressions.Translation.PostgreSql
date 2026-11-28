@@ -13,6 +13,7 @@ internal sealed partial class Translator
     private static readonly Dictionary<Type, string> ValueTypes = new()
     {
         [typeof(bool)] = "boolean",
+        [typeof(char)] = "text",
         [typeof(string)] = "text",
         [typeof(Guid)] = "uuid",
         [typeof(DateTime)] = "timestamp",
@@ -27,6 +28,7 @@ internal sealed partial class Translator
     private static readonly HashSet<Type> SelfTyped =
     [
         typeof(bool),
+        typeof(ushort),
         typeof(int),
         typeof(Guid),
         typeof(DateTime),
@@ -72,29 +74,48 @@ internal sealed partial class Translator
                         alias,
                         column.Name,
                         column.Type,
-                        rows.Any(row => row[index] is null)
+                        rows.Any(row => row[index] is null),
+                        Kind(rows.Select(row => row[index]))
                     )
             )
         );
-        return new SelectQuery(
-            new ValuesSource(
-                [
-                    .. rows.Select(
-                        (row, number) =>
-                            (IReadOnlyList<SqlExpression>)
-                                [
-                                    .. row.Select(
-                                        (cell, index) =>
-                                            Cell(cell, columns[index].Type, number == 0)
-                                    ),
-                                ]
-                    ),
-                ],
-                [.. columns.Select(column => column.Name)],
-                alias
-            ),
-            Shaped(element, read)
+        ValuesSource source = new(
+            [
+                .. rows.Select(
+                    (row, number) =>
+                        (IReadOnlyList<SqlExpression>)
+                            [
+                                .. row.Select(
+                                    (cell, index) =>
+                                        Cell(cell, columns[index].Type, number == 0)
+                                ),
+                            ]
+                ),
+            ],
+            [.. columns.Select(column => column.Name)],
+            alias
         );
+        // The rows come in the order of the sequence, which breaks the ties of a sort.
+        return new SelectQuery(source, Shaped(element, read))
+        {
+            Ties = [new Ordering(new SqlPosition(source), false)],
+        };
+    }
+
+    // The kind of a column of DateTime values: theirs when they agree. A Local one
+    // has no literal, which says so.
+    private static SqlKind Kind(IEnumerable<object?> cells)
+    {
+        List<bool> universal =
+        [
+            .. cells
+                .OfType<DateTime>()
+                .Select(moment => moment.Kind == DateTimeKind.Utc)
+                .Distinct(),
+        ];
+        return universal.Count > 1 ? SqlKind.Mixed
+            : universal.Contains(true) ? SqlKind.Utc
+            : SqlKind.Unspecified;
     }
 
     private static SqlExpression Cell(object? value, Type type, bool first)

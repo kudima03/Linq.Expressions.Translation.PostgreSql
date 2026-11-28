@@ -9,6 +9,9 @@ internal sealed class SqlScalarSubquery(SelectQuery query, Type type)
     public override bool Nullable =>
         !Type.IsValueType || System.Nullable.GetUnderlyingType(Type) is not null;
 
+    public override SqlKind TimeKind =>
+        Query.Kinds() is [SqlKind kind] ? kind : SqlKind.Unspecified;
+
     public override void Render(SqlWriter writer, SqlMode mode)
     {
         _ = writer.Append("(");

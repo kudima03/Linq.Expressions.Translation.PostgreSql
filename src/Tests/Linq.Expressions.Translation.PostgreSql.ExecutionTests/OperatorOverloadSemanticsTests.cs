@@ -7,7 +7,7 @@ namespace Linq.Expressions.Translation.PostgreSql.ExecutionTests;
 public sealed class OperatorOverloadSemanticsTests(Database database)
 {
     // #141: DefaultIfEmpty of a non-empty query is the query.
-    [Fact(Skip = "#141: DefaultIfEmpty as a sequence operator is refused")]
+    [Fact]
     public void KeepsRowsOfNonEmptyQueryThroughDefaultIfEmpty()
     {
         database.AssertSameRows(Orders.Select(o => o.Quantity).DefaultIfEmpty());
@@ -15,7 +15,7 @@ public sealed class OperatorOverloadSemanticsTests(Database database)
     }
 
     // #141: DefaultIfEmpty of an empty query is one default element.
-    [Fact(Skip = "#141: DefaultIfEmpty as a sequence operator is refused")]
+    [Fact]
     public void YieldsDefaultOfEmptyQuery()
     {
         database.AssertSameRows(
@@ -33,7 +33,7 @@ public sealed class OperatorOverloadSemanticsTests(Database database)
     }
 
     // #141: the operators after DefaultIfEmpty see its default element.
-    [Fact(Skip = "#141: DefaultIfEmpty as a sequence operator is refused")]
+    [Fact]
     public void ComposesAfterDefaultIfEmpty()
     {
         database.AssertSameRows(
@@ -50,7 +50,7 @@ public sealed class OperatorOverloadSemanticsTests(Database database)
     }
 
     // #141: DefaultIfEmpty as the source of Over.
-    [Fact(Skip = "#141: DefaultIfEmpty as the source of Over is refused")]
+    [Fact]
     public void WindowsDefaultIfEmpty()
     {
         database.AssertSameRows(
@@ -75,7 +75,7 @@ public sealed class OperatorOverloadSemanticsTests(Database database)
 
     // #141: FirstOrDefault(source, defaultValue) is the first element of a non-empty
     // query, also where that element is NULL, and the given default of an empty one.
-    [Fact(Skip = "#141: FirstOrDefault(source, defaultValue) is refused")]
+    [Fact]
     public void TakesFirstOrGivenDefault()
     {
         database.AssertSameResult(
@@ -97,7 +97,7 @@ public sealed class OperatorOverloadSemanticsTests(Database database)
     }
 
     // #141: LastOrDefault(source, defaultValue) of an ordered query.
-    [Fact(Skip = "#141: LastOrDefault(source, defaultValue) is refused")]
+    [Fact]
     public void TakesLastOrGivenDefault()
     {
         database.AssertSameResult(
@@ -116,7 +116,7 @@ public sealed class OperatorOverloadSemanticsTests(Database database)
 
     // #141: SingleOrDefault(source, defaultValue) is the only element, the default of
     // no element, and throws for more than one.
-    [Fact(Skip = "#141: SingleOrDefault(source, defaultValue) is refused")]
+    [Fact]
     public void TakesSingleOrGivenDefault()
     {
         database.AssertSameResult(
@@ -134,7 +134,7 @@ public sealed class OperatorOverloadSemanticsTests(Database database)
     }
 
     // #141: ElementAt(^n) is the n-th element from the end; out of range it throws.
-    [Fact(Skip = "#141: ElementAt(Index) counted from the end is refused")]
+    [Fact]
     public void TakesElementFromEnd()
     {
         database.AssertSameResult(
@@ -152,7 +152,7 @@ public sealed class OperatorOverloadSemanticsTests(Database database)
     }
 
     // #141: ElementAtOrDefault(^n) is the default where n is beyond the count.
-    [Fact(Skip = "#141: ElementAtOrDefault(Index) counted from the end is refused")]
+    [Fact]
     public void TakesElementFromEndOrDefault()
     {
         database.AssertSameResult(

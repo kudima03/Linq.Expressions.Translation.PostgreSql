@@ -12,6 +12,15 @@ internal sealed class SqlOrderedAggregate(
     Type type
 ) : SqlExpression(type)
 {
+    public override IEnumerable<SqlExpression> Operands =>
+        [
+            .. arguments,
+            .. order.Select(ordering => ordering.Key),
+            .. new[] { filter }.OfType<SqlExpression>(),
+        ];
+
+    public override bool IsAggregate => true;
+
     public override void Render(SqlWriter writer, SqlMode mode)
     {
         _ = writer

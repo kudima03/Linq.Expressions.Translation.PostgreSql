@@ -341,7 +341,7 @@ public sealed record NullSemanticsCombinationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT AVG(CAST(t0."Priority" AS double precision))
+                SELECT CAST(AVG(t0."Priority") AS double precision)
                 FROM "Order" AS t0
                 """
             ),

@@ -86,7 +86,7 @@ public sealed record OneRowAggregateTests
                     SELECT COALESCE(SUM(t1."Total"), 0)
                     FROM "Order" AS t1
                 ) AS "Revenue", (
-                    SELECT AVG(t2."Total")
+                    SELECT TRIM_SCALE(ROUND(AVG(ROUND(t2."Total", 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t2."Total", 30))) / 0.79228162514264337593543950335) AS text))))
                     FROM "Order" AS t2
                 ) AS "AverageTotal"
                 """
@@ -239,19 +239,25 @@ public sealed record OneRowAggregateTests
         );
     }
 
+    // #137: a one-element root whose element is read is a VALUES list of one row.
     [Fact]
-    public void RejectsBareOneElementInMemoryRoot()
+    public void ReadsBareOneElementInMemoryRootAsValues()
     {
         Expression query = new[] { 0 }.AsQueryable().Expression;
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Value"
+                FROM (VALUES (0)) AS t0 ("Value")
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void RejectsOrderedOneElementInMemoryRoot()
+    public void OrdersOneElementInMemoryRootAsValues()
     {
         Expression query = new[] { 0 }
             .AsQueryable()
@@ -259,36 +265,56 @@ public sealed record OneRowAggregateTests
             .Select(_ => Orders.Count())
             .Expression;
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT (SELECT CAST(COUNT(*) AS integer) FROM "Order" AS t1)
+                FROM (VALUES (0)) AS t0 ("Value")
+                ORDER BY t0."Value"
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void RejectsOneElementInMemoryRootInSetOperation()
+    public void CombinesOneElementInMemoryRootAsValues()
     {
         Expression query = new[] { 0 }
             .AsQueryable()
             .Concat(Orders.Select(o => o.Id))
             .Expression;
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Value"
+                FROM (VALUES (0)) AS t0 ("Value")
+                UNION ALL
+                SELECT t1."Id"
+                FROM "Order" AS t1
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void RejectsOneElementInMemoryRootAsSubquerySource()
+    public void SearchesOneElementInMemoryRootAsValues()
     {
         Expression query = Customers
             .Where(c => new[] { 1 }.AsQueryable().Any(i => i == c.Id))
             .Expression;
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", t0."Name", t0."Email", t0."Region", t0."IsActive"
+                FROM "Customer" AS t0
+                WHERE EXISTS (SELECT 1 FROM (VALUES (1)) AS t1 ("Value") WHERE t1."Value" = t0."Id")
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
     }
 }

@@ -66,8 +66,20 @@ internal sealed partial class Translator
                 shape = Bind(Lambda(layer, 1), shape);
             }
         }
+        // An aggregate of what a window function computes would be a window over a
+        // window, which PostgreSQL does not nest: it stays a subquery.
+        SqlExpression windowed = Windowed(call, argument, shape, filter);
+        if (
+            windowed.Any(part =>
+                part.IsWindow
+                && part.Operands.Any(operand => operand.Any(inner => inner.IsWindow))
+            )
+        )
+        {
+            return null;
+        }
         query.Windowed = true;
-        return Windowed(call, argument, shape, filter);
+        return windowed;
     }
 
     private SqlExpression Windowed(

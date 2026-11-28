@@ -45,14 +45,14 @@ public sealed record OrderedGroupElementTests
                         .ThenByDescending(o => o.Id)
                         .Select(o => o.Id)
                         .First(),
-                "(ARRAY_AGG(t0.\"Id\" ORDER BY t0.\"Note\" COLLATE \"C\" NULLS FIRST, t0.\"Id\" DESC))[1]"
+                "(ARRAY_AGG(t0.\"Id\" ORDER BY REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" NULLS FIRST, t0.\"Id\" DESC))[1]"
             },
             {
                 g =>
                     g.OrderByDescending(o => o.Number, StringComparer.Ordinal)
                         .Select(o => o.Id)
                         .First(),
-                "(ARRAY_AGG(t0.\"Id\" ORDER BY t0.\"Number\" COLLATE \"C\" DESC))[1]"
+                "(ARRAY_AGG(t0.\"Id\" ORDER BY REGEXP_REPLACE(t0.\"Number\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" DESC))[1]"
             },
             {
                 g => g.OrderBy(o => new { o.Quantity, o.Id }).Select(o => o.Id).First(),
@@ -96,14 +96,14 @@ public sealed record OrderedGroupElementTests
             },
             {
                 g => g.Select(o => o.Note).Min(StringComparer.Ordinal),
-                "MIN(t0.\"Note\" COLLATE \"C\") COLLATE \"default\""
+                "REGEXP_REPLACE(MIN(REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\"), E'\\ud7ff([\\\\U00010000-\\\\U0010FFFF])', '\\1', 'g') COLLATE \"default\""
             },
             {
                 g =>
                     g.Where(o => o.IsPaid)
                         .Select(o => o.Number)
                         .Max(StringComparer.Ordinal),
-                "MAX(t0.\"Number\" COLLATE \"C\") FILTER (WHERE t0.\"IsPaid\") COLLATE \"default\""
+                "REGEXP_REPLACE(MAX(REGEXP_REPLACE(t0.\"Number\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\") FILTER (WHERE t0.\"IsPaid\"), E'\\ud7ff([\\\\U00010000-\\\\U0010FFFF])', '\\1', 'g') COLLATE \"default\""
             },
         };
 
@@ -209,7 +209,7 @@ public sealed record OrderedGroupElementTests
             Sql.Valid(
                 """
                 SELECT (
-                    SELECT MAX(t1."Number" COLLATE "C") COLLATE "default"
+                    SELECT REGEXP_REPLACE(MAX(REGEXP_REPLACE(t1."Number", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"), E'\ud7ff([\\U00010000-\\U0010FFFF])', '\1', 'g') COLLATE "default"
                     FROM "Order" AS t1
                     WHERE t1."CustomerId" = t0."Id"
                 )
@@ -230,7 +230,7 @@ public sealed record OrderedGroupElementTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT MIN(t0."Note" COLLATE "C") COLLATE "default"
+                SELECT REGEXP_REPLACE(MIN(REGEXP_REPLACE(t0."Note", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"), E'\ud7ff([\\U00010000-\\U0010FFFF])', '\1', 'g') COLLATE "default"
                 FROM "Order" AS t0
                 """
             ),

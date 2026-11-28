@@ -18,7 +18,8 @@ internal sealed partial class Translator
     {
         SqlQuery query = Query(Evaluator.Evaluate(expression));
         _ = Ungrouped(query.Shape);
-        SqlWriter writer = new();
+        Read(query, query.Kinds());
+        SqlWriter writer = new(true);
         query.Render(writer);
         return writer.ToString();
     }
@@ -91,8 +92,9 @@ internal sealed partial class Translator
 
     // A query of its own is translated with no projection around it: an aggregate
     // in it is a window over its own rows only.
-    private SqlQuery Query(Expression expression)
+    private SqlQuery Query(Expression source)
     {
+        Expression expression = Sequence(source);
         SelectQuery? window = _window;
         _window = null;
         SqlQuery query = expression switch
@@ -138,10 +140,30 @@ internal sealed partial class Translator
     }
 
     // A one-element in-memory root selects one row without FROM: a row of aggregates
-    // over tables. Any other in-memory sequence is a VALUES list.
-    private static SelectQuery OneRow(IQueryable root)
+    // over tables. Any other in-memory sequence is a VALUES list, and so is this one
+    // once its element is read.
+    private SelectQuery OneRow(IQueryable root)
     {
-        return new SelectQuery(null, new RowShape(root.GetType().Name));
+        SelectQuery query = new(null, null!);
+        query.Shape = new RowShape(() =>
+        {
+            SelectQuery values = Values(root, root.ElementType);
+            query.From = values.From;
+            if (query.Shape is RowShape)
+            {
+                query.Shape = values.Shape;
+            }
+            return values.Shape;
+        });
+        return query;
+    }
+
+    // The rows of a one-element root that is read as a sequence of its own, joined,
+    // combined or searched, are its VALUES row.
+    private static SqlQuery Sourced(SqlQuery query)
+    {
+        _ = (query.Shape as RowShape)?.Element();
+        return query;
     }
 
     private SqlQuery Operator(MethodCallExpression call)
@@ -151,8 +173,20 @@ internal sealed partial class Translator
             : Sequence(Operand(call), call);
     }
 
+    // Where, Select and SelectMany may leave the element of a one-row root unread.
     private SqlQuery Sequence(SqlQuery source, MethodCallExpression call)
     {
+        if (
+            call.Method.Name
+            is not (
+                nameof(Queryable.Where)
+                or nameof(Queryable.Select)
+                or nameof(Queryable.SelectMany)
+            )
+        )
+        {
+            _ = Sourced(source);
+        }
         return call.Method.Name switch
         {
             nameof(Queryable.Where) => Where(source, Lambda(call, 1)),
@@ -198,6 +232,11 @@ internal sealed partial class Translator
             nameof(Queryable.DistinctBy) => DistinctBy(source, call),
             nameof(Queryable.Reverse) => Reverse(source, call.Method),
             nameof(Queryable.Cast) or nameof(Queryable.OfType) => Cast(source, call),
+            nameof(Queryable.DefaultIfEmpty) => Defaulted(
+                source,
+                call.Arguments.Count > 1 ? Sql(call.Arguments[1]) : null,
+                call.Method.GetGenericArguments()[0]
+            ),
             nameof(Queryable.GroupBy) => GroupBy(source, call),
             nameof(Queryable.Concat)
             or nameof(Queryable.Union)
@@ -294,17 +333,20 @@ internal sealed partial class Translator
         [
             .. key.Columns()
                 .Where(column => column.Value is not SqlConstant)
-                .Select(column => new Ordering(
-                    ordinal ? new SqlCollation(column.Value) : column.Value,
-                    descending,
-                    descending || nullsLast
-                )),
+                .SelectMany(column =>
+                    Keys(
+                        ordinal ? CodeUnits(column.Value) : column.Value,
+                        descending,
+                        descending || nullsLast
+                    )
+                ),
         ];
         // A later OrderBy sorts the elements the earlier one ordered, which keep their
         // order where its keys tie, as a stable sort does: the keys of the earlier
         // ordering follow every key of the later one, those of its ThenBy included.
         if (!then)
         {
+            Sequenced(query);
             query.Inherited = query.Orderings.Count;
         }
         int own = query.Orderings.Count - query.Inherited;
@@ -317,13 +359,44 @@ internal sealed partial class Translator
         return query;
     }
 
+    // The rows of an in-memory sequence come in its order, which no ORDER BY states
+    // while they are read as they are. A sort is given their positions to break its
+    // ties with, and so are the distinct values and the groups of the sequence when
+    // the first of them are taken, which are those that occur first.
+    private static void Sequenced(SelectQuery query)
+    {
+        if (query.Orderings.Count == 0)
+        {
+            query.Orderings = [.. query.Ties];
+        }
+    }
+
+    private SqlQuery Positioned(SqlQuery source)
+    {
+        if (source is not SelectQuery { Ties.Count: > 0, Orderings.Count: 0 } query)
+        {
+            return source;
+        }
+        if (query.Distinct)
+        {
+            query.Distinct = false;
+            Sequenced(query);
+            return Distinguished(query, query.Shape);
+        }
+        if (query.GroupBy is not null)
+        {
+            Sequenced(query);
+        }
+        return query;
+    }
+
     private SqlQuery Skip(SqlQuery source, int count)
     {
         if (count <= 0)
         {
             return source;
         }
-        SelectQuery query = Open(source, Barrier.Bound);
+        SelectQuery query = Open(Positioned(source), Barrier.Bound);
         query.Offset = (query.Offset ?? 0) + count;
         if (query.Limit is long limit)
         {
@@ -334,7 +407,7 @@ internal sealed partial class Translator
 
     private SelectQuery Take(SqlQuery source, int count)
     {
-        SelectQuery query = Open(source, Barrier.Bound);
+        SelectQuery query = Open(Positioned(source), Barrier.Bound);
         query.Limit = Math.Min(query.Limit ?? long.MaxValue, Math.Max(count, 0));
         return query;
     }
@@ -456,6 +529,10 @@ internal sealed partial class Translator
     private SelectQuery Reverse(SqlQuery source, MethodInfo method)
     {
         SelectQuery query = Open(source, Barrier.Paging);
+        if (!query.Distinct && query.GroupBy is null)
+        {
+            Sequenced(query);
+        }
         if (query.Orderings.Count == 0)
         {
             throw Unsupported.Method(method);
@@ -550,12 +627,19 @@ internal sealed partial class Translator
             _ = names.TryAdd(SqlWriter.Text(column.Value), column.Name!);
         }
         IReadOnlyList<bool> nullability = inner.Nullability();
+        IReadOnlyList<SqlKind> kinds = inner.Kinds();
         int index = 0;
         SelectQuery outer = new(
             new DerivedSource(inner, alias),
             inner.Shape.Map(
                 (value, name) =>
-                    new SqlColumn(alias, name!, value.Type, nullability[index++]),
+                    new SqlColumn(
+                        alias,
+                        name!,
+                        value.Type,
+                        nullability[index],
+                        kinds[index++]
+                    ),
                 null
             )
         )

@@ -127,40 +127,60 @@ public sealed record CollectionQuantifierTests
         );
     }
 
+    // #138: a predicate other than an equality with an item is the EXISTS of the
+    // Queryable form over the values.
     [Fact]
-    public void RejectsAnyComparingElementWithItself()
+    public void TestsAnyComparingElementWithItselfOverValues()
     {
         int[] ids = [1, 2];
         Expression query = Orders.Where(o => ids.Any(i => i == i * o.Id)).Expression;
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", t0."CustomerId", t0."Number", t0."Note", t0."Total", t0."Discount", t0."Quantity", t0."Priority", t0."Points", t0."Weight", t0."IsPaid", t0."IsGift", t0."Status", t0."Options", t0."CreatedAt", t0."PaidAt", t0."ShippedOn", t0."DeliveryTime", t0."TrackingId", t0."Tags"
+                FROM "Order" AS t0
+                WHERE EXISTS (SELECT 1 FROM (VALUES (1), (2)) AS t1 ("Value") WHERE t1."Value" = (t1."Value" * t0."Id"))
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("Any", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void RejectsAnyWithOrderingPredicate()
+    public void TestsAnyWithOrderingPredicateOverValues()
     {
         List<int> ids = [1, 2];
         Expression query = Orders.Where(o => ids.Any(i => i > o.Id)).Expression;
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", t0."CustomerId", t0."Number", t0."Note", t0."Total", t0."Discount", t0."Quantity", t0."Priority", t0."Points", t0."Weight", t0."IsPaid", t0."IsGift", t0."Status", t0."Options", t0."CreatedAt", t0."PaidAt", t0."ShippedOn", t0."DeliveryTime", t0."TrackingId", t0."Tags"
+                FROM "Order" AS t0
+                WHERE EXISTS (SELECT 1 FROM (VALUES (1), (2)) AS t1 ("Value") WHERE t1."Value" > t0."Id")
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("Any", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void RejectsAnyWithEqualityIgnoringElement()
+    public void TestsAnyWithEqualityIgnoringElementOverValues()
     {
         List<int> ids = [1, 2];
         Expression query = Orders.Where(o => ids.Any(i => o.Id == o.Quantity)).Expression;
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id", t0."CustomerId", t0."Number", t0."Note", t0."Total", t0."Discount", t0."Quantity", t0."Priority", t0."Points", t0."Weight", t0."IsPaid", t0."IsGift", t0."Status", t0."Options", t0."CreatedAt", t0."PaidAt", t0."ShippedOn", t0."DeliveryTime", t0."TrackingId", t0."Tags"
+                FROM "Order" AS t0
+                WHERE EXISTS (SELECT 1 FROM (VALUES (1), (2)) AS t1 ("Value") WHERE t0."Id" = t0."Quantity")
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("Any", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

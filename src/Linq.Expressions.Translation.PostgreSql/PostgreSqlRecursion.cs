@@ -22,8 +22,9 @@ public static class PostgreSqlRecursion
     }
 
     // As above, with levels up to maxDepth (the seed is level 0): a row of a deeper
-    // level fails the statement, whatever the query around it reads, instead of
-    // being cut off, so that the recursion ends even over cyclic data.
+    // level fails the statement, whatever the query around it reads of the rows,
+    // instead of being cut off, so that the recursion ends even over cyclic data.
+    // PostgreSQL computes no recursion it can tell no row will be read of.
     public static IQueryable<TSource> WithRecursive<TSource>(
         this IQueryable<TSource> seed,
         Expression<Func<IQueryable<TSource>, IQueryable<TSource>>> step,

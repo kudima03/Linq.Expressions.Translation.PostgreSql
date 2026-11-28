@@ -92,7 +92,7 @@ public sealed record TickArithmeticTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT (TIMESTAMP '0001-01-01 00:00:00' + ((t0."Points" / 864000000000) * INTERVAL '1 day')) + (((t0."Points" % 864000000000) / 10) * INTERVAL '1 microsecond')
+                SELECT (MAKE_DATE(CASE WHEN (t0."Points" >= 0) AND (t0."Points" <= 3155378975999999999) THEN 1 ELSE 0 END, 1, 1) + ((t0."Points" / 864000000000) * INTERVAL '1 day')) + (((t0."Points" % 864000000000) / 10) * INTERVAL '1 microsecond')
                 FROM "Order" AS t0
                 """
             ),
@@ -110,7 +110,7 @@ public sealed record TickArithmeticTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT ((TIMESTAMP '0001-01-01 00:00:00' + ((t0."Points" / 864000000000) * INTERVAL '1 day')) + (((t0."Points" % 864000000000) / 10) * INTERVAL '1 microsecond')) AT TIME ZONE 'UTC'
+                SELECT ((MAKE_DATE(CASE WHEN (t0."Points" >= 0) AND (t0."Points" <= 3155378975999999999) THEN 1 ELSE 0 END, 1, 1) + ((t0."Points" / 864000000000) * INTERVAL '1 day')) + (((t0."Points" % 864000000000) / 10) * INTERVAL '1 microsecond')) AT TIME ZONE 'UTC'
                 FROM "Order" AS t0
                 """
             ),
@@ -136,7 +136,7 @@ public sealed record TickArithmeticTests
             Sql.Valid(
                 """
                 SELECT t0."CustomerId",
-                (TIMESTAMP '0001-01-01 00:00:00' + ((CAST(TRUNC(AVG(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric) / 10) * 10) AS bigint) / 864000000000) * INTERVAL '1 day')) + (((CAST(TRUNC(AVG(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric) / 10) * 10) AS bigint) % 864000000000) / 10) * INTERVAL '1 microsecond') AS "AverageCreatedAt"
+                (MAKE_DATE(CASE WHEN (CAST(TRUNC(TRIM_SCALE(ROUND(AVG(ROUND(TRIM_SCALE(ROUND(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10, 29 - LENGTH(CAST(TRUNC(ABS(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10) / 0.79228162514264337593543950335) AS text)))), 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(TRIM_SCALE(ROUND(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10, 29 - LENGTH(CAST(TRUNC(ABS(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10) / 0.79228162514264337593543950335) AS text)))), 30))) / 0.79228162514264337593543950335) AS text)))) * 10) AS bigint) >= 0) AND (CAST(TRUNC(TRIM_SCALE(ROUND(AVG(ROUND(TRIM_SCALE(ROUND(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10, 29 - LENGTH(CAST(TRUNC(ABS(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10) / 0.79228162514264337593543950335) AS text)))), 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(TRIM_SCALE(ROUND(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10, 29 - LENGTH(CAST(TRUNC(ABS(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10) / 0.79228162514264337593543950335) AS text)))), 30))) / 0.79228162514264337593543950335) AS text)))) * 10) AS bigint) <= 3155378975999999999) THEN 1 ELSE 0 END, 1, 1) + ((CAST(TRUNC(TRIM_SCALE(ROUND(AVG(ROUND(TRIM_SCALE(ROUND(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10, 29 - LENGTH(CAST(TRUNC(ABS(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10) / 0.79228162514264337593543950335) AS text)))), 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(TRIM_SCALE(ROUND(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10, 29 - LENGTH(CAST(TRUNC(ABS(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10) / 0.79228162514264337593543950335) AS text)))), 30))) / 0.79228162514264337593543950335) AS text)))) * 10) AS bigint) / 864000000000) * INTERVAL '1 day')) + (((CAST(TRUNC(TRIM_SCALE(ROUND(AVG(ROUND(TRIM_SCALE(ROUND(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10, 29 - LENGTH(CAST(TRUNC(ABS(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10) / 0.79228162514264337593543950335) AS text)))), 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(TRIM_SCALE(ROUND(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10, 29 - LENGTH(CAST(TRUNC(ABS(ROUND(CAST(CAST(EXTRACT(EPOCH FROM (t0."CreatedAt" - TIMESTAMP '0001-01-01 00:00:00')) * 10000000 AS bigint) AS numeric), 30) / 10) / 0.79228162514264337593543950335) AS text)))), 30))) / 0.79228162514264337593543950335) AS text)))) * 10) AS bigint) % 864000000000) / 10) * INTERVAL '1 microsecond') AS "AverageCreatedAt"
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
                 """
@@ -146,10 +146,10 @@ public sealed record TickArithmeticTests
     }
 
     private const string Moment =
-        "(TIMESTAMP '0001-01-01 00:00:00' + ((t0.\"Points\" / 864000000000) * INTERVAL '1 day')) + (((t0.\"Points\" % 864000000000) / 10) * INTERVAL '1 microsecond')";
+        "(MAKE_DATE(CASE WHEN (t0.\"Points\" >= 0) AND (t0.\"Points\" <= 3155378975999999999) THEN 1 ELSE 0 END, 1, 1) + ((t0.\"Points\" / 864000000000) * INTERVAL '1 day')) + (((t0.\"Points\" % 864000000000) / 10) * INTERVAL '1 microsecond')";
 
     private const string NullableMoment =
-        "(TIMESTAMP '0001-01-01 00:00:00' + ((CAST(t0.\"Priority\" AS bigint) / 864000000000) * INTERVAL '1 day')) + (((CAST(t0.\"Priority\" AS bigint) % 864000000000) / 10) * INTERVAL '1 microsecond')";
+        "(MAKE_DATE(CASE WHEN (CAST(t0.\"Priority\" AS bigint) >= 0) AND (CAST(t0.\"Priority\" AS bigint) <= 3155378975999999999) THEN 1 ELSE 0 END, 1, 1) + ((CAST(t0.\"Priority\" AS bigint) / 864000000000) * INTERVAL '1 day')) + (((CAST(t0.\"Priority\" AS bigint) % 864000000000) / 10) * INTERVAL '1 microsecond')";
 
     // The ticks of a nullable column read as its value are never null where the
     // C# evaluates, so the timestamp compares with =, with and without a kind.
@@ -166,11 +166,11 @@ public sealed record TickArithmeticTests
             },
             {
                 o => new DateTime(o.Points, DateTimeKind.Utc) == o.CreatedAt,
-                $"(({Moment}) AT TIME ZONE 'UTC') = t0.\"CreatedAt\""
+                $"({Moment}) = t0.\"CreatedAt\""
             },
             {
                 o => new DateTime(o.Priority!.Value, DateTimeKind.Utc) == o.CreatedAt,
-                $"(({NullableMoment}) AT TIME ZONE 'UTC') = t0.\"CreatedAt\""
+                $"({NullableMoment}) = t0.\"CreatedAt\""
             },
             {
                 o => TimeSpan.FromTicks(o.Points) == TimeSpan.Zero,

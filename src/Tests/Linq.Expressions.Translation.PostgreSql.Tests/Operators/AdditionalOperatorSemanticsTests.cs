@@ -154,7 +154,7 @@ public sealed record AdditionalOperatorSemanticsTests
             Sql.Valid(
                 """
                 SELECT t0."Name", COALESCE((
-                    SELECT AVG(CAST(t1."Quantity" AS double precision))
+                    SELECT CAST(AVG(t1."Quantity") AS double precision)
                     FROM "Order" AS t1
                     WHERE t1."CustomerId" = t0."Id"
                 ), 0) AS "Mean"

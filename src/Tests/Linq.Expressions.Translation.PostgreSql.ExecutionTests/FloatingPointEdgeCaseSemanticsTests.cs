@@ -16,7 +16,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #131: a -0.0 past the first row of VALUES is the untyped -0, which is 0.
-    [Fact(Skip = "#131: a -0.0 constant is the integer literal -0, which loses its sign")]
+    [Fact]
     public void KeepsSignOfNegativeZeroPastTheFirstRow()
     {
         database.AssertSameRows(
@@ -25,7 +25,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #131: the default of LAG is written -0.
-    [Fact(Skip = "#131: a -0.0 constant is the integer literal -0, which loses its sign")]
+    [Fact]
     public void KeepsSignOfNegativeZeroAsDefaultOfLag()
     {
         database.AssertSameRows(
@@ -42,7 +42,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #131: a -0.0 in a computed value is the integer literal -0.
-    [Fact(Skip = "#131: a -0.0 constant is the integer literal -0, which loses its sign")]
+    [Fact]
     public void KeepsSignOfNegativeZeroInAComputedValue()
     {
         database.AssertSameRows(
@@ -50,9 +50,19 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
         );
     }
 
+    // Whole double constants in the branches of a conditional are divided as
+    // doubles, not as the integers their digits alone would be.
+    [Fact]
+    public void DividesWholeDoubleConstantsAsDoubles()
+    {
+        database.AssertSameRows(
+            Orders.Select(o => new { o.Id, Half = (o.IsPaid ? 7.0 : 5.0) / 2.0 })
+        );
+    }
+
     // #131: 100000000f + x is 100000000f in single precision for small x, so the
     // difference is 0; computed in double precision it is x.
-    [Fact(Skip = "#131: float constants are untyped, so float arithmetic is double")]
+    [Fact]
     public void AddsFloatConstantsInSinglePrecision()
     {
         database.AssertSameRows(
@@ -68,7 +78,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #131: x.Score + 0.5f over a real column is t0."Score" + 0.5, double precision.
-    [Fact(Skip = "#131: float constants are untyped, so float arithmetic is double")]
+    [Fact]
     public void AddsFloatConstantsToARealColumnInSinglePrecision()
     {
         database.AssertSameRows(
@@ -82,7 +92,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #132: .NET orders NaN below -Infinity, PostgreSQL above +Infinity.
-    [Fact(Skip = "#132: OrderBy of doubles sorts NaN last where .NET sorts it first")]
+    [Fact]
     public void OrdersNaNAndInfinitiesAsDotNet()
     {
         database.AssertSameSequence(
@@ -101,7 +111,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #132: RANK() OVER (ORDER BY value) ranks NaN first in .NET: 1, 5, 2, 6, 3, 3.
-    [Fact(Skip = "#132: a window ordered by a double ranks NaN last, .NET first")]
+    [Fact]
     public void RanksNaNAsDotNet()
     {
         database.AssertSameRows(
@@ -124,7 +134,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #132: for NaN, n > 0, n < 0 and n == n * 1 are all false in .NET.
-    [Fact(Skip = "#132: comparisons of a double NaN are true in SQL, false in .NET")]
+    [Fact]
     public void ComparesNaNWithItselfAndZeroAsDotNet()
     {
         database.AssertSameRows(
@@ -142,14 +152,14 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
 
     // #140: .NET sums the longs exactly and divides once: the mean of long.MinValue
     // and long.MaxValue is -0.5; averaged as doubles it is 0.
-    [Fact(Skip = "#140: Average of long converts every value to double before summing")]
+    [Fact]
     public void AveragesLongsFromTheirExactSum()
     {
         database.AssertSameResult(Rows([long.MinValue, long.MaxValue]), q => q.Average());
     }
 
     // #140: the same in a group.
-    [Fact(Skip = "#140: Average of long converts every value to double before summing")]
+    [Fact]
     public void AveragesTheLongsOfAGroupFromTheirExactSum()
     {
         (int Key, long Big)[] rows = [(1, long.MinValue), (1, long.MaxValue), (2, 3)];
@@ -162,7 +172,7 @@ public sealed class FloatingPointEdgeCaseSemanticsTests(Database database)
     }
 
     // #140: the same over the rows of a window.
-    [Fact(Skip = "#140: Average of long converts every value to double before summing")]
+    [Fact]
     public void AveragesTheLongsOfAWindowFromTheirExactSum()
     {
         database.AssertSameRows(

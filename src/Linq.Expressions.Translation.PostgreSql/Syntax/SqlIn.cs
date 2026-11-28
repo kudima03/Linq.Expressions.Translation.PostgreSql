@@ -6,12 +6,14 @@ internal sealed class SqlIn(
     bool negated
 ) : SqlMembership(operand.Nullable)
 {
+    public override IEnumerable<SqlExpression> Operands => [operand, .. values];
+
     protected override void RenderMembership(SqlWriter writer)
     {
         _ = writer
             .Operand(operand, SqlMode.Value)
             .Append(negated ? " NOT IN (" : " IN (")
-            .Join(values, value => writer.Render(value, SqlMode.Value))
+            .Join(values, value => writer.Unified(value, SqlWriter.IsNumeric([operand])))
             .Append(")");
     }
 }

@@ -17,6 +17,7 @@ internal sealed partial class Translator
             Bind(Lambda(call, 3), inner.Shape)
         );
         outer.Joins.Add(new SqlJoin("INNER JOIN", inner.From!, condition));
+        Follow(outer, inner);
         Absorb(outer, inner);
         outer.Shape = Bind(Lambda(call, 4, 2), outer.Shape, inner.Shape);
         return outer;
@@ -43,9 +44,9 @@ internal sealed partial class Translator
             && IsInMemory(collection.Body)
         )
         {
-            return Unrolled(source, call, collection);
+            return Unrolled((SelectQuery)source, call, collection);
         }
-        SelectQuery outer = Opened(source);
+        SelectQuery outer = Opened(Sourced(source));
         Binding binding = new(outer.Shape, collection);
         _bindings[collection.Parameters[0]] = binding;
         Expression body = collection.Body;
@@ -67,19 +68,27 @@ internal sealed partial class Translator
     }
 
     // The one row of the root that yields the rows of an in-memory sequence yields
-    // those rows: they are the source, and the row itself cannot be read.
+    // those rows: they are the source. A result selector that reads the row makes it
+    // a VALUES row, which the rows are joined to.
     private SelectQuery Unrolled(
-        SqlQuery source,
+        SelectQuery source,
         MethodCallExpression call,
         LambdaExpression collection
     )
     {
         SelectQuery inner = (SelectQuery)Query(collection.Body);
-        if (call.Arguments.Count > 2)
+        if (call.Arguments.Count == 2)
         {
-            inner.Shape = Bind(Lambda(call, 2, 2), source.Shape, inner.Shape);
+            return inner;
         }
-        return inner;
+        Shape shape = Bind(Lambda(call, 2, 2), source.Shape, inner.Shape);
+        SelectQuery query = source.From is null ? inner : source;
+        if (query == source)
+        {
+            source.Joins.Add(new SqlJoin("CROSS JOIN", inner.From!, null));
+        }
+        query.Shape = shape;
+        return query;
     }
 
     // The matches of a GroupJoin are filtered in the join condition: filtered after the
@@ -132,7 +141,7 @@ internal sealed partial class Translator
     {
         bool left = padding is not null;
         int uses = collection.Uses;
-        SqlQuery query = Query(items);
+        SqlQuery query = Sourced(Query(items));
         bool correlated = collection.Uses > uses;
         bool simple = IsJoinable(query, left);
         SelectQuery inner = simple ? (SelectQuery)query : Wrap(query, false);
@@ -145,9 +154,13 @@ internal sealed partial class Translator
             left ? "LEFT JOIN"
             : simple ? "INNER JOIN"
             : "CROSS JOIN";
+        // A table is joined on the condition that reads the outer row; a derived
+        // table or a recursion reads it inside, which only LATERAL lets it do.
         return Attached(
             outer,
-            simple || !correlated ? join : join + " LATERAL",
+            correlated && inner.From is DerivedSource or RecursiveSource
+                ? join + " LATERAL"
+                : join,
             inner,
             join == "CROSS JOIN" ? null : inner.Where ?? True,
             padding
@@ -163,17 +176,33 @@ internal sealed partial class Translator
     )
     {
         outer.Joins.Add(new SqlJoin(kind, inner.From!, condition));
+        Follow(outer, inner);
         return padding is null ? inner.Shape : Absent(inner.Shape, padding);
     }
 
     private SqlQuery Correlated(GroupJoinShape group)
     {
-        SelectQuery inner = Simple(Query(group.Inner), true);
+        SelectQuery inner = Simple(Sourced(Query(group.Inner)), true);
         inner.Where = Conjoined(
             Matching(Bind(group.InnerKey, inner.Shape), group.OuterKey),
             inner.Where
         );
         return group.Operators.Aggregate<MethodCallExpression, SqlQuery>(inner, Sequence);
+    }
+
+    // The rows of a join come in the order of the outer rows and, for each of them,
+    // of the inner ones: the positions of a joined in-memory sequence follow the
+    // order of the outer rows, or break the ties of a later one.
+    private static void Follow(SelectQuery outer, SelectQuery inner)
+    {
+        if (outer.Orderings.Count > 0 && outer.IsOrdered)
+        {
+            outer.Orderings.AddRange(inner.Ties);
+        }
+        else
+        {
+            outer.Ties.AddRange(inner.Ties);
+        }
     }
 
     private static void Absorb(SelectQuery outer, SelectQuery inner)
@@ -192,7 +221,7 @@ internal sealed partial class Translator
 
     private SqlQuery Joined(MethodCallExpression call)
     {
-        return Query(JoinedSource(call));
+        return Sourced(Query(JoinedSource(call)));
     }
 
     private static Expression JoinedSource(MethodCallExpression call)
@@ -215,6 +244,7 @@ internal sealed partial class Translator
             && select.Joins.Count == 0
             && !select.KeepsOrder
             && !select.Distinct
+            && !select.Windowed
             && select.GroupBy is null;
     }
 
@@ -225,7 +255,7 @@ internal sealed partial class Translator
     // element is in LINQ to Objects, so such a source is joined as a derived table too.
     private SelectQuery Joinable(SqlQuery query, bool left)
     {
-        return IsJoinable(query, left) ? (SelectQuery)query : Wrap(query, false);
+        return IsJoinable(Sourced(query), left) ? (SelectQuery)query : Wrap(query, false);
     }
 
     private static bool IsJoinable(SqlQuery query, bool left)
@@ -257,38 +287,109 @@ internal sealed partial class Translator
     // else is wrapped into.
     private Shape Absent(Shape shape, MethodCallExpression padding)
     {
+        return Absent(
+            shape,
+            padding.Arguments.Count > 1 ? Sql(padding.Arguments[1]) : null,
+            padding.Method.GetGenericArguments()[0],
+            null
+        );
+    }
+
+    // The same with the default and the type of the element at hand, and a column
+    // that is TRUE in every row the source yields, when it exposes one.
+    private static Shape Absent(
+        Shape shape,
+        SqlExpression? fallback,
+        Type type,
+        SqlExpression? present
+    )
+    {
         Shape nullified = shape.Map(
             (value, name) => ((SqlColumn)Own(value)).AsNullable(),
             null
         );
-        SqlExpression? fallback =
-            padding.Arguments.Count > 1 ? Sql(padding.Arguments[1]) : null;
         if (fallback is not null and not SqlConstant { Value: null })
         {
-            return Padded(shape, nullified, fallback);
+            return Padded(shape, nullified, fallback, present);
         }
-        Shape defaulted = Defaulted(nullified, padding.Method.GetGenericArguments()[0]);
+        Shape defaulted = Defaulted(nullified, type);
         return defaulted is ObjectShape composite
             ? composite.Present(Presence(shape))
             : defaulted;
     }
 
     // An explicit default replaces a value that is NULL only without a match; a value
-    // that may be NULL in a match could not tell the two apart.
-    private static Shape Padded(Shape shape, Shape nullified, SqlExpression fallback)
+    // that may be NULL in a match cannot tell the two apart, unless a column of the
+    // source that is TRUE in every row does.
+    private static Shape Padded(
+        Shape shape,
+        Shape nullified,
+        SqlExpression fallback,
+        SqlExpression? present
+    )
     {
         return shape is ScalarShape { Value.Nullable: false }
-            ? new ScalarShape(
-                new SqlFunction(
-                    "COALESCE",
-                    [((ScalarShape)nullified).Value, fallback],
-                    fallback.Type,
-                    fallback.Nullable
+                ? new ScalarShape(
+                    new SqlFunction(
+                        "COALESCE",
+                        [((ScalarShape)nullified).Value, fallback],
+                        fallback.Type,
+                        fallback.Nullable
+                    )
                 )
-            )
+            : shape is ScalarShape && present is not null
+                ? new ScalarShape(
+                    new SqlCase(
+                        [new SqlWhen(present, ((ScalarShape)nullified).Value)],
+                        fallback,
+                        fallback.Type
+                    )
+                )
             : throw new NotSupportedException(
                 "A default of DefaultIfEmpty is only translated for a single value that is never NULL in a matching row, as NULL cannot be told from the absence of a row."
             );
+    }
+
+    // The rows of a sequence that yields at least one of them stand in a column that
+    // is TRUE in every one; a member never starts with $.
+    private const string Present = "$present";
+
+    // DefaultIfEmpty as a sequence operator: the rows of the source, or one row of
+    // the default element where it has none, which is one row left joined to them.
+    private SelectQuery Defaulted(
+        SqlQuery source,
+        SqlExpression? fallback,
+        Type type,
+        bool ordered = true
+    )
+    {
+        SelectQuery rows = Sourced(source) as SelectQuery ?? Wrap(source);
+        bool marked =
+            fallback is not null and not SqlConstant { Value: null }
+            && rows.Shape is ScalarShape { Value.Nullable: true };
+        if (marked)
+        {
+            rows.Hidden.Add(new ProjectionColumn(Present, True));
+        }
+        SelectQuery read = Wrap(rows, ordered);
+        SqlSource joined = read.From!;
+        SelectQuery padded = new(
+            new DerivedSource(
+                new SelectQuery(null, new ScalarShape(Integer(1))),
+                NextAlias()
+            ),
+            Absent(
+                read.Shape,
+                fallback,
+                type,
+                marked ? new SqlColumn(joined.Alias, Present, typeof(bool), true) : null
+            )
+        )
+        {
+            Orderings = read.Orderings,
+        };
+        padded.Joins.Add(new SqlJoin("LEFT JOIN", joined, True));
+        return padded;
     }
 
     // A value type is its default member by member, down to a member of a reference or

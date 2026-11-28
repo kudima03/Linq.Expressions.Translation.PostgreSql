@@ -52,11 +52,11 @@ public sealed record ArrayExtremeAndNormalizeTests
             },
             {
                 o => new[] { o.Number, o.Note, "m" }.Min(StringComparer.Ordinal),
-                "LEAST(t0.\"Number\" COLLATE \"C\", t0.\"Note\" COLLATE \"C\", 'm' COLLATE \"C\") COLLATE \"default\""
+                "REGEXP_REPLACE(LEAST(REGEXP_REPLACE(t0.\"Number\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\", REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\", 'm' COLLATE \"C\"), E'\\ud7ff([\\\\U00010000-\\\\U0010FFFF])', '\\1', 'g') COLLATE \"default\""
             },
             {
                 o => new[] { o.Note, null }.Max(StringComparer.Ordinal),
-                "GREATEST(t0.\"Note\" COLLATE \"C\", NULL COLLATE \"C\") COLLATE \"default\""
+                "REGEXP_REPLACE(GREATEST(REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\", NULL COLLATE \"C\"), E'\\ud7ff([\\\\U00010000-\\\\U0010FFFF])', '\\1', 'g') COLLATE \"default\""
             },
             {
                 o =>

@@ -429,8 +429,8 @@ public sealed record DateTimeTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."DeliveryTime" - TIME '08:00:00'
-                FROM "Order" AS t0
+                SELECT CASE WHEN t0."DeliveryTime" < TIME '08:00:00' THEN (t0."DeliveryTime" - TIME '08:00:00') + INTERVAL '1 day' ELSE t0."DeliveryTime" - TIME '08:00:00'
+                END FROM "Order" AS t0
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -701,7 +701,7 @@ public sealed record DateTimeTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE t0."CreatedAt" < NOW()
+                WHERE t0."CreatedAt" < (NOW() AT TIME ZONE 'UTC')
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -721,7 +721,7 @@ public sealed record DateTimeTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE t0."CreatedAt" > (NOW() + (-30 * INTERVAL '1 day'))
+                WHERE t0."CreatedAt" > ((NOW() AT TIME ZONE 'UTC') + (-30 * INTERVAL '1 day'))
                 """
             ),
             new PostgreSqlQuery(query).TextValue

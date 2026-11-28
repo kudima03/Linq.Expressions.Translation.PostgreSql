@@ -176,7 +176,7 @@ public sealed record AdditionalGroupingSemanticsTests
             Sql.Valid(
                 """
                 SELECT t0."CustomerId",
-                AVG(CAST(t0."Quantity" AS double precision)) AS "Mean"
+                CAST(AVG(t0."Quantity") AS double precision) AS "Mean"
                 FROM "Order" AS t0
                 GROUP BY t0."CustomerId"
                 """

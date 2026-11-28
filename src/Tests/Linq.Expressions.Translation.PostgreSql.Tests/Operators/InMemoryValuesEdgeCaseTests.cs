@@ -56,7 +56,7 @@ public sealed record InMemoryValuesEdgeCaseTests
 
     // NotSupportedException: The element of the in-memory source 'EnumerableQuery`1'
     // cannot be translated into SQL; select aggregates over tables from it.
-    [Fact(Skip = "#137: the one-element AsQueryable() inner of Join is refused")]
+    [Fact]
     public void JoinsQueryableOfOneElement()
     {
         IQueryable<int> ids = new[] { 1 }.AsQueryable();
@@ -80,7 +80,7 @@ public sealed record InMemoryValuesEdgeCaseTests
     // NotSupportedException: The element of the in-memory source 'EnumerableQuery`1'
     // cannot be translated into SQL; select aggregates over tables from it. The same
     // subquery over two elements is a VALUES list.
-    [Fact(Skip = "#137: a subquery over a one-element AsQueryable() is refused")]
+    [Fact]
     public void TestsExistenceInQueryableOfOneElement()
     {
         int[] ids = [1];
@@ -228,14 +228,14 @@ public sealed record InMemoryValuesEdgeCaseTests
             { () => Root<bool?>(true, null), "TRUE), (NULL" },
             {
                 () => Root(double.NaN, double.PositiveInfinity),
-                "CAST(CAST('NaN' AS double precision) AS double precision)), "
+                "CAST('NaN' AS double precision)), "
                     + "(CAST('Infinity' AS double precision)"
             },
             {
                 () => Root(1d, double.NegativeInfinity),
                 "CAST(1 AS double precision)), (CAST('-Infinity' AS double precision)"
             },
-            { () => Root(float.NaN, 0.1f), "CAST(CAST('NaN' AS real) AS real)), (0.1" },
+            { () => Root(float.NaN, 0.1f), "CAST('NaN' AS real)), (0.1" },
             {
                 () => Root(double.Epsilon, double.MaxValue),
                 "CAST(5E-324 AS double precision)), (1.7976931348623157E+308"
@@ -268,7 +268,7 @@ public sealed record InMemoryValuesEdgeCaseTests
             {
                 () =>
                     Root(
-                        new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                        new DateTime(2024, 1, 1, 0, 0, 0),
                         new DateTime(2024, 1, 1, 0, 0, 0, 0, 1)
                     ),
                 "TIMESTAMP '2024-01-01 00:00:00'), "
@@ -663,13 +663,13 @@ public sealed record InMemoryValuesEdgeCaseTests
                 """
                 SELECT t2."Value"
                 FROM (
-                    SELECT t0."Value", 0 AS "$side", t0."Value" AS "$1"
-                    FROM (VALUES (3), (1), (2)) AS t0 ("Value")
+                    SELECT t0."Value", 0 AS "$side", t0."Value" AS "$1", t0."$position" AS "$2"
+                    FROM (VALUES (3, 0), (1, 1), (2, 2)) AS t0 ("Value", "$position")
                     UNION ALL
-                    SELECT t1."Value", 1 AS "$side", NULL AS "$1"
+                    SELECT t1."Value", 1 AS "$side", NULL AS "$1", NULL AS "$2"
                     FROM (VALUES (0), (9)) AS t1 ("Value")
                 ) AS t2
-                ORDER BY t2."$side", t2."$1"
+                ORDER BY t2."$side", t2."$1", t2."$2"
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -737,8 +737,8 @@ public sealed record InMemoryValuesEdgeCaseTests
             Sql.Valid(
                 """
                 SELECT t0."Item1", t0."Item2"
-                FROM (VALUES (2, CAST('b' AS text)), (1, 'z'), (2, 'a')) AS t0 ("Item1", "Item2")
-                ORDER BY t0."Item1", t0."Item2" COLLATE "C" DESC
+                FROM (VALUES (2, CAST('b' AS text), 0), (1, 'z', 1), (2, 'a', 2)) AS t0 ("Item1", "Item2", "$position")
+                ORDER BY t0."Item1", REGEXP_REPLACE(t0."Item2", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C" DESC, t0."$position"
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -828,13 +828,7 @@ public sealed record InMemoryValuesEdgeCaseTests
                 "at least one row"
             },
             { () => Enumerable.Range(1, 0).AsQueryable().Expression, "at least one row" },
-            { () => Root((byte)1, (byte)2), "Byte" },
-            { () => Root((sbyte)1, (sbyte)2), "SByte" },
-            { () => Root((ushort)1, (ushort)2), "UInt16" },
-            { () => Root(1U, 2U), "UInt32" },
-            { () => Root(1UL, 2UL), "UInt64" },
             { () => Root((Half)1, (Half)2), "Half" },
-            { () => Root(TinyStatus.Low, TinyStatus.High), "TinyStatus" },
             {
                 () =>
                     Root(
@@ -848,13 +842,17 @@ public sealed record InMemoryValuesEdgeCaseTests
                     Root(new DateTime(2024, 1, 1).AddTicks(1), new DateTime(2024, 1, 2)),
                 "microsecond"
             },
+            {
+                () =>
+                    Root(
+                        new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                        new DateTime(2024, 1, 2)
+                    ),
+                "Utc on some rows"
+            },
             { () => Root("a", "b\0c"), "NUL" },
             { () => Root<object>(1, 2), "Object" },
             { () => Root(new KeyValuePair<int, int>(1, 2), default), "KeyValuePair" },
-            {
-                () => new[] { 5 }.AsQueryable().Select(x => x + 1).Expression,
-                "EnumerableQuery"
-            },
         };
     }
 
@@ -868,25 +866,74 @@ public sealed record InMemoryValuesEdgeCaseTests
         Assert.Contains(message, exception.Message, StringComparison.Ordinal);
     }
 
-    public static TheoryData<Func<Expression>> Unordered =>
-        [
-            () =>
-                Expression.Call(
-                    typeof(Queryable),
-                    nameof(Queryable.Last),
-                    [typeof(int)],
-                    new[] { 3, 1 }.AsQueryable().Expression
-                ),
-            () => new[] { 3, 1 }.AsQueryable().Reverse().Expression,
-        ];
-
-    // The last element of an unordered source is not defined in SQL.
-    [Theory]
-    [MemberData(nameof(Unordered))]
-    public void RefusesLastOfUnorderedValues(Func<Expression> query)
+    // #134: an in-memory sequence has an order, the positions of its rows, so its
+    // last element is the first in the inverted order of them.
+    [Fact]
+    public void TakesLastOfValuesByTheirPositions()
     {
-        _ = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query()).TextValue
+        Expression query = Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.Last),
+            [typeof(int)],
+            new[] { 3, 1 }.AsQueryable().Expression
+        );
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Value"
+                FROM (VALUES (3, 0), (1, 1)) AS t0 ("Value", "$position")
+                ORDER BY t0."$position" DESC
+                LIMIT 1
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // #134: the first distinct values and the first groups of a sequence are those
+    // that occur first in it.
+    [Fact]
+    public void TakesFirstDistinctValuesAndGroupsByTheirPositions()
+    {
+        Expression distinct = new[] { 3, 1, 3 }
+            .AsQueryable()
+            .Distinct()
+            .Take(2)
+            .Expression;
+        Expression groups = new[] { 3, 1, 3 }
+            .AsQueryable()
+            .GroupBy(i => i)
+            .Select(g => g.Key)
+            .Skip(1)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Value"
+                FROM (
+                    SELECT DISTINCT ON (t0."Value") t0."Value", t0."$position" AS "$0"
+                    FROM (VALUES (3, 0), (1, 1), (3, 2)) AS t0 ("Value", "$position")
+                    ORDER BY t0."Value", t0."$position"
+                ) AS t1
+                ORDER BY t1."$0"
+                LIMIT 2
+                """
+            ),
+            new PostgreSqlQuery(distinct).TextValue
+        );
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Value"
+                FROM (VALUES (3, 0), (1, 1), (3, 2)) AS t0 ("Value", "$position")
+                GROUP BY t0."Value"
+                ORDER BY MIN(t0."$position")
+                OFFSET 1
+                """
+            ),
+            new PostgreSqlQuery(groups).TextValue
         );
     }
 }

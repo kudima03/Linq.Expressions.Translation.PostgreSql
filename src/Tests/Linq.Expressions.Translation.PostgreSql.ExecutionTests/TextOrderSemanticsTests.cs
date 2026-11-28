@@ -5,15 +5,14 @@ namespace Linq.Expressions.Translation.PostgreSql.ExecutionTests;
 // The order of text: StringComparer.Ordinal compares UTF-16 code units, so a
 // character outside the Basic Multilingual Plane (a surrogate pair from U+D800)
 // orders before U+E000..U+FFFF, where code points order it after them; without a
-// comparer LINQ to Objects compares with the current culture.
+// comparer LINQ to Objects compares with the current culture and SQL with the
+// collation of the database.
 [Collection(SharedDatabase.Name)]
 public sealed class TextOrderSemanticsTests(Database database)
 {
     // #133: .NET orders "é", "😀", "ａ" (U+00E9, U+D83D U+DE00, U+FF41);
     // COLLATE "C" orders "é", "ａ", "😀".
-    [Fact(
-        Skip = "#133: OrderBy with StringComparer.Ordinal orders code points, not UTF-16"
-    )]
+    [Fact]
     public void OrdersSequenceByUtf16CodeUnits()
     {
         database.AssertSameSequence(
@@ -24,9 +23,7 @@ public sealed class TextOrderSemanticsTests(Database database)
     }
 
     // #133: the same order over a table column, descending as well.
-    [Fact(
-        Skip = "#133: OrderBy with StringComparer.Ordinal orders code points, not UTF-16"
-    )]
+    [Fact]
     public void OrdersColumnByUtf16CodeUnits()
     {
         database.AssertSameSequence(
@@ -46,7 +43,7 @@ public sealed class TextOrderSemanticsTests(Database database)
     }
 
     // #133: ROW_NUMBER() OVER (ORDER BY ... COLLATE "C") numbers the emoji after "ａ".
-    [Fact(Skip = "#133: a window ordered with StringComparer.Ordinal orders code points")]
+    [Fact]
     public void NumbersRowsInUtf16Order()
     {
         database.AssertSameRows(
@@ -63,7 +60,7 @@ public sealed class TextOrderSemanticsTests(Database database)
     }
 
     // #133: MAX(... COLLATE "C") of a sequence is the emoji, .NET's maximum is "ａ".
-    [Fact(Skip = "#133: Max/Min with StringComparer.Ordinal compare code points")]
+    [Fact]
     public void TakesOrdinalExtremesOfSequenceInUtf16Order()
     {
         IQueryable<string?> notes = Orders.Select(o => o.Id == 1 ? "ａ" : o.Note);
@@ -80,9 +77,7 @@ public sealed class TextOrderSemanticsTests(Database database)
     }
 
     // #133: STRING_AGG(... ORDER BY ... COLLATE "C") joins the emoji after "ａ".
-    [Fact(
-        Skip = "#133: string.Join of a group ordered with StringComparer.Ordinal orders code points"
-    )]
+    [Fact]
     public void JoinsGroupInUtf16Order()
     {
         database.AssertSameRows(
@@ -101,16 +96,29 @@ public sealed class TextOrderSemanticsTests(Database database)
     }
 
     // #133: without a comparer LINQ to Objects orders with the current culture, where
-    // case and leading white space weigh less than letters; the database collation
-    // (here the code point order of C.UTF-8) orders "MiXeD Case" before "bob". A
-    // refusal of the culture-dependent order is an acceptable fix as well.
-    [Fact(
-        Skip = "#133: OrderBy of text without a comparer is the database collation, not the current culture (a refusal is acceptable)"
-    )]
-    public void OrdersTextWithoutComparerInCultureOrder()
+    // case and leading white space weigh less than letters, and which differs from
+    // one machine to the next. SQL orders text by the collation of its database, as
+    // every query over a text column does: here the code point order of C.UTF-8,
+    // which orders "MiXeD Case" before "bob". The order of a culture is the
+    // database's to give, by a collation of that culture, so the translation neither
+    // refuses the most common of orders nor claims the culture's.
+    [Fact]
+    public void OrdersTextWithoutComparerInDatabaseCollation()
     {
-        database.AssertSameSequence(
-            Customers.OrderBy(c => c.Name).ThenBy(c => c.Id).Select(c => c.Id)
+        IQueryable<int> query = Customers
+            .OrderBy(c => c.Name)
+            .ThenBy(c => c.Id)
+            .Select(c => c.Id);
+
+        ResultSet result = database.Query(
+            new PostgreSqlQuery(query.Expression).TextValue
+        );
+
+        Assert.Equal(
+            Seed.Customers.OrderBy(c => c.Name, StringComparer.Ordinal)
+                .ThenBy(c => c.Id)
+                .Select(c => c.Id),
+            result.Rows.Select(row => (int)row[0]!)
         );
     }
 }

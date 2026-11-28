@@ -73,7 +73,7 @@ public sealed record TemporalConstructionTests
             },
             {
                 o => new TimeOnly(o.Points),
-                "MAKE_TIME(CASE WHEN (t0.\"Points\" >= 0) AND (t0.\"Points\" <= 863999999999) THEN 0 ELSE -1 END, 0, 0) + ((t0.\"Points\" / 10) * INTERVAL '1 microsecond')"
+                "MAKE_TIME(CASE WHEN (t0.\"Points\" >= 0) AND (t0.\"Points\" <= 863999999999) AND ((t0.\"Points\" % 10) = 0) THEN 0 ELSE -1 END, 0, 0) + ((t0.\"Points\" / 10) * INTERVAL '1 microsecond')"
             },
         };
 

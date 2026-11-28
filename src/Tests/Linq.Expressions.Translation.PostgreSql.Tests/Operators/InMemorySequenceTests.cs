@@ -27,7 +27,7 @@ public sealed record InMemorySequenceTests
         };
 
     // #136: bytes are smallint as the other numbers, chars are text.
-    [Theory(Skip = "#136: VALUES of byte, sbyte and char is refused")]
+    [Theory]
     [MemberData(nameof(NarrowFirstRows))]
     public void WritesSmallintForBytesAndTextForChars(Func<Expression> root, string rows)
     {
@@ -44,8 +44,66 @@ public sealed record InMemorySequenceTests
         );
     }
 
+    public static TheoryData<Func<Expression>, string> WideFirstRows =>
+        new()
+        {
+            { () => Root((ushort)1, ushort.MaxValue), "1), (65535" },
+            { () => Root(1U, uint.MaxValue), "CAST(1 AS bigint)), (4294967295" },
+            {
+                () => Root(1UL, ulong.MaxValue),
+                "CAST(1 AS numeric)), (18446744073709551615"
+            },
+            { () => Root<ulong?>(null, 1UL), "CAST(NULL AS numeric)), (1" },
+        };
+
+    // #122: an unsigned integer is the narrowest type that holds every value of it.
+    [Theory]
+    [MemberData(nameof(WideFirstRows))]
+    public void WritesTheNextWiderTypeForUnsignedIntegers(
+        Func<Expression> root,
+        string rows
+    )
+    {
+        Expression query = root();
+
+        Assert.Equal(
+            Sql.Valid(
+                $"""
+                SELECT t0."Value"
+                FROM (VALUES ({rows})) AS t0 ("Value")
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // A char is a text of one character: it compares with a number by its code, and a
+    // signed integer converts to a ulong by its bits, a negative one wrapping around.
+    [Fact]
+    public void ConvertsCharsAndUnsignedIntegersAsDotNetDoes()
+    {
+        char[] letters = ['a', 'b'];
+        ulong[] large = [1UL, ulong.MaxValue];
+        Expression query = Customers
+            .Join(letters, c => c.Id, l => l, (c, l) => c.Id)
+            .Join(large, id => (ulong)id, u => u, (id, u) => id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Customer" AS t0
+                INNER JOIN (VALUES (CAST('a' AS text)), ('b')) AS t1 ("Value") ON t0."Id" = ASCII(t1."Value")
+                INNER JOIN (VALUES (CAST(1 AS numeric)), (18446744073709551615)) AS t2 ("Value") ON (CAST(t0."Id" AS numeric) + CASE WHEN t0."Id" < 0 THEN 18446744073709551616. ELSE 0 END) = t2."Value"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
     // #138: the same SQL as Orders.Any(...).
-    [Fact(Skip = "#138: Enumerable.Any over a table captured as IEnumerable is refused")]
+    [Fact]
     public void TestsExistenceInTableCapturedAsSequence()
     {
         IEnumerable<Order> orders = Orders;
@@ -71,9 +129,7 @@ public sealed record InMemorySequenceTests
     }
 
     // #138: the same SQL as Orders.Where(...).Any(...).
-    [Fact(
-        Skip = "#138: the query below Enumerable.Any of a captured sequence is refused"
-    )]
+    [Fact]
     public void TestsExistenceInQueryCapturedAsSequence()
     {
         IEnumerable<Order> paid = Orders.Where(o => o.IsPaid);
@@ -99,9 +155,7 @@ public sealed record InMemorySequenceTests
     }
 
     // #138: the same SQL as the recursion's Any(...).
-    [Fact(
-        Skip = "#138: WithRecursive below Enumerable.Any of a captured sequence is refused"
-    )]
+    [Fact]
     public void TestsExistenceInRecursionCapturedAsSequence()
     {
         IEnumerable<Employee> reports = Trees.WithRecursive(
@@ -141,6 +195,70 @@ public sealed record InMemorySequenceTests
         );
     }
 
+    // #139: a row of the sequence whose members equal those of the tuple, a null
+    // member equal to a null one.
+    [Fact]
+    public void TestsTupleInSequenceOfTuples()
+    {
+        ValueTuple<int?, string>[] pairs = [new(1, "a"), new(null, "b")];
+        Expression query = Orders
+            .Where(o =>
+                pairs.Contains(new ValueTuple<int?, string>(o.Priority, o.Number))
+            )
+            .Select(o => o.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Order" AS t0
+                WHERE EXISTS (SELECT 1 FROM (VALUES (1, CAST('a' AS text)), (NULL, 'b')) AS t1 ("Item1", "Item2") WHERE (t0."Priority" IS NOT DISTINCT FROM t1."Item1") AND (t0."Number" = t1."Item2"))
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // #139: the same over a query of tuples.
+    [Fact]
+    public void TestsTupleInQueryOfTuples()
+    {
+        Expression query = Customers
+            .Where(c =>
+                Orders
+                    .Select(o => new ValueTuple<int, bool>(o.CustomerId, o.IsPaid))
+                    .Contains(new ValueTuple<int, bool>(c.Id, c.IsActive))
+            )
+            .Select(c => c.Id)
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Id"
+                FROM "Customer" AS t0
+                WHERE EXISTS (SELECT 1 FROM "Order" AS t1 WHERE (t0."Id" = t1."CustomerId") AND (t0."IsActive" = t1."IsPaid"))
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // An object is searched among objects of its members, not among entities.
+    [Fact]
+    public void RefusesObjectAmongEntities()
+    {
+        Expression query = Orders
+            .Where(o => Customers.Contains(new Customer { Id = o.CustomerId }))
+            .Expression;
+
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+        Assert.Contains("Contains", exception.Message, StringComparison.Ordinal);
+    }
+
     public static TheoryData<Func<Expression>> LoneSurrogates()
     {
         string reversed = "\udc00\ud800";
@@ -162,7 +280,7 @@ public sealed record InMemorySequenceTests
 
     // #135: a lone UTF-16 surrogate has no UTF-8 encoding, so the statement cannot be
     // sent; it is refused before any statement runs, as the NUL character is.
-    [Theory(Skip = "#135: a string with a lone surrogate is written into the statement")]
+    [Theory]
     [MemberData(nameof(LoneSurrogates))]
     public void RefusesLoneSurrogates(Func<Expression> query)
     {

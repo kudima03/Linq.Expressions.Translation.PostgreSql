@@ -5,7 +5,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Tests.Operators;
 public sealed record ElementFromEndTests
 {
     // #141: ElementAt(^2) is the second row of the inverted order.
-    [Fact(Skip = "#141: ElementAt(Index) counted from the end is refused")]
+    [Fact]
     public void TakesElementAtFromEnd()
     {
         Expression query = Customers.OrderBy(c => c.Id).Executed(q => q.ElementAt(^2));
@@ -24,7 +24,7 @@ public sealed record ElementFromEndTests
     }
 
     // #141: ElementAtOrDefault(^1) is the first row of the inverted order.
-    [Fact(Skip = "#141: ElementAtOrDefault(Index) counted from the end is refused")]
+    [Fact]
     public void TakesElementAtOrDefaultFromEnd()
     {
         Expression query = Customers

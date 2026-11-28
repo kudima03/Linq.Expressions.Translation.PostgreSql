@@ -52,6 +52,14 @@ internal sealed partial class Translator
         typeof(decimal),
     ];
 
+    private static readonly HashSet<Type> Signed =
+    [
+        typeof(sbyte),
+        typeof(short),
+        typeof(int),
+        typeof(long),
+    ];
+
     private static bool IsBoolean(Type type)
     {
         return ScalarTypes.Underlying(type) == typeof(bool);
@@ -97,7 +105,7 @@ internal sealed partial class Translator
     {
         Binding binding = _bindings[parameter];
         binding.Uses++;
-        return binding.Shape is RowShape row ? throw row.Rejected() : binding.Shape;
+        return binding.Shape is RowShape row ? row.Element() : binding.Shape;
     }
 
     // A constant tuple is projected member by member, as a constructed one is: each
@@ -244,21 +252,65 @@ internal sealed partial class Translator
         }
         // Only a DateTime converts to a DateTimeOffset: a timestamp compares with a
         // timestamptz through the session time zone, as the conversion uses the local one.
+        // A Utc one is the instant of its UTC time, as its offset is zero.
         if (target == typeof(DateTimeOffset))
         {
-            return value;
+            return value.TimeKind == SqlKind.Utc ? Instant(value, to)
+                : value.TimeKind == SqlKind.Mixed ? throw Unkinded()
+                : value;
         }
-        if (!ScalarTypes.IsNumber(target))
+        // A conversion to a byte or an unsigned integer wraps in C#, which a cast to
+        // the wider PostgreSQL type does not: only the conversion of a signed integer
+        // to a ulong is written out.
+        if (
+            !ScalarTypes.IsNumber(target)
+            || (ScalarTypes.IsWidened(target) && target != typeof(ulong))
+        )
         {
             throw new NotSupportedException(
                 $"Converting '{from.Name}' to '{to.Name}' is not supported."
             );
+        }
+        if (target == typeof(ulong) && Signed.Contains(source))
+        {
+            return Unsigned(value, to);
+        }
+        // A char is a text of one character, and its number the code of the character.
+        if (source == typeof(char))
+        {
+            SqlFunction code = new("ASCII", [value], typeof(int), value.Nullable);
+            return target == typeof(int)
+                ? code
+                : new SqlCast(code, ScalarTypes.Number(target), to);
         }
         SqlExpression operand =
             Fractional.Contains(source) && !Fractional.Contains(target)
                 ? new SqlFunction("TRUNC", [value], value.Type)
                 : value;
         return new SqlCast(operand, ScalarTypes.Number(target), to);
+    }
+
+    // (ulong)x of a negative integer is x + 2^64, as the conversion keeps the bits.
+    private static SqlBinary Unsigned(SqlExpression value, Type type)
+    {
+        SqlCast number = new(value, "numeric", type);
+        return new SqlBinary(
+            "+",
+            SqlBinaryKind.Arithmetic,
+            number,
+            new SqlCase(
+                [
+                    new SqlWhen(
+                        Compare("<", value, Integer(0)),
+                        new SqlConstant(ulong.MaxValue + 1m, typeof(decimal))
+                    ),
+                ],
+                Integer(0),
+                type
+            ),
+            type,
+            value.Nullable
+        );
     }
 
     // A nullable value C# reads as its value is never NULL where the C# evaluates.
@@ -274,7 +326,8 @@ internal sealed partial class Translator
             return Equality(
                 binary.Left,
                 binary.Right,
-                binary.NodeType == ExpressionType.NotEqual
+                binary.NodeType == ExpressionType.NotEqual,
+                true
             );
         }
         if (binary.NodeType == ExpressionType.Coalesce)
@@ -306,16 +359,24 @@ internal sealed partial class Translator
                 or ExpressionType.RightShift
             ? Masked(binary)
             : Sql(binary.Right);
-        return binary.NodeType == ExpressionType.Modulo && IsFloating(binary.Type)
-            ? Remainder(left, right, binary.Type)
-            : new SqlBinary(
-                symbol,
-                kind,
-                left,
-                right,
-                binary.Type,
-                left.Nullable || right.Nullable
-            );
+        SqlBinary operation = new(
+            symbol,
+            kind,
+            left,
+            right,
+            binary.Type,
+            left.Nullable || right.Nullable
+        );
+        return binary.NodeType == ExpressionType.Subtract
+            && binary.Left.Type == typeof(TimeOnly)
+            && binary.Right.Type == typeof(TimeOnly)
+                ? Elapsed(operation)
+            : binary.NodeType == ExpressionType.Modulo && IsFloating(binary.Type)
+                ? Remainder(left, right, binary.Type)
+            : binary.NodeType == ExpressionType.Divide && IsDecimal(binary.Type)
+                ? Quotient(left, right, binary.Type)
+            : Comparisons.ContainsKey(binary.NodeType) ? Ordered(operation)
+            : operation;
     }
 
     private static (string Symbol, SqlBinaryKind Kind) Operator(BinaryExpression binary)
@@ -331,6 +392,30 @@ internal sealed partial class Translator
             : Arithmetic.TryGetValue(binary.NodeType, out string? arithmetic)
                 ? (arithmetic, SqlBinaryKind.Arithmetic)
             : throw Unsupported.Node(binary);
+    }
+
+    // A TimeOnly less another is the time elapsed from it on a circular clock, never
+    // negative: an earlier time is a day behind. No time is earlier than midnight.
+    private static SqlExpression Elapsed(SqlBinary difference)
+    {
+        return
+            difference.Right is SqlConstant { Value: TimeOnly time }
+            && time == TimeOnly.MinValue
+            ? difference
+            : new SqlCase(
+                [
+                    new SqlWhen(
+                        Compare("<", difference.Left, difference.Right),
+                        Calculate(
+                            "+",
+                            difference,
+                            new SqlFragment("INTERVAL '1 day'", typeof(TimeSpan))
+                        )
+                    ),
+                ],
+                difference,
+                typeof(TimeSpan)
+            );
     }
 
     private static bool IsFloating(Type type)
@@ -374,7 +459,14 @@ internal sealed partial class Translator
             : Calculate("&", count, Integer(mask));
     }
 
-    private SqlExpression Equality(Expression left, Expression right, bool negated)
+    // The operators == and != are false and true for NaN; Equals takes it for equal
+    // to itself.
+    private SqlExpression Equality(
+        Expression left,
+        Expression right,
+        bool negated,
+        bool operators = false
+    )
     {
         if (left is ConstantExpression { Value: null })
         {
@@ -395,11 +487,21 @@ internal sealed partial class Translator
         }
         Shape first = Shape(left);
         Shape second = Shape(right);
-        return first is not ScalarShape || second is not ScalarShape
-            ? throw new NotSupportedException(
+        if (first is not ScalarShape || second is not ScalarShape)
+        {
+            throw new NotSupportedException(
                 "Comparing entities or projections for equality is not supported."
-            )
-            : Equated(Scalar(first), Scalar(second), negated, IsCorrelation(left, right));
+            );
+        }
+        SqlExpression equated = Equated(
+            Scalar(first),
+            Scalar(second),
+            negated,
+            IsCorrelation(left, right)
+        );
+        return operators
+            ? Unequal(equated, Scalar(first), Scalar(second), negated)
+            : equated;
     }
 
     // A correlation key equal to NULL is false in both languages, but not equal to it

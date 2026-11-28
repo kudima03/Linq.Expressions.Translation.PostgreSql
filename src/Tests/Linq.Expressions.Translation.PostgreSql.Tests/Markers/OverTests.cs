@@ -173,7 +173,7 @@ public sealed record OverTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT ROW_NUMBER() OVER (ORDER BY t0."Region", t0."Id", t0."Name" COLLATE "C" DESC)
+                SELECT ROW_NUMBER() OVER (ORDER BY t0."Region", t0."Id", REGEXP_REPLACE(t0."Name", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C" DESC)
                 FROM "Customer" AS t0
                 """
             ),
@@ -215,7 +215,7 @@ public sealed record OverTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT RANK() OVER (ORDER BY t0."Name" COLLATE "C" DESC)
+                SELECT RANK() OVER (ORDER BY REGEXP_REPLACE(t0."Name", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C" DESC)
                 FROM "Customer" AS t0
                 """
             ),
@@ -270,7 +270,7 @@ public sealed record OverTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Id", ROW_NUMBER() OVER (PARTITION BY t0."CustomerId" ORDER BY t0."CreatedAt" ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS "Number", AVG(t0."Total") OVER (PARTITION BY t0."CustomerId" ORDER BY t0."CreatedAt" ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS "Moving", LAG(t0."Number", 1) OVER (PARTITION BY t0."CustomerId" ORDER BY t0."CreatedAt" ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS "Previous"
+                SELECT t0."Id", ROW_NUMBER() OVER (PARTITION BY t0."CustomerId" ORDER BY t0."CreatedAt" ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS "Number", TRIM_SCALE(ROUND(AVG(ROUND(t0."Total", 30)) OVER (PARTITION BY t0."CustomerId" ORDER BY t0."CreatedAt" ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t0."Total", 30)) OVER (PARTITION BY t0."CustomerId" ORDER BY t0."CreatedAt" ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING)) / 0.79228162514264337593543950335) AS text)))) AS "Moving", LAG(t0."Number", 1) OVER (PARTITION BY t0."CustomerId" ORDER BY t0."CreatedAt" ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS "Previous"
                 FROM "Order" AS t0
                 """
             ),
@@ -300,7 +300,7 @@ public sealed record OverTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Id", t0."Total" / COALESCE(SUM(t0."Total") OVER (PARTITION BY t0."CustomerId"), 0) AS "Share", CAST(t0."Quantity" AS double precision) > AVG(CAST(t0."Quantity" AS double precision)) OVER (PARTITION BY t0."CustomerId") AS "Above"
+                SELECT t0."Id", TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / COALESCE(SUM(t0."Total") OVER (PARTITION BY t0."CustomerId"), 0), 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / COALESCE(SUM(t0."Total") OVER (PARTITION BY t0."CustomerId"), 0)) / 0.79228162514264337593543950335) AS text)))) AS "Share", CAST(t0."Quantity" AS double precision) > CAST(AVG(t0."Quantity") OVER (PARTITION BY t0."CustomerId") AS double precision) AS "Above"
                 FROM "Order" AS t0
                 """
             ),

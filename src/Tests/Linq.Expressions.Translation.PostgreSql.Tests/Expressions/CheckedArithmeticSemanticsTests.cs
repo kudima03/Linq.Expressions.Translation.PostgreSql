@@ -171,7 +171,7 @@ public sealed record CheckedArithmeticSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Total" / 2
+                SELECT TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / 2, 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / 2) / 0.79228162514264337593543950335) AS text))))
                 FROM "Order" AS t0
                 """
             ),

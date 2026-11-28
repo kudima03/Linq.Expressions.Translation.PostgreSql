@@ -9,6 +9,8 @@ internal sealed class SqlBinary(
     bool nullable
 ) : SqlExpression(type)
 {
+    public override IEnumerable<SqlExpression> Operands => [Left, Right];
+
     // PostgreSQL binds these tighter than a prefix ~, so ~a + 1 means ~(a + 1).
     private static readonly HashSet<string> Arithmetic = ["+", "-", "*", "/", "%"];
 
@@ -18,6 +20,10 @@ internal sealed class SqlBinary(
         nullable && (Kind != SqlBinaryKind.Comparison || IsLifted);
 
     private bool IsLifted => System.Nullable.GetUnderlyingType(Type) is not null;
+
+    // A DateTime plus or minus a duration is of its kind.
+    public override SqlKind TimeKind =>
+        Symbol is "+" or "-" ? KindOf([Left]) : SqlKind.Unspecified;
 
     public string Symbol { get; } = symbol;
 
@@ -57,18 +63,24 @@ internal sealed class SqlBinary(
         _ =
             Arithmetic.Contains(Symbol) && Left is SqlUnary { Symbol: "~" } complement
                 ? writer.Append("(").Render(complement, mode).Append(")")
-                : RenderOperand(writer, Left, mode);
+                : RenderOperand(writer, Left, Right, mode);
         _ = writer.Append(" " + Symbol + " ");
-        _ = RenderOperand(writer, Right, mode);
+        _ = RenderOperand(writer, Right, Left, mode);
     }
 
     // Only logical operators pass a predicate position on; every other operand is a value.
-    private SqlWriter RenderOperand(SqlWriter writer, SqlExpression operand, SqlMode mode)
+    private SqlWriter RenderOperand(
+        SqlWriter writer,
+        SqlExpression operand,
+        SqlExpression other,
+        SqlMode mode
+    )
     {
         SqlMode inner = Kind == SqlBinaryKind.Logical ? mode : SqlMode.Value;
-        return
-            IsChained(operand) || (Kind == SqlBinaryKind.Logical && operand is SqlUnary)
-            ? writer.Render(operand, inner)
+        return operand is SqlConstant && SqlWriter.IsNumeric([other])
+                ? writer.Unified(operand, true)
+            : IsChained(operand) || (Kind == SqlBinaryKind.Logical && operand is SqlUnary)
+                ? writer.Render(operand, inner)
             : writer.Operand(operand, inner);
     }
 

@@ -22,8 +22,9 @@ internal static class SqlLiteral
                     CultureInfo.InvariantCulture
                 )
                 .ToString()!,
-            double number => Floating(number, "double precision"),
-            float number => Floating(number, "real"),
+            decimal number => Exact(Number(number)),
+            double number => Floating(number),
+            float number => Single(number),
             Guid guid => $"UUID '{guid}'",
             DateTime moment => Timestamp(moment),
             DateTimeOffset moment =>
@@ -31,7 +32,7 @@ internal static class SqlLiteral
             DateOnly day =>
                 $"DATE '{day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}'",
             TimeOnly time =>
-                $"TIME '{time.ToString(Seconds, CultureInfo.InvariantCulture)}'",
+                $"TIME '{Whole(time).ToString(Seconds, CultureInfo.InvariantCulture)}'",
             TimeSpan span => $"INTERVAL '{Duration(span)}'",
             byte[] bytes => $"BYTEA '\\x{Convert.ToHexString(bytes).ToLowerInvariant()}'",
             Array items => Items(items),
@@ -49,6 +50,12 @@ internal static class SqlLiteral
         {
             throw new NotSupportedException(
                 "PostgreSQL text cannot contain the NUL character."
+            );
+        }
+        if (text.Where((character, index) => IsLone(text, index)).Any())
+        {
+            throw new NotSupportedException(
+                "PostgreSQL text cannot contain a lone surrogate, which is no character and has no UTF-8 encoding."
             );
         }
         if (!text.Any(IsInvisible))
@@ -79,6 +86,17 @@ internal static class SqlLiteral
         return escaped.Append('\'').ToString();
     }
 
+    // A surrogate that is not half of a pair: a high one without a low one after it,
+    // or a low one without a high one before it.
+    private static bool IsLone(string text, int index)
+    {
+        char character = text[index];
+        return char.IsHighSurrogate(character)
+            ? index + 1 == text.Length || !char.IsLowSurrogate(text[index + 1])
+            : char.IsLowSurrogate(character)
+                && (index == 0 || !char.IsHighSurrogate(text[index - 1]));
+    }
+
     // A control character or a white-space character other than the space is written
     // as an escape, so that the statement shows it and stays a single line.
     private static bool IsInvisible(char character)
@@ -87,14 +105,67 @@ internal static class SqlLiteral
             || (char.IsWhiteSpace(character) && character != ' ');
     }
 
-    private static string Floating(IFormattable number, string type)
+    // A whole decimal or double is written with its point, as a number without one
+    // is an integer to PostgreSQL, which divides integers without a remainder; the
+    // point alone keeps the scale of a decimal.
+    private static string Exact(string digits)
     {
-        NumberFormatInfo format = NumberFormatInfo.InvariantInfo;
-        string text = number.ToString(null, format);
-        return text == format.NaNSymbol ? $"CAST('NaN' AS {type})"
-            : text == format.PositiveInfinitySymbol ? $"CAST('Infinity' AS {type})"
-            : text == format.NegativeInfinitySymbol ? $"CAST('-Infinity' AS {type})"
-            : text;
+        return
+            digits.Contains('.', StringComparison.Ordinal)
+            || digits.Contains('E', StringComparison.Ordinal)
+            ? digits
+            : digits + ".";
+    }
+
+    // A decimal as its digits, for where a numeric operand beside it types it.
+    public static string Number(decimal number)
+    {
+        return number.ToString(CultureInfo.InvariantCulture);
+    }
+
+    // A number of a fractional type as its digits alone, for where an operand beside
+    // it, a cast or a column types it; null for one that has no digits: NaN, an
+    // infinity, or the negative zero, whose sign the integer -0 would lose.
+    public static string? Digits(object? value)
+    {
+        return value switch
+        {
+            decimal number => Number(number),
+            double number when double.IsFinite(number) && !IsNegativeZero(number) =>
+                number.ToString(null, CultureInfo.InvariantCulture),
+            float number when float.IsFinite(number) && !IsNegativeZero(number) =>
+                number.ToString(null, CultureInfo.InvariantCulture),
+            _ => null,
+        };
+    }
+
+    // A floating-point number without digits as the text a cast reads it from.
+    public static string Quoted(double number)
+    {
+        return double.IsNaN(number) ? "'NaN'"
+            : double.IsPositiveInfinity(number) ? "'Infinity'"
+            : double.IsNegativeInfinity(number) ? "'-Infinity'"
+            : "'-0'";
+    }
+
+    private static bool IsNegativeZero(double number)
+    {
+        return number == 0 && double.IsNegative(number);
+    }
+
+    // A double is a numeric literal, which PostgreSQL converts to the double
+    // precision of the operand beside it; a float is always cast, as a real beside a
+    // numeric literal would be computed in double precision.
+    private static string Floating(double number)
+    {
+        return Digits(number) is string digits
+            ? Exact(digits)
+            : $"CAST({Quoted(number)} AS double precision)";
+    }
+
+    private static string Single(float number)
+    {
+        return $"CAST({Digits(number) ?? Quoted(number)} AS real)";
     }
 
     // A DateTime is a timestamp whatever its kind, as C# compares DateTime values by
@@ -109,13 +180,28 @@ internal static class SqlLiteral
             : $"TIMESTAMP '{Precise(moment)}'";
     }
 
+    // A time of day or a duration of a whole number of microseconds, as its type.
+    private static TimeOnly Whole(TimeOnly time)
+    {
+        _ = Whole(time.Ticks, "times");
+        return time;
+    }
+
     private static string Precise(DateTime moment)
     {
-        return moment.Ticks % 10 != 0
+        _ = Whole(moment.Ticks, "timestamps");
+        return moment.ToString("yyyy-MM-dd " + Seconds, CultureInfo.InvariantCulture);
+    }
+
+    // PostgreSQL keeps microseconds: a value finer than one would be read back as
+    // another value, truncated or rounded.
+    private static long Whole(long ticks, string type)
+    {
+        return ticks % TimeSpan.TicksPerMicrosecond != 0
             ? throw new NotSupportedException(
-                "PostgreSQL timestamps are limited to microsecond precision."
+                $"PostgreSQL {type} are limited to microsecond precision."
             )
-            : moment.ToString("yyyy-MM-dd " + Seconds, CultureInfo.InvariantCulture);
+            : ticks;
     }
 
     private static string Offset(DateTimeOffset moment)
@@ -127,6 +213,7 @@ internal static class SqlLiteral
 
     private static string Duration(TimeSpan span)
     {
+        _ = Whole(span.Ticks, "intervals");
         string date = span.Days == 0 ? string.Empty : $"{span.Days}D";
         decimal seconds =
             (decimal)(span.Ticks % TimeSpan.TicksPerMinute) / TimeSpan.TicksPerSecond;

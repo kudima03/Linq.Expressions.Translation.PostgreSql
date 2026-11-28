@@ -3,6 +3,8 @@ namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 internal sealed class SqlUnary(string symbol, SqlExpression operand, Type type)
     : SqlExpression(type)
 {
+    public override IEnumerable<SqlExpression> Operands => [operand];
+
     public override bool Nullable => operand.Nullable;
 
     public string Symbol { get; } = symbol;

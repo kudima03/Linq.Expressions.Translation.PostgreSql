@@ -368,7 +368,7 @@ public sealed record StringJoinEdgeCaseTests
             Sql.Valid(
                 """
                 SELECT (
-                    SELECT COALESCE(STRING_AGG(t1."Number", ',' ORDER BY t1."Number" COLLATE "C"), '')
+                    SELECT COALESCE(STRING_AGG(t1."Number", ',' ORDER BY REGEXP_REPLACE(t1."Number", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"), '')
                     FROM "Order" AS t1
                     WHERE t1."IsPaid"
                 )
@@ -392,8 +392,8 @@ public sealed record StringJoinEdgeCaseTests
             Sql.Valid(
                 """
                 SELECT (
-                    SELECT COALESCE(STRING_AGG(t1."Value", ',' ORDER BY t1."Value"), '')
-                    FROM (VALUES (CAST('a' AS text)), ('b')) AS t1 ("Value")
+                    SELECT COALESCE(STRING_AGG(t1."Value", ',' ORDER BY t1."Value", t1."$position"), '')
+                    FROM (VALUES (CAST('a' AS text), 0), ('b', 1)) AS t1 ("Value", "$position")
                 )
                 FROM "Order" AS t0
                 """
@@ -422,7 +422,7 @@ public sealed record StringJoinEdgeCaseTests
             Sql.Valid(
                 """
                 SELECT (
-                    SELECT COALESCE(STRING_AGG(t3."Number", ',' ORDER BY t3."Number" COLLATE "C"), '')
+                    SELECT COALESCE(STRING_AGG(t3."Number", ',' ORDER BY REGEXP_REPLACE(t3."Number", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C"), '')
                     FROM (
                         SELECT t1."Number"
                         FROM "Order" AS t1
@@ -480,22 +480,6 @@ public sealed record StringJoinEdgeCaseTests
             g => string.Join(",", g.Select(o => o.Number).ToList()),
             g => string.Join(",", g.GroupBy(o => o.Status).Select(x => x.Key.ToString())),
             g => string.Join(g.First().Number, g.Select(o => o.Number)),
-            g =>
-                string.Join(
-                    ",",
-                    g.OrderBy(o => o.Id)
-                        .Select(o => o.Note)
-                        .Where(n => n != null)
-                        .Distinct()
-                ),
-            g =>
-                string.Join(
-                    ",",
-                    g.Select(o => o.Number)
-                        .OrderBy(n => n)
-                        .ThenBy(n => n.Length)
-                        .Distinct()
-                ),
             g =>
                 string.Join(
                     ",",

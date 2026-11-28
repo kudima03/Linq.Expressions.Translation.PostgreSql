@@ -130,13 +130,21 @@ public sealed record ArithmeticMatrixTests
     )
     {
         Expression query = Orders.OrderBy(selector).Select(o => o.Id).Expression;
+        // A double is sorted as NULL where it is NaN, which .NET ranks first; a
+        // number converted to a double is never NaN.
+        bool floating =
+            selector.Body is UnaryExpression { Operand: not UnaryExpression } boxed
+            && boxed.Operand.Type == typeof(double);
+        string key = floating
+            ? $"NULLIF({value}, 'NaN') NULLS FIRST"
+            : value + (nullable ? " NULLS FIRST" : string.Empty);
 
         Assert.Equal(
             Sql.Valid(
                 $"""
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                ORDER BY {value}{(nullable ? " NULLS FIRST" : string.Empty)}
+                ORDER BY {key}
                 """
             ),
             new PostgreSqlQuery(query).TextValue

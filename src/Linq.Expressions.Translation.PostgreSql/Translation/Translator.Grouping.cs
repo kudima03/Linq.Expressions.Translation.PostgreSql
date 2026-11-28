@@ -14,8 +14,13 @@ internal sealed partial class Translator
             call.Arguments.Count > 2 && ParameterCount(call.Arguments[2]) == 1;
         Shape element = selected ? Bind(Lambda(call, 2), query.Shape) : query.Shape;
         query.GroupBy = Partitioned(key);
+        List<Ordering> sequence =
+            !query.IsOrdered ? []
+            : query.Orderings.Count > 0 ? query.Orderings
+            : query.Ties;
         query.Orderings = Grouped(query.Orderings, query.GroupBy);
-        query.Shape = new GroupingShape(key, element, null, false);
+        query.Ties = Grouped(query.Ties, query.GroupBy);
+        query.Shape = new GroupingShape(key, element, null, false, null, sequence);
         if (call.Arguments.Count > (selected ? 3 : 2))
         {
             query.Shape = Bind(
@@ -84,7 +89,11 @@ internal sealed partial class Translator
 
     private static int ParameterCount(Expression argument)
     {
-        return ((LambdaExpression)((UnaryExpression)argument).Operand).Parameters.Count;
+        Expression lambda = argument
+            is UnaryExpression { NodeType: ExpressionType.Quote } quote
+            ? quote.Operand
+            : argument;
+        return ((LambdaExpression)lambda).Parameters.Count;
     }
 
     private Shape Grouped(GroupingShape group, MethodCallExpression call)
@@ -103,7 +112,8 @@ internal sealed partial class Translator
                 Kept(Lambda(call, 1), element),
                 Conjoined(Scalar(Bind(Lambda(call, 1), element)), group.Filter),
                 group.Distinct,
-                group.Order
+                group.Order,
+                group.Source
             ),
             // A projection of the distinct elements is not the distinct projection,
             // which is what the aggregate of a DISTINCT group would compute.
@@ -116,14 +126,16 @@ internal sealed partial class Translator
                 Bind(Lambda(call, 1), element),
                 group.Filter,
                 group.Distinct,
-                group.Order
+                group.Order,
+                group.Source
             ),
             nameof(Enumerable.Distinct) => new GroupingShape(
                 group.Key,
                 element,
                 group.Filter,
                 true,
-                group.Order
+                group.Order,
+                group.Source
             ),
             nameof(Enumerable.Count) or nameof(Enumerable.LongCount) => new ScalarShape(
                 Counting(

@@ -1,5 +1,6 @@
 #pragma warning disable CA1861 // the constant arrays are the sources under test
 
+using System.Globalization;
 using Xunit.Sdk;
 
 namespace Linq.Expressions.Translation.PostgreSql.ExecutionTests;
@@ -145,9 +146,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // Observed: the statement succeeds, as the ticks are added to 0001-01-01 without a
     // range check: -1 tick is 0001-01-01 (the year 1), -10 ticks or -1 day a date in
     // 1 BC and DateTime.MaxValue.Ticks + 1 the year 10000.
-    [Theory(
-        Skip = "#128: new DateTime(ticks) does not fail on the server for ticks out of range"
-    )]
+    [Theory]
     [MemberData(nameof(TicksPastBounds))]
     public void FailsForTicksOutOfRange(Func<IQueryable<Order>, IQueryable<object>> query)
     {
@@ -176,18 +175,28 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
                 orders.Select(o => (object)new DateTime(o.Id, 1, 1).AddYears(-1).Year),
         ];
 
-    // Shifting a date or a timestamp built at a bound past it throws in .NET.
-    // Observed: the statement succeeds with the year 10000, or -1 for the year
-    // before 1 (1 BC), as date and timestamp arithmetic reaches far past 9999.
-    [Theory(
-        Skip = "#128: date and timestamp arithmetic does not fail past 9999-12-31 or before 0001-01-01"
-    )]
+    // Shifting a date or a timestamp built at a bound past it throws in .NET, and
+    // PostgreSQL, whose dates reach from 4713 BC far past 9999, keeps counting: the
+    // year is 10000, or -1 for the year before 1 (1 BC). A value is checked where it
+    // is built from its parts, at no cost to the statement; holding every sum of a
+    // date and a number to the range of .NET would wrap each of them in a check of
+    // its result, so the arithmetic is PostgreSQL's, and a result out of the range of
+    // a DateTime fails where the client reads it.
+    [Theory]
     [MemberData(nameof(ShiftedPastBounds))]
-    public void FailsWhenShiftedPastBound(
+    public void CountsPastBoundWhereDotNetThrows(
         Func<IQueryable<Order>, IQueryable<object>> query
     )
     {
-        AssertFails(query(First));
+        IQueryable<object> shifted = query(First);
+
+        _ = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new EnumerableQuery<object>(InMemory.Rewrite(shifted.Expression)).ToList()
+        );
+        object?[] row = Assert.Single(
+            database.Query(new PostgreSqlQuery(shifted.Expression).TextValue).Rows
+        );
+        Assert.NotInRange(Convert.ToInt32(row[0], CultureInfo.InvariantCulture), 1, 9999);
     }
 
     // Ticks and day numbers read back build the same value.
@@ -349,9 +358,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // MAKE_TIMESTAMP(0, 1, 1, 24, 0, 0) is folded, and fails, while PostgreSQL plans
     // the statement, though no row reaches the branch.
     // Observed: "time field value out of range: -1:00:60" for the first of them.
-    [Fact(
-        Skip = "#128: a constant part out of range fails the statement at planning time, even in a branch no row reaches"
-    )]
+    [Fact]
     public void LeavesUnreachedConstantPartsOutOfRange()
     {
         database.AssertSameRows(
@@ -370,9 +377,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
         );
     }
 
-    [Fact(
-        Skip = "#128: a constant part out of range fails the statement at planning time, even in a branch no row reaches"
-    )]
+    [Fact]
     public void LeavesUnreachedFoldedPartsOutOfRange()
     {
         database.AssertSameRows(
@@ -504,9 +509,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // TimeOnly subtraction is the time elapsed on a circular clock in .NET, never
     // negative. Observed: time - time is a negative interval for an earlier time,
     // 09:00 - 12:02 is -03:02:00 where .NET gives 20:58:00.
-    [Fact(
-        Skip = "#128: TimeOnly subtraction is time - time, negative where .NET wraps around midnight"
-    )]
+    [Fact]
     public void SubtractsTimesAroundMidnight()
     {
         database.AssertSameRows(
@@ -655,9 +658,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
     // Observed: MAKE_TIMESTAMP(...) AT TIME ZONE 'UTC' is a timestamptz, whose hour,
     // day and date PostgreSQL reads in the session zone (America/New_York), so Hour
     // of 2024-01-01 02:00 UTC is 21 instead of 2.
-    [Fact(
-        Skip = "#129: a DateTime constructed with DateTimeKind.Utc is a timestamptz, read in the session time zone"
-    )]
+    [Fact]
     public void ReadsMembersOfUtcTimestampsAsWritten()
     {
         database.AssertSameRows(
@@ -693,9 +694,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
 
     // Observed: the timestamptz compares with the timestamp column and the TIMESTAMP
     // constant through the session zone, five hours later.
-    [Fact(
-        Skip = "#129: a DateTime constructed with DateTimeKind.Utc compares with a DateTime through the session time zone"
-    )]
+    [Fact]
     public void ComparesUtcTimestampsByTicks()
     {
         database.AssertSameRows(
@@ -721,9 +720,7 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
 
     // Observed: timestamptz - timestamp converts the timestamp through the session
     // zone, and adding a day across the change to daylight saving time adds 23 hours.
-    [Fact(
-        Skip = "#129: arithmetic on a DateTime constructed with DateTimeKind.Utc follows the session time zone"
-    )]
+    [Fact]
     public void ComputesWithUtcTimestampsByTicks()
     {
         database.AssertSameRows(
@@ -745,17 +742,24 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
         );
     }
 
-    // Observed: UNION and GREATEST resolve timestamptz and timestamp to timestamptz,
-    // so the column's values shift by the session zone's offset.
-    [Fact(
-        Skip = "#129: a DateTime constructed with DateTimeKind.Utc shifts a DateTime it is combined with by the session time zone"
-    )]
+    // A Utc DateTime combined with a column stays a timestamp, so nothing is shifted
+    // by the session zone: Union keeps the distinct ticks and Max takes the later
+    // ticks. The combined values are of two kinds, which no column can be read as, so
+    // they are counted and read through their members.
+    [Fact]
     public void CombinesUtcTimestampsWithColumns()
     {
-        database.AssertSameRows(
-            Orders
-                .Select(o => new DateTime(2024, 1, 1, o.Quantity, 0, 0, DateTimeKind.Utc))
-                .Union(Orders.Select(o => o.CreatedAt))
+        database.AssertSameResult(
+            Orders.Select(o => new DateTime(
+                2024,
+                1,
+                1,
+                o.Quantity,
+                0,
+                0,
+                DateTimeKind.Utc
+            )),
+            q => q.Union(Orders.Select(o => o.CreatedAt)).Count()
         );
         database.AssertSameRows(
             Orders.Select(o => new
@@ -765,8 +769,31 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
                 {
                     o.CreatedAt,
                     new DateTime(2024, 1, 1, o.Quantity, 0, 0, DateTimeKind.Utc),
-                }.Max(),
+                }
+                    .Max()
+                    .Hour,
+                Later = new[]
+                {
+                    o.CreatedAt,
+                    new DateTime(2024, 1, 1, o.Quantity, 0, 0, DateTimeKind.Utc),
+                }.Max() > new DateTime(2024, 1, 1, 5, 0, 0),
             })
+        );
+        _ = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(
+                Orders
+                    .Select(o => new DateTime(
+                        2024,
+                        1,
+                        1,
+                        o.Quantity,
+                        0,
+                        0,
+                        DateTimeKind.Utc
+                    ))
+                    .Union(Orders.Select(o => o.CreatedAt))
+                    .Expression
+            ).TextValue
         );
     }
 
@@ -918,38 +945,43 @@ public sealed class TemporalConstructionEdgeCaseSemanticsTests(Database database
         );
     }
 
-    // A count of ticks below a microsecond is truncated, as PostgreSQL keeps none.
+    // A count of ticks below a microsecond fails, as PostgreSQL keeps none and would
+    // read the time back as another one.
     [Fact]
-    public void TruncatesTicksBelowMicrosecond()
+    public void FailsForTicksBelowMicrosecond()
     {
-        ResultSet result = database.Query(
-            new PostgreSqlQuery(
-                First.Select(o => new TimeOnly((o.Id * 10_000_000L) + 9)).Expression
-            ).TextValue
+        XunitException exception = Assert.Throws<XunitException>(() =>
+            database.Query(
+                new PostgreSqlQuery(
+                    First.Select(o => new TimeOnly((o.Id * 10_000_000L) + 9)).Expression
+                ).TextValue
+            )
         );
 
-        object?[] row = Assert.Single(result.Rows);
-        Assert.Equal(new TimeOnly(0, 0, 1), row[0]);
+        Assert.Contains("out of range", exception.Message, StringComparison.Ordinal);
     }
 
     // A TimeOnly constant finer than a microsecond is not what PostgreSQL compares:
-    // .NET orders 00:00:00 before 00:00:00.0000005 where TIME '00:00:00' is equal.
-    // Observed: the constant renders as TIME '00:00:00', truncated, where a DateTime
-    // constant finer than a microsecond is refused with NotSupportedException.
-    [Fact(
-        Skip = "#130: a TimeOnly constant finer than a microsecond is truncated silently"
-    )]
-    public void ComparesTimeConstantFinerThanMicrosecond()
+    // .NET orders 00:00:00 before 00:00:00.0000005 where TIME '00:00:00' is equal, so
+    // the constant is refused, as a DateTime constant finer than a microsecond is.
+    [Fact]
+    public void RefusesTimeConstantFinerThanMicrosecond()
     {
-        database.AssertSameRows(
-            Orders.Select(o => new
-            {
-                o.Id,
-                Later = o.DeliveryTime >= new TimeOnly(5),
-                Before = o.DeliveryTime
-                    < new TimeOnly(23, 59, 59).Add(TimeSpan.FromTicks(9_999_995)),
-            })
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(
+                Orders
+                    .Select(o => new
+                    {
+                        o.Id,
+                        Later = o.DeliveryTime >= new TimeOnly(5),
+                        Before = o.DeliveryTime
+                            < new TimeOnly(23, 59, 59).Add(TimeSpan.FromTicks(9_999_995)),
+                    })
+                    .Expression
+            ).TextValue
         );
+
+        Assert.Contains("microsecond", exception.Message, StringComparison.Ordinal);
     }
 
     private void AssertFails(IQueryable<object> failing)

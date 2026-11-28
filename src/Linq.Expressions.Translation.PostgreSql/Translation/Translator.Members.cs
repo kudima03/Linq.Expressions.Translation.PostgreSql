@@ -74,13 +74,8 @@ internal sealed partial class Translator
                 type,
                 owner.Nullable
             ),
-            { Name: nameof(DateTimeOffset.UtcDateTime) } => new SqlBinary(
-                "AT TIME ZONE",
-                SqlBinaryKind.Arithmetic,
-                owner,
-                Text("UTC"),
-                type,
-                owner.Nullable
+            { Name: nameof(DateTimeOffset.UtcDateTime) } => new SqlUtc(
+                Zoned(owner, type)
             ),
             { Name: nameof(DateOnly.DayNumber) } => Calculate(
                 "-",
@@ -172,7 +167,7 @@ internal sealed partial class Translator
                     [Text("day"), local],
                     typeof(DateTime)
                 ),
-                _ => Now(member),
+                _ => new SqlUtc(Zoned(Now(member), typeof(DateTime))),
             };
     }
 

@@ -46,12 +46,17 @@ internal sealed partial class Translator
             : Recursive(call);
     }
 
+    // DISTINCT ON keeps its rows after the window functions of its SELECT are
+    // computed, so a window over them is one over a derived table of them.
     private SelectQuery Over(MethodCallExpression call)
     {
-        SelectQuery query = Open(
-            Query(call.Arguments[0]),
-            Barrier.Paging | Barrier.Distinct | Barrier.Projection | Barrier.Window
-        );
+        SqlQuery source = Query(call.Arguments[0]);
+        SelectQuery query = source is SelectQuery { DistinctOn: not null }
+            ? Wrap(source)
+            : Open(
+                source,
+                Barrier.Paging | Barrier.Distinct | Barrier.Projection | Barrier.Window
+            );
         List<SqlExpression> partition = Optional(call, 1) is LambdaExpression partitionBy
             ?
             [
@@ -61,20 +66,27 @@ internal sealed partial class Translator
                     .Where(value => value is not SqlConstant),
             ]
             : [];
-        List<Ordering> order = Optional(call, 2) is LambdaExpression orderBy
-            ? WindowOrder(orderBy, query.Shape)
-            : [];
         PostgreSqlFrame? frame = call.Arguments[3] is ConstantExpression constant
             ? (PostgreSqlFrame?)constant.Value
             : throw new NotSupportedException(
                 "The frame of a window must be a constant, not computed for each row."
             );
-        if (frame is not null)
-        {
-            Framed(frame, order);
-        }
+        // A RANGE with an offset measures the distance of its one key: a key that
+        // may be NULL is not split in two to put NaN where .NET sorts it.
+        List<Ordering> order = Optional(call, 2) is LambdaExpression orderBy
+            ? WindowOrder(
+                orderBy,
+                query.Shape,
+                frame?.Kind is FrameKind.NumericRange or FrameKind.IntervalRange
+            )
+            : [];
         WindowShape window = new(
-            new SqlWindow(partition, order, frame?.TextValue),
+            new SqlWindow(
+                partition,
+                order,
+                frame is null ? null : Framed(frame, order),
+                frame?.IncludesCurrentRow ?? true
+            ),
             query.Shape,
             frame?.IncludesCurrentRow ?? true
         );
@@ -104,7 +116,7 @@ internal sealed partial class Translator
 
     // The ORDER BY of a window: OrderBy (or Order) of its rows, then ThenBy, each
     // ascending or descending and by the default or the ordinal comparer.
-    private List<Ordering> WindowOrder(LambdaExpression orderBy, Shape row)
+    private List<Ordering> WindowOrder(LambdaExpression orderBy, Shape row, bool ranged)
     {
         List<Ordering> order = [];
         Expression body = orderBy.Body;
@@ -128,10 +140,15 @@ internal sealed partial class Translator
                 0,
                 key.Columns()
                     .Where(column => column.Value is not SqlConstant)
-                    .Select(column => new Ordering(
-                        ordinal ? new SqlCollation(column.Value) : column.Value,
-                        descending
-                    ))
+                    .SelectMany(column =>
+                        ranged && column.Value.Nullable
+                            ? [new Ordering(column.Value, descending)]
+                            : Keys(
+                                ordinal ? CodeUnits(column.Value) : column.Value,
+                                descending,
+                                descending
+                            )
+                    )
             );
             body = sort.Arguments[0];
             if (!name.StartsWith("Then", StringComparison.Ordinal))
@@ -147,25 +164,50 @@ internal sealed partial class Translator
             );
     }
 
-    // A RANGE with an offset needs exactly one key of a type the offset can be added
-    // to.
-    private static void Framed(PostgreSqlFrame frame, List<Ordering> order)
+    // The frame clause. A RANGE with an offset needs exactly one key of a type the
+    // offset can be added to.
+    private static string Framed(PostgreSqlFrame frame, List<Ordering> order)
     {
         if (frame.Kind is not (FrameKind.NumericRange or FrameKind.IntervalRange))
         {
-            return;
+            return frame.TextValue;
         }
         Type? key = order.Count == 1 ? ScalarTypes.Underlying(order[0].Key.Type) : null;
-        if (
-            key is null
+        return key is null
             || (frame.Kind == FrameKind.NumericRange && !ScalarTypes.IsNumber(key))
             || (frame.Kind == FrameKind.IntervalRange && !Spanned.Contains(key))
-        )
+                ? throw new NotSupportedException(
+                    "A RANGE frame with an offset needs the window to be ordered by exactly one key, a number for a numeric offset and a date, a time or a duration for an interval."
+                )
+            : frame.Kind == FrameKind.NumericRange && !Fractional.Contains(key)
+                ? "RANGE BETWEEN "
+                    + Whole(frame.Start, true)
+                    + " AND "
+                    + Whole(frame.End, false)
+            : frame.TextValue;
+    }
+
+    // A bound of a RANGE over an integer key. PostgreSQL takes an integer offset
+    // there, no numeric one: the keys from x + start to x + end are the integers from
+    // the next whole offset inside the frame, and an offset past a bigint is the
+    // largest one, which reaches every key.
+    private static string Whole(decimal? offset, bool start)
+    {
+        if (offset is not decimal value)
         {
-            throw new NotSupportedException(
-                "A RANGE frame with an offset needs the window to be ordered by exactly one key, a number for a numeric offset and a date, a time or a duration for an interval."
-            );
+            return start ? "UNBOUNDED PRECEDING" : "UNBOUNDED FOLLOWING";
         }
+        if (value == 0)
+        {
+            return "CURRENT ROW";
+        }
+        decimal distance = Math.Min(
+            start == (value < 0)
+                ? Math.Floor(Math.Abs(value))
+                : Math.Ceiling(Math.Abs(value)),
+            long.MaxValue
+        );
+        return SqlLiteral.Number(distance) + (value < 0 ? " PRECEDING" : " FOLLOWING");
     }
 
     // PostgreSqlWindow<TSource>.Rows, the rows of the frame.
@@ -265,7 +307,35 @@ internal sealed partial class Translator
 
     // ROW_NUMBER, RANK, ..., LAG, LEAD, FIRST_VALUE and LAST_VALUE over the
     // window of the selector of Over, in the projection of its SELECT.
-    private SqlWindowFunction WindowFunction(MethodCallExpression call)
+    // An aggregate of a table in an argument of a window function is a subquery, not
+    // a window aggregate of the SELECT, which PostgreSQL would find nested; and a
+    // window function in an argument, which nothing but a derived table of its own
+    // can compute first, is refused.
+    private SqlExpression WindowFunction(MethodCallExpression call)
+    {
+        SqlExpression function = Plain(() => Function(call));
+        return function.Any(part =>
+            part.IsWindow
+            && part.Operands.Any(operand => operand.Any(inner => inner.IsWindow))
+        )
+            ? throw new NotSupportedException(
+                $"'{call.Method.Name}' reads a window function in its arguments, and PostgreSQL nests no window function in another: compute it in an Over of its own and read its result here."
+            )
+            : function;
+    }
+
+    // What is bound without the SELECT whose projection is being bound, so that an
+    // aggregate of its rows is a subquery.
+    private T Plain<T>(Func<T> bind)
+    {
+        SelectQuery? window = _window;
+        _window = null;
+        T bound = bind();
+        _window = window;
+        return bound;
+    }
+
+    private SqlExpression Function(MethodCallExpression call)
     {
         return
             call.Method.Name == nameof(PostgreSqlWindows.Over)
@@ -319,7 +389,7 @@ internal sealed partial class Translator
 
     // LAG and LEAD read their value in another row, and their default in this one,
     // where a null default is PostgreSQL's own: NULL for a missing row.
-    private SqlWindowFunction Shifted(
+    private SqlExpression Shifted(
         string name,
         WindowShape window,
         MethodCallExpression call
@@ -328,15 +398,38 @@ internal sealed partial class Translator
         SqlExpression value = Read(window, call);
         SqlExpression offset = Sql(call.Arguments[2]);
         SqlExpression fallback = Sql(call.Arguments[3]);
-        return Missing(
-            name,
-            fallback is SqlConstant { Value: null }
-                ? [value, offset]
-                : [value, offset, fallback],
-            window,
-            call,
-            value.Nullable || fallback.Nullable
-        );
+        // PostgreSQL nests no window function in another. A default that is one is
+        // read beside the function, where there is no row, which a value that is
+        // never NULL tells: COALESCE(LAG(value, offset) OVER (...), default).
+        return fallback.Any(part => part.IsWindow)
+            ? value.Nullable
+                ? throw new NotSupportedException(
+                    $"A default of '{name}' that is a window function is read where '{name}' is NULL, which tells a missing row only for a value that is never NULL."
+                )
+                : new SqlFunction(
+                    "COALESCE",
+                    [
+                        new SqlWindowFunction(
+                            name,
+                            [value, offset],
+                            window.Window,
+                            call.Type,
+                            true
+                        ),
+                        fallback,
+                    ],
+                    call.Type,
+                    fallback.Nullable
+                )
+            : Missing(
+                name,
+                fallback is SqlConstant { Value: null }
+                    ? [value, offset]
+                    : [value, offset, fallback],
+                window,
+                call,
+                value.Nullable || fallback.Nullable
+            );
     }
 
     // FIRST_VALUE and LAST_VALUE are NULL where the frame is empty.

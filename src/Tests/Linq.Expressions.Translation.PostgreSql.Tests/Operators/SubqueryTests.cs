@@ -298,7 +298,7 @@ public sealed record SubqueryTests
                 SELECT t0."Id"
                 FROM "Order" AS t0
                 WHERE t0."Total" > (
-                    SELECT AVG(t1."Total")
+                    SELECT TRIM_SCALE(ROUND(AVG(ROUND(t1."Total", 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t1."Total", 30))) / 0.79228162514264337593543950335) AS text))))
                     FROM "Order" AS t1
                 )
                 """
@@ -939,11 +939,11 @@ public sealed record SubqueryTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT AVG(CAST((
+                SELECT CAST(AVG((
                     SELECT CAST(COUNT(*) AS integer)
                     FROM "Order" AS t1
                     WHERE t1."CustomerId" = t0."Id"
-                ) AS double precision))
+                )) AS double precision)
                 FROM "Customer" AS t0
                 """
             ),

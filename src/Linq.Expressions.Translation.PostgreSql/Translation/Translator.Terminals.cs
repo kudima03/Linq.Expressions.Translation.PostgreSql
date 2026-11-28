@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using System.Reflection;
 using Linq.Expressions.Translation.PostgreSql.Mapping;
 using Linq.Expressions.Translation.PostgreSql.Shapes;
 using Linq.Expressions.Translation.PostgreSql.Syntax;
@@ -33,6 +32,14 @@ internal sealed partial class Translator
 
     private static readonly HashSet<Type> Integral = [typeof(int), typeof(long)];
 
+    private static readonly HashSet<string> Countable =
+    [
+        nameof(Queryable.Count),
+        nameof(Queryable.LongCount),
+        nameof(Queryable.Any),
+        nameof(Queryable.All),
+    ];
+
     private static SelectQuery Statement(SqlExpression result)
     {
         return result is SqlScalarSubquery subquery
@@ -46,11 +53,14 @@ internal sealed partial class Translator
     }
 
     // In a value position, an ...OrDefault of a non-nullable value falls back to its
-    // default where the subquery yields no row.
+    // default where the subquery yields no row, unless it is given one, which the
+    // subquery yields itself.
     private static SqlExpression Valued(SqlExpression result, MethodCallExpression call)
     {
         SqlExpression value = Single(result);
-        return call.Method.Name.EndsWith("OrDefault", StringComparison.Ordinal)
+        return
+            call.Method.Name.EndsWith("OrDefault", StringComparison.Ordinal)
+            && Fallback(call) is null
             ? Substituted(value, call.Type)
             : value;
     }
@@ -66,25 +76,35 @@ internal sealed partial class Translator
             : result;
     }
 
+    // An aggregate of the whole sequence after DefaultIfEmpty() reads the default
+    // element where there is no row, without joining it.
+    private static readonly HashSet<string> Paddable =
+    [
+        nameof(Queryable.Any),
+        nameof(Queryable.Count),
+        nameof(Queryable.LongCount),
+        nameof(Queryable.Sum),
+        nameof(Queryable.Average),
+        nameof(Queryable.Min),
+        nameof(Queryable.Max),
+    ];
+
     private SqlExpression Terminal(MethodCallExpression call)
     {
         MethodCallExpression? padding = call.Arguments[0] as MethodCallExpression;
         return
             padding
                 is { Method.Name: nameof(Queryable.DefaultIfEmpty), Arguments.Count: 1 }
-            ? Padded(Operand(padding), call, padding.Method)
+            && call.Arguments.Count == 1
+            && Paddable.Contains(call.Method.Name)
+            ? Padded(Operand(padding), call)
             : Terminal(Operand(call), call);
     }
 
-    private SqlExpression Padded(
-        SqlQuery source,
-        MethodCallExpression call,
-        MethodInfo padding
-    )
+    private SqlExpression Padded(SqlQuery source, MethodCallExpression call)
     {
         string name = call.Method.Name;
-        return call.Arguments.Count > 1 ? throw Unsupported.Method(padding)
-            : name == nameof(Queryable.Any) ? new SqlConstant(true, typeof(bool))
+        return name == nameof(Queryable.Any) ? new SqlConstant(true, typeof(bool))
             : name is nameof(Queryable.Count) or nameof(Queryable.LongCount)
                 ? Sized(
                     name,
@@ -98,12 +118,7 @@ internal sealed partial class Translator
                     )
                 )
             : name == nameof(Queryable.Sum) ? Aggregated(source, call)
-            : name
-                is nameof(Queryable.Average)
-                    or nameof(Queryable.Min)
-                    or nameof(Queryable.Max)
-                ? Substituted(Aggregated(source, call), call.Type)
-            : throw Unsupported.Method(padding);
+            : Substituted(Aggregated(source, call), call.Type);
     }
 
     private static SqlExpression Substituted(SqlExpression value, Type type)
@@ -123,13 +138,54 @@ internal sealed partial class Translator
             call.Method.GetParameters().Any(IsRejected)
             && !IsOrdinal(call)
             && !IsOrdinallyCompared(call)
+            && Position(call) is null
             ? throw Unsupported.Method(call.Method)
             : Query(call.Arguments[0]);
     }
 
+    // The constant Index of ElementAt or ElementAtOrDefault.
+    private static Index? Position(MethodCallExpression call)
+    {
+        return
+            call.Method.Name
+                is nameof(Queryable.ElementAt)
+                    or nameof(Queryable.ElementAtOrDefault)
+            && call.Arguments[1] is ConstantExpression { Value: Index index }
+            ? index
+            : null;
+    }
+
+    // The default given to FirstOrDefault, LastOrDefault or SingleOrDefault, their
+    // last argument when it is no predicate.
+    private static Expression? Fallback(MethodCallExpression call)
+    {
+        return
+            call.Arguments.Count > 1
+            && call.Method.Name
+                is nameof(Queryable.FirstOrDefault)
+                    or nameof(Queryable.LastOrDefault)
+                    or nameof(Queryable.SingleOrDefault)
+            && !IsPredicate(call.Arguments[^1])
+            ? call.Arguments[^1]
+            : null;
+    }
+
+    private static bool IsPredicate(Expression argument)
+    {
+        return argument
+            is LambdaExpression
+                or UnaryExpression { NodeType: ExpressionType.Quote };
+    }
+
+    // Counting and testing the rows of a one-row root leave its element unread,
+    // unless their predicate reads it.
     private SqlExpression Terminal(SqlQuery source, MethodCallExpression call)
     {
-        bool filtered = call.Arguments.Count > 1;
+        bool filtered = call.Arguments.Count > 1 && IsPredicate(call.Arguments[1]);
+        if (!Countable.Contains(call.Method.Name))
+        {
+            _ = Sourced(source);
+        }
         return call.Method.Name switch
         {
             nameof(Queryable.Count) or nameof(Queryable.LongCount) => Counted(
@@ -159,8 +215,21 @@ internal sealed partial class Translator
                 1,
                 call
             ),
+            // An Index counted from the end is counted from the start of the inverted
+            // order: ^1 is its first element.
+            nameof(Queryable.ElementAt)
+            or nameof(Queryable.ElementAtOrDefault)
+                when Position(call) is Index { IsFromEnd: true } index => Element(
+                Positioned(Reverse(source, call.Method), index.Value - 1),
+                1,
+                call
+            ),
             nameof(Queryable.ElementAt) or nameof(Queryable.ElementAtOrDefault) =>
-                Element(Positioned(source, Count(call.Arguments[1])), 1, call),
+                Element(
+                    Positioned(source, Position(call)?.Value ?? Count(call.Arguments[1])),
+                    1,
+                    call
+                ),
             nameof(Queryable.First) or nameof(Queryable.FirstOrDefault) => Element(
                 filtered ? Where(source, Lambda(call, 1)) : source,
                 1,
@@ -206,7 +275,27 @@ internal sealed partial class Translator
 
     private SqlExpression Membership(SqlQuery source, MethodCallExpression call)
     {
-        return Membership(source, call.Arguments[0], Sql(call.Arguments[1]));
+        Shape item = Shape(call.Arguments[1]);
+        return item is ObjectShape composite
+            ? Contained(source, composite)
+            : Membership(source, call.Arguments[0], Scalar(item));
+    }
+
+    // Contains of a tuple or an object of values among the rows of a sequence of
+    // them: a row whose members equal its members, compared as the default comparer
+    // compares them, where null equals null.
+    private SqlExists Contained(SqlQuery source, ObjectShape item)
+    {
+        SelectQuery query = Restricted(source, false);
+        Restrict(
+            query,
+            query.Shape is ObjectShape row && row.Members.Count == item.Members.Count
+                ? Members(item, row)
+                : throw new NotSupportedException(
+                    "Contains of a tuple or an object is translated over a sequence of tuples or objects of the same members."
+                )
+        );
+        return new SqlExists(Existing(query));
     }
 
     // Contains matches a null item with a NULL of the sequence, which IN never does.
@@ -248,17 +337,55 @@ internal sealed partial class Translator
         SelectQuery query = Unordered(Open(source, Barrier.Aggregation, false));
         if (IsOrdinallyCompared(call))
         {
-            query.Shape = new ScalarShape(Ordinal(Scalar(query.Shape), null, call));
+            (query, SqlExpression text) = Owning(query, Scalar(query.Shape), false);
+            query.Shape = new ScalarShape(Ordinal(text, null, call));
             return new SqlScalarSubquery(query, call.Type);
         }
-        SqlExpression value =
+        (query, SqlExpression value) = Owning(
+            query,
             call.Arguments.Count > 1
                 ? Scalar(Bind(Lambda(call, 1), query.Shape))
-                : Scalar(query.Shape);
+                : Scalar(query.Shape),
+            false
+        );
         query.Shape = new ScalarShape(
             Aggregate(call.Method.Name, value, call.Type, false, null)
         );
         return new SqlScalarSubquery(query, call.Type);
+    }
+
+    // An aggregate whose argument reads nothing of its own SELECT but a column of a
+    // query around it is, to PostgreSQL, an aggregate of that query, where it does
+    // not belong: the value is then a column of a derived table of the rows, which
+    // the aggregate reads as its own.
+    private (SelectQuery Query, SqlExpression Value) Owning(
+        SelectQuery query,
+        SqlExpression value,
+        bool ordered
+    )
+    {
+        HashSet<string> own =
+        [
+            .. query
+                .Joins.Select(join => join.Source)
+                .Prepend(query.From)
+                .OfType<SqlSource>()
+                .Select(source => source.Alias),
+        ];
+        bool foreign = false;
+        bool native = value.Any(part =>
+        {
+            string? alias = (part as SqlColumn)?.Alias;
+            foreign |= alias is not null && !own.Contains(alias);
+            return alias is not null && own.Contains(alias);
+        });
+        if (native || !foreign)
+        {
+            return (query, value);
+        }
+        query.Shape = new ScalarShape(value);
+        SelectQuery rows = Wrap(query, ordered);
+        return (rows, Scalar(rows.Shape));
     }
 
     // COUNT(DISTINCT x) skips NULL, which Distinct() keeps as one of the values.
@@ -337,20 +464,49 @@ internal sealed partial class Translator
                 ? new SqlCast(sum, ScalarTypes.Number(result), result)
                 : sum;
         }
-        SqlExpression argument =
-            name == nameof(Queryable.Average)
-            && Integral.Contains(ScalarTypes.Underlying(value.Type))
-                ? new SqlCast(value, "double precision", typeof(double))
-                : value;
-        return new SqlAggregate(
-            name == nameof(Queryable.Average) ? "AVG" : Extreme(name, value.Type),
-            argument,
-            distinct,
-            filter,
-            type,
-            windowed,
-            window
-        );
+        if (name != nameof(Queryable.Average))
+        {
+            SqlAggregate Extremal(string function, SqlExpression argument)
+            {
+                return new SqlAggregate(
+                    function,
+                    argument,
+                    distinct,
+                    filter,
+                    type,
+                    windowed,
+                    window
+                );
+            }
+            return IsFloating(value.Type)
+                ? Negated(
+                    Extremal(
+                        name == nameof(Queryable.Max) ? "MIN" : "MAX",
+                        Negated(value)
+                    )
+                )
+                : Extremal(Extreme(name, value.Type), value);
+        }
+        // The mean of integers is a numeric, of their type until it is converted.
+        SqlAggregate Mean(SqlExpression argument)
+        {
+            return new SqlAggregate(
+                "AVG",
+                argument,
+                distinct,
+                filter,
+                IsFloating(type) && !IsFloating(argument.Type) ? argument.Type : type,
+                windowed,
+                window
+            );
+        }
+        // The mean of integers is the exact sum divided once, as .NET computes it:
+        // AVG of an integer is a numeric, where the mean of the values as doubles
+        // would round each of them first. The mean of decimals has their places.
+        return Integral.Contains(ScalarTypes.Underlying(value.Type))
+                ? new SqlCast(Mean(value), "double precision", type)
+            : IsDecimal(value.Type) ? Fitted(Mean(Padded(value)))
+            : Mean(value);
     }
 
     // PostgreSQL has no MIN or MAX of boolean or uuid: booleans have BOOL_AND and
@@ -400,15 +556,24 @@ internal sealed partial class Translator
         return query;
     }
 
+    // The first rows of a query; with a default given, that default where there is
+    // none, as DefaultIfEmpty yields it.
     private SqlScalarSubquery Element(
         SqlQuery source,
         int count,
         MethodCallExpression call
     )
     {
-        return new SqlScalarSubquery(Take(source, count), call.Type);
+        SelectQuery rows = Take(source, count);
+        return new SqlScalarSubquery(
+            Fallback(call) is Expression fallback
+                ? Defaulted(rows, Sql(fallback), call.Type, false)
+                : rows,
+            call.Type
+        );
     }
 
+    // The level of a recursion is a source, not a row: it is of no scope.
     private bool IsCorrelation(params Expression[] operands)
     {
         Parameters parameters = new();
@@ -417,7 +582,8 @@ internal sealed partial class Translator
             _ = parameters.Visit(operand);
         }
         return parameters
-                .Found.Select(parameter => _bindings[parameter].Scope)
+                .Found.Where(_bindings.ContainsKey)
+                .Select(parameter => _bindings[parameter].Scope)
                 .Distinct()
                 .Count() > 1;
     }

@@ -198,7 +198,7 @@ public sealed record RoundingTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE CASE WHEN (ABS(t0."Weight" - TRUNC(t0."Weight")) = 0.5) AND (MOD(CAST(TRUNC(t0."Weight") AS numeric), 2) = 0) THEN TRUNC(t0."Weight") ELSE ROUND(t0."Weight") END > 2
+                WHERE (CASE WHEN (ABS(t0."Weight" - TRUNC(t0."Weight")) = 0.5) AND (MOD(CAST(TRUNC(t0."Weight") AS numeric), 2) = 0) THEN TRUNC(t0."Weight") ELSE ROUND(t0."Weight") END > 2) AND (CASE WHEN (ABS(t0."Weight" - TRUNC(t0."Weight")) = 0.5) AND (MOD(CAST(TRUNC(t0."Weight") AS numeric), 2) = 0) THEN TRUNC(t0."Weight") ELSE ROUND(t0."Weight") END <> 'NaN')
                 """
             ),
             new PostgreSqlQuery(query).TextValue

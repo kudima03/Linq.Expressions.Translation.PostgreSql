@@ -25,7 +25,7 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         return Customers.Where(c => c.Id == 1).SelectMany(c => values);
     }
 
-    [Fact(Skip = "#134: Distinct().Take(n) of an in-memory sequence ignores its order")]
+    [Fact]
     public void TakesFirstDistinctValuesInSequenceOrder()
     {
         // SELECT DISTINCT t0."Value" FROM (VALUES (3), (1), (3), (2)) AS t0 ("Value")
@@ -33,7 +33,7 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         database.AssertSameRows(new[] { 3, 1, 3, 2 }.AsQueryable().Distinct().Take(2));
     }
 
-    [Fact(Skip = "#134: GroupBy().Take(n) of an in-memory sequence ignores its order")]
+    [Fact]
     public void TakesFirstGroupsInSequenceOrder()
     {
         // SELECT t0."Value" FROM (VALUES (3), (1), (3), (2)) AS t0 ("Value")
@@ -93,7 +93,7 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         database.AssertSameResult(Rows([true, false, true]), q => q.Count(b => b));
     }
 
-    [Fact(Skip = "#132: Max of a double column with NaN is NaN where .NET skips NaN")]
+    [Fact]
     public void TakesMaximumOfDoublesWithNaN()
     {
         // SELECT MAX(...) is NaN, as PostgreSQL orders NaN above every number; LINQ's
@@ -101,14 +101,14 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         database.AssertSameResult(Rows([1, double.NaN, 2]), q => q.Max());
     }
 
-    [Fact(Skip = "#132: Min of a double column with NaN skips NaN where .NET returns it")]
+    [Fact]
     public void TakesMinimumOfDoublesWithNaN()
     {
         // SELECT MIN(...) is 1; LINQ's Min of 1, NaN, 2 is NaN.
         database.AssertSameResult(Rows([1, double.NaN, 2]), q => q.Min());
     }
 
-    [Fact(Skip = "#132: OrderBy of doubles sorts NaN last where .NET sorts it first")]
+    [Fact]
     public void OrdersDoublesWithNaNAsDotNet()
     {
         // ORDER BY t0."Value" yields -Infinity, -1, 1, NaN; LINQ yields NaN first.
@@ -119,7 +119,7 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         );
     }
 
-    [Fact(Skip = "#132: comparisons of a double NaN are true in SQL, false in .NET")]
+    [Fact]
     public void ComparesNaNAsDotNet()
     {
         // NaN = NaN and NaN > 0 are TRUE in PostgreSQL and false in C#.
@@ -181,7 +181,7 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         );
     }
 
-    [Fact(Skip = "#131: a -0.0 double literal is the numeric -0, which loses its sign")]
+    [Fact]
     public void KeepsSignOfNegativeZero()
     {
         // VALUES (CAST(-0 AS double precision)), (1.5): the numeric -0 is 0, so its
@@ -435,14 +435,14 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
                 (o, d) => o.Id
             )
         );
-        database.AssertSameRows(
-            new[]
-            {
+        // Equal by their ticks, they are one distinct value; read, the column would
+        // be of the kind Utc on one row and Unspecified on the other.
+        database.AssertSameResult(
+            Rows([
                 new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Unspecified),
-            }
-                .AsQueryable()
-                .Distinct()
+            ]),
+            q => q.Distinct().Count()
         );
     }
 
@@ -467,23 +467,21 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         );
     }
 
-    [Fact(Skip = "#130: a TimeOnly literal drops the ticks below a microsecond")]
-    public void KeepsTicksOfTimeOnly()
+    // PostgreSQL's time keeps microseconds: TIME '00:00:00' and TIME '23:59:59.999999'
+    // for new TimeOnly(1) and TimeOnly.MaxValue would be read back as other times, so
+    // the 100 ns ticks are refused, as those of a DateTime constant are.
+    [Fact]
+    public void RefusesTicksOfTimeOnly()
     {
-        // VALUES (TIME '00:00:00'), (TIME '23:59:59.999999') for new TimeOnly(1) and
-        // TimeOnly.MaxValue: the 100 ns ticks are truncated silently, where a DateTime
-        // constant with them is refused.
-        database.AssertSameRows(
-            new[] { new TimeOnly(1), TimeOnly.MaxValue }.AsQueryable()
-        );
+        AssertRefused(new[] { new TimeOnly(1), TimeOnly.MaxValue }.AsQueryable());
     }
 
-    [Fact(Skip = "#130: a TimeSpan literal drops the ticks below a microsecond")]
-    public void KeepsTicksOfTimeSpan()
+    // PostgreSQL rounds INTERVAL 'PT0.0000001S' to zero, which Distinct would take for
+    // the other row, so the 100 ns ticks are refused.
+    [Fact]
+    public void RefusesTicksOfTimeSpan()
     {
-        // VALUES (INTERVAL 'PT0.0000001S'), (INTERVAL 'PT0S'): PostgreSQL rounds the
-        // interval to microseconds, so both rows are zero and Distinct keeps one.
-        database.AssertSameRows(
+        AssertRefused(
             new[] { TimeSpan.FromTicks(1), TimeSpan.Zero }.AsQueryable().Distinct()
         );
     }
@@ -950,5 +948,13 @@ public sealed class InMemoryValuesEdgeCaseSemanticsTests(Database database)
         database.AssertSameRows(
             Customers.SelectMany(c => Enumerable.Range(1, 2), (c, n) => new { c.Id, n })
         );
+    }
+
+    private static void AssertRefused<T>(IQueryable<T> query)
+    {
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query.Expression).TextValue
+        );
+        Assert.Contains("microsecond", exception.Message, StringComparison.Ordinal);
     }
 }

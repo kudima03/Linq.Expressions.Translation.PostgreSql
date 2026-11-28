@@ -81,12 +81,22 @@ internal sealed partial class Translator
             .. Bind(Lambda(call, 1), element)
                 .Columns()
                 .Where(column => column.Value is not SqlConstant)
-                .Select(column => new Ordering(
-                    ordinal ? new SqlCollation(column.Value) : column.Value,
-                    descending
-                )),
+                .SelectMany(column =>
+                    Keys(
+                        ordinal ? CodeUnits(column.Value) : column.Value,
+                        descending,
+                        descending
+                    )
+                ),
         ];
-        return new GroupingShape(group.Key, element, group.Filter, group.Distinct, keys);
+        return new GroupingShape(
+            group.Key,
+            element,
+            group.Filter,
+            group.Distinct,
+            keys,
+            group.Source
+        );
     }
 
     // The first or last element of a group in its order is the first of the array of
@@ -101,11 +111,11 @@ internal sealed partial class Translator
     {
         string name = call.Method.Name;
         bool last = name.StartsWith(nameof(Enumerable.Last), StringComparison.Ordinal);
-        IReadOnlyList<Ordering> order = group.Order ?? [];
+        IReadOnlyList<Ordering> order = group.Sequence;
         if (last && order.Count == 0)
         {
             throw new NotSupportedException(
-                $"'{name}' of a group is translated only once its elements are sorted with OrderBy: they have no order in SQL."
+                $"'{name}' of a group is translated only once its elements are sorted with OrderBy, or come from an ordered source: they have no order in SQL."
             );
         }
         SqlExpression? filter =
@@ -119,15 +129,21 @@ internal sealed partial class Translator
                 $"'{name}' of a filtered group is not supported: where no element is left, .NET throws; use {name}OrDefault."
             );
         }
-        SqlExpression first = new SqlFirst(
-            element is ScalarShape scalar
-                ? scalar.Value
-                : throw new NotSupportedException(
-                    $"'{name}' of a group is translated for a single value only: select the value before {name}."
-                ),
-            [.. last ? order.Select(ordering => ordering.Inverted()) : order],
-            filter
-        );
+        SqlExpression value = element is ScalarShape scalar
+            ? scalar.Value
+            : throw new NotSupportedException(
+                $"'{name}' of a group is translated for a single value only: select the value before {name}."
+            );
+        // The first of the distinct values is the first value; the last of them is
+        // the one that occurs first the latest, not the last value.
+        SqlExpression first =
+            last && group.Distinct && !IsSortedByItself(group, value)
+                ? new SqlOccurrences(value, order, filter, true, value.Type)
+                : new SqlFirst(
+                    value,
+                    [.. last ? order.Select(ordering => ordering.Inverted()) : order],
+                    filter
+                );
         return filter is null ? first : Substituted(first, call.Type);
     }
 
@@ -183,26 +199,61 @@ internal sealed partial class Translator
             : throw Unsupported.Method(call.Method);
     }
 
-    // Min and Max of strings with StringComparer.Ordinal are MIN and MAX in the "C"
-    // collation, whose result is read in the collation of the database.
+    // Min and Max of strings with StringComparer.Ordinal are MIN and MAX of the keys
+    // of the ordinal order, read back as text in the collation of the database.
     private static SqlCollation Ordinal(
         SqlExpression value,
         SqlExpression? filter,
         MethodCallExpression call
     )
     {
+        SqlAggregate extreme = new(
+            call.Method.Name.ToUpperInvariant(),
+            CodeUnits(value),
+            false,
+            filter,
+            typeof(string)
+        );
         return value.Type != typeof(string)
             ? throw Unsupported.Method(call.Method)
-            : new SqlCollation(
-                new SqlAggregate(
-                    call.Method.Name.ToUpperInvariant(),
-                    new SqlCollation(value),
-                    false,
-                    filter,
-                    typeof(string)
-                ),
-                "default"
-            );
+            : Restored(extreme, extreme.Nullable);
+    }
+
+    // Max or Min of an array written in the query: of its elements, or of new T[n],
+    // which is n times the default of T.
+    private SqlExpression Listed(NewArrayExpression array, MethodCallExpression call)
+    {
+        return array.NodeType == ExpressionType.NewArrayInit
+            ? Extremes(array, call)
+            : Defaults(array, call);
+    }
+
+    // The extreme of n defaults is the default, null for a nullable T, and of no
+    // element nothing: NULL, as an aggregate over no row is where .NET throws.
+    private SqlExpression Defaults(NewArrayExpression array, MethodCallExpression call)
+    {
+        Type element = array.Type.GetElementType()!;
+        if (
+            call.Arguments.Count > 1
+            || array.Expressions.Count != 1
+            || !ScalarTypes.IsScalar(element)
+        )
+        {
+            throw Unsupported.Method(call.Method);
+        }
+        SqlConstant missing = new(null, call.Type);
+        return element.IsValueType && Nullable.GetUnderlyingType(element) is null
+            ? new SqlCase(
+                [
+                    new SqlWhen(
+                        Compare(">", Sql(array.Expressions[0]), Integer(0)),
+                        new SqlConstant(ScalarTypes.Default(element), element)
+                    ),
+                ],
+                missing,
+                call.Type
+            )
+            : missing;
     }
 
     // new[] { a, b, ... }.Max() is GREATEST(a, b, ...) and Min() is LEAST(...): both
@@ -236,7 +287,7 @@ internal sealed partial class Translator
         [
             .. array
                 .Expressions.Select(Sql)
-                .Select(value => ordinal ? new SqlCollation(value) : value),
+                .Select(value => ordinal ? CodeUnits(value) : value),
         ];
         SqlFunction extreme = new(
             name == nameof(Enumerable.Max) ? "GREATEST" : "LEAST",
@@ -244,7 +295,7 @@ internal sealed partial class Translator
             call.Type,
             values.All(value => value.Nullable)
         );
-        return ordinal ? new SqlCollation(extreme, "default") : extreme;
+        return ordinal ? Restored(extreme, extreme.Nullable) : extreme;
     }
 
     // string.Normalize() is in form C.
@@ -278,7 +329,8 @@ internal sealed partial class Translator
         }
         SqlExpression separator = Separator(call.Arguments[0]);
         Expression argument = call.Arguments[1];
-        return argument is NewArrayExpression or ConstantExpression { Value: not null }
+        return IsQueried(argument) ? Aggregated(Query(argument), separator)
+            : argument is NewArrayExpression or ConstantExpression { Value: not null }
                 ? Interleaved(argument, separator)
             : argument.Type.IsAssignableTo(typeof(IQueryable))
                 ? Aggregated(Query(argument), separator)
@@ -353,20 +405,39 @@ internal sealed partial class Translator
     // The values a subquery yields, in its order, joined in one row.
     private SqlExpression Aggregated(SqlQuery source, SqlExpression separator)
     {
-        SelectQuery query = Open(source, Barrier.Aggregation);
+        SelectQuery rows = Open(source, Barrier.Aggregation);
+        (SelectQuery query, SqlExpression value) = Owning(rows, Scalar(rows.Shape), true);
         List<Ordering> order = query.IsOrdered ? query.Orderings : [];
         query.Orderings = [];
-        query.Shape = new ScalarShape(
-            Aggregated(Scalar(query.Shape), separator, false, order, null)
-        );
+        query.Shape = new ScalarShape(Aggregated(value, separator, false, order, null));
         return new SqlRequired(
             new SqlScalarSubquery(query, typeof(string)),
             typeof(string)
         );
     }
 
-    // STRING_AGG(DISTINCT ...) orders by its value only, and would take a NULL for
-    // the empty string, which .NET joins as a value of its own.
+    // Whether the elements of a group are sorted by their value alone, in the order
+    // of the database or the ordinal one: their distinct values then come in that
+    // order whichever of equal values came first.
+    private static bool IsSortedByItself(GroupingShape group, SqlExpression value)
+    {
+        HashSet<string> keys =
+        [
+            .. (group.Order ?? []).Select(ordering => SqlWriter.Text(ordering.Key)),
+        ];
+        return keys.Count == 1
+            && (
+                keys.Contains(SqlWriter.Text(value))
+                || keys.Contains(SqlWriter.Text(CodeUnits(value)))
+            );
+    }
+
+    // The values of a group joined in the order they come in: the keys they are
+    // sorted by, then the order of the source. STRING_AGG(DISTINCT ...) orders by its
+    // value only, and would take a NULL for the empty string, which .NET joins as a
+    // value of its own: it joins the distinct values that are sorted by themselves,
+    // or come in no order at all, and are never null. In any other order the distinct
+    // values come by their first occurrences.
     private static SqlExpression Aggregated(GroupingShape group, SqlExpression separator)
     {
         SqlExpression value = Scalar(
@@ -375,26 +446,39 @@ internal sealed partial class Translator
                     "The elements of a group are not available once the groups have been paged, made distinct or combined; aggregate them before that."
                 )
         );
-        IReadOnlyList<Ordering> order = group.Order ?? [];
         if (!group.Distinct)
         {
-            return Aggregated(value, separator, false, order, group.Filter);
+            return Aggregated(value, separator, false, group.Sequence, group.Filter);
         }
-        HashSet<string> keys =
-        [
-            .. order.Select(ordering => SqlWriter.Text(ordering.Key)),
-        ];
-        bool ordinal =
-            order.Count > 0 && keys.Contains(SqlWriter.Text(new SqlCollation(value)));
-        SqlExpression argument = ordinal ? new SqlCollation(value) : value;
-        if (
-            value.Nullable
-            || keys.Count > 1
-            || (order.Count > 0 && !keys.Contains(SqlWriter.Text(argument)))
-        )
+        IReadOnlyList<Ordering> sorted = group.Order ?? [];
+        bool ordinal = sorted.Any(ordering =>
+            SqlWriter.Text(ordering.Key) == SqlWriter.Text(CodeUnits(value))
+        );
+        SqlExpression argument = ordinal ? CodeUnits(value) : value;
+        bool byValue =
+            sorted.Count == 0 ? group.Source.Count == 0 : IsSortedByItself(group, value);
+        if (!byValue || (value.Nullable && sorted.Count > 0))
+        {
+            return new SqlFunction(
+                "ARRAY_TO_STRING",
+                [
+                    new SqlOccurrences(
+                        value,
+                        group.Sequence,
+                        group.Filter,
+                        false,
+                        typeof(string[])
+                    ),
+                    separator,
+                    Text(string.Empty),
+                ],
+                typeof(string)
+            );
+        }
+        if (value.Nullable)
         {
             throw new NotSupportedException(
-                "string.Join of the distinct values of a group is translated only for values that are never null and are sorted by themselves: STRING_AGG(DISTINCT ...) orders by its value."
+                "string.Join of the distinct values of a group that may be null is translated only once they come in an order, their own or the source's: STRING_AGG(DISTINCT ...) would take a NULL for the empty string."
             );
         }
         SqlExpression joined = Aggregated(
@@ -402,13 +486,13 @@ internal sealed partial class Translator
             separator,
             true,
             [
-                .. order
+                .. sorted
                     .Take(1)
                     .Select(ordering => new Ordering(argument, ordering.Descending)),
             ],
             group.Filter
         );
-        return ordinal ? new SqlCollation(joined, "default") : joined;
+        return ordinal ? Restored(joined, false) : joined;
     }
 
     private static SqlFunction Aggregated(
@@ -419,6 +503,35 @@ internal sealed partial class Translator
         SqlExpression? filter
     )
     {
+        // A separator that aggregates the rows cannot stand inside STRING_AGG, an
+        // aggregate itself: the values are aggregated into an array and joined
+        // outside it, a NULL as the empty string.
+        if (separator.Any(part => part.IsAggregate))
+        {
+            return new SqlFunction(
+                "COALESCE",
+                [
+                    new SqlFunction(
+                        "ARRAY_TO_STRING",
+                        [
+                            new SqlOrderedAggregate(
+                                "ARRAY_AGG",
+                                [value],
+                                distinct,
+                                order,
+                                filter,
+                                typeof(string[])
+                            ),
+                            separator,
+                            Text(string.Empty),
+                        ],
+                        typeof(string)
+                    ),
+                    Text(string.Empty),
+                ],
+                typeof(string)
+            );
+        }
         SqlExpression text = value.Nullable
             ? new SqlFunction("COALESCE", [value, Text(string.Empty)], typeof(string))
             : value;

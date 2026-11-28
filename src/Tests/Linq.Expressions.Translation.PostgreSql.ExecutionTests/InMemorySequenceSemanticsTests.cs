@@ -21,7 +21,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #122
-    [Fact(Skip = "#122: VALUES of ushort, uint and ulong is refused")]
+    [Fact]
     public void ReadsUnsignedValuesAtTheirBoundaries()
     {
         database.AssertSameRows(new ushort[] { 0, 1, ushort.MaxValue }.AsQueryable());
@@ -32,7 +32,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #122: a ulong above long.MaxValue on a later row needs numeric for the column.
-    [Fact(Skip = "#122: VALUES of ushort, uint and ulong is refused")]
+    [Fact]
     public void TypesUlongAboveLongRangeOnLaterRow()
     {
         database.AssertSameRows(
@@ -54,7 +54,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #122
-    [Fact(Skip = "#122: VALUES of ushort, uint and ulong is refused")]
+    [Fact]
     public void JoinsUnsignedValuesWithTable()
     {
         ulong[] ulongs = [1, 2, 99];
@@ -76,7 +76,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #122
-    [Fact(Skip = "#122: VALUES of ushort, uint and ulong is refused")]
+    [Fact]
     public void ComputesWithUnsignedValues()
     {
         database.AssertSameRows(
@@ -92,7 +92,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #122
-    [Fact(Skip = "#122: VALUES of ushort, uint and ulong is refused")]
+    [Fact]
     public void ReadsTuplesOfUnsignedMembers()
     {
         (ushort Small, uint Middle, ulong Large)[] rows =
@@ -108,7 +108,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #136
-    [Fact(Skip = "#136: VALUES of byte, sbyte and char is refused")]
+    [Fact]
     public void ReadsBytesAndSBytesAtTheirBoundaries()
     {
         database.AssertSameRows(new byte[] { 0, 1, byte.MaxValue }.AsQueryable());
@@ -123,7 +123,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #136
-    [Fact(Skip = "#136: VALUES of byte, sbyte and char is refused")]
+    [Fact]
     public void JoinsBytesWithTable()
     {
         byte[] quantities = [0, 2, 7, byte.MaxValue];
@@ -138,7 +138,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #136: C# computes bytes as int, so the products exceed smallint.
-    [Fact(Skip = "#136: VALUES of byte, sbyte and char is refused")]
+    [Fact]
     public void ComputesWithBytesAsIntegers()
     {
         database.AssertSameRows(
@@ -154,7 +154,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #136
-    [Fact(Skip = "#136: VALUES of byte, sbyte and char is refused")]
+    [Fact]
     public void ReadsCharsAsText()
     {
         database.AssertSameRows(
@@ -165,7 +165,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #136: chars order by code point, as the database's C.UTF-8 orders text.
-    [Fact(Skip = "#136: VALUES of byte, sbyte and char is refused")]
+    [Fact]
     public void OrdersCharsByCodePoint()
     {
         database.AssertSameSequence(
@@ -174,7 +174,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #136
-    [Fact(Skip = "#136: VALUES of byte, sbyte and char is refused")]
+    [Fact]
     public void ReadsTuplesOfBytesAndChars()
     {
         (byte Unsigned, sbyte Signed, char Letter)[] rows =
@@ -191,8 +191,27 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
         );
     }
 
+    // A char compares with a number by its code, and a negative integer converts to
+    // a ulong by its bits.
+    [Fact]
+    public void ConvertsCharsAndNegativeIntegersAsDotNetDoes()
+    {
+        char[] codes = [(char)1, (char)3, 'a'];
+        ulong[] large = [2UL, ulong.MaxValue - 2];
+
+        database.AssertSameRows(
+            Customers.Join(codes, c => c.Id, l => l, (c, l) => new { c.Id, l })
+        );
+        database.AssertSameRows(
+            Customers.Join(large, c => (ulong)(c.Id - 5), u => u, (c, u) => c.Id)
+        );
+        database.AssertSameRows(
+            Customers.Join(large, c => (ulong)c.Id, u => u, (c, u) => c.Id)
+        );
+    }
+
     // #137
-    [Fact(Skip = "#137: a one-element AsQueryable() side of a set operation is refused")]
+    [Fact]
     public void CombinesTableWithQueryableOfOneElement()
     {
         database.AssertSameRows(Customers.Select(c => c.Name).Union(Ann.AsQueryable()));
@@ -204,7 +223,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #137
-    [Fact(Skip = "#137: a one-element AsQueryable() side of a set operation is refused")]
+    [Fact]
     public void CombinesQueryableOfOneElementWithTable()
     {
         database.AssertSameRows(Ann.AsQueryable().Union(Customers.Select(c => c.Name)));
@@ -218,7 +237,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #137
-    [Fact(Skip = "#137: the one-element AsQueryable() inner of Join is refused")]
+    [Fact]
     public void JoinsQueryableOfOneElement()
     {
         database.AssertSameRows(
@@ -227,7 +246,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #137
-    [Fact(Skip = "#137: a one-element AsQueryable() in SelectMany is refused")]
+    [Fact]
     public void FlattensQueryableOfOneElement()
     {
         database.AssertSameRows(
@@ -242,7 +261,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #137
-    [Fact(Skip = "#137: a subquery over a one-element AsQueryable() is refused")]
+    [Fact]
     public void FiltersOnQueryableOfOneElement()
     {
         database.AssertSameRows(
@@ -256,7 +275,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #137
-    [Fact(Skip = "#137: a Count() over a one-element AsQueryable() is refused")]
+    [Fact]
     public void CountsQueryableOfOneElementPerRow()
     {
         database.AssertSameRows(
@@ -270,7 +289,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
 
     // #137: only the root of aggregates is the one-row root without FROM; an element
     // that is read is a one-row VALUES.
-    [Fact(Skip = "#137: the element of a one-element AsQueryable() root is refused")]
+    [Fact]
     public void ReadsElementOfQueryableOfOneElement()
     {
         database.AssertSameRows(
@@ -281,7 +300,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138
-    [Fact(Skip = "#138: Enumerable.All over a captured array is refused")]
+    [Fact]
     public void TestsAllOfCapturedArray()
     {
         int[] ids = Ids;
@@ -292,7 +311,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138: only Any(x => x == item) is rewritten to Contains.
-    [Fact(Skip = "#138: Enumerable.Any with another predicate over an array is refused")]
+    [Fact]
     public void TestsAnyOfCapturedArrayWithComparison()
     {
         int[] ids = Ids;
@@ -303,7 +322,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138
-    [Fact(Skip = "#138: Enumerable.Count over a captured array is refused")]
+    [Fact]
     public void CountsCapturedArrayPerRow()
     {
         int[] ids = Ids;
@@ -314,7 +333,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138: the call is refused even when it does not read the row.
-    [Fact(Skip = "#138: Enumerable.Count over a captured array is refused")]
+    [Fact]
     public void CountsCapturedArrayWithoutReadingRow()
     {
         int[] ids = Ids;
@@ -328,7 +347,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138: every customer's Id is at least 1, so no selection is empty.
-    [Fact(Skip = "#138: Enumerable.Where over a captured array is refused")]
+    [Fact]
     public void AggregatesFilteredCapturedArrayPerRow()
     {
         int[] ids = Ids;
@@ -346,7 +365,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138
-    [Fact(Skip = "#138: Enumerable.Any over a table read as IEnumerable is refused")]
+    [Fact]
     public void TestsExistenceInTableReadAsSequence()
     {
         database.AssertSameRows(
@@ -357,7 +376,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138
-    [Fact(Skip = "#138: the query below Enumerable.Any of a sequence is refused")]
+    [Fact]
     public void TestsExistenceInQueryReadAsSequence()
     {
         IQueryable<Order> paid = Orders.Where(o => o.IsPaid);
@@ -379,7 +398,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138: ToList and AsEnumerable of a subquery are the IN of that subquery.
-    [Fact(Skip = "#138: ToList/AsEnumerable over a subquery is refused")]
+    [Fact]
     public void FiltersOnSubqueryAsListOrSequence()
     {
         database.AssertSameRows(
@@ -407,7 +426,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #138
-    [Fact(Skip = "#138: AsQueryable over a query that is not a root is refused")]
+    [Fact]
     public void TestsExistenceInSubqueryMadeQueryableAgain()
     {
         database.AssertSameRows(
@@ -423,7 +442,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #139
-    [Fact(Skip = "#139: Contains of a tuple in a sequence of tuples is refused")]
+    [Fact]
     public void FiltersOnTupleInSequenceOfTuples()
     {
         (int, string)[] pairs = [(1, "Ann"), (2, "x"), (12, "Ann")];
@@ -451,7 +470,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #139
-    [Fact(Skip = "#139: Contains of a tuple in a sequence of tuples is refused")]
+    [Fact]
     public void SelectsTupleMembershipAsValue()
     {
         (int, string)[] pairs = [(1, "Ann"), (2, "x")];
@@ -466,7 +485,7 @@ public sealed class InMemorySequenceSemanticsTests(Database database)
     }
 
     // #139: tuples are equal when their null members are, as EqualityComparer has it.
-    [Fact(Skip = "#139: Contains of a tuple in a sequence of tuples is refused")]
+    [Fact]
     public void MatchesNullMembersOfTuples()
     {
         ValueTuple<int?, int>[] keys = [new(null, 1), new(3, 0), new(null, 99)];

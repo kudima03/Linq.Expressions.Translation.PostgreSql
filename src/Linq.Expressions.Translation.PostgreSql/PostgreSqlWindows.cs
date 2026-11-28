@@ -14,10 +14,10 @@ public static class PostgreSqlWindows
     // partitionBy: the PARTITION BY keys, one value or a tuple or an object of them,
     // or null for one partition of every row. orderBy: the ORDER BY of the window, as
     // OrderBy, OrderByDescending, ThenBy and ThenByDescending of its rows (sorted as
-    // in .NET: nulls first ascending; StringComparer.Ordinal sorts by code point), or
-    // null for none. frame: the frame clause, or null for PostgreSQL's default (with
-    // an ORDER BY, RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW; without, the
-    // partition).
+    // in .NET: nulls first ascending, NaN below every number; StringComparer.Ordinal
+    // sorts by UTF-16 code units), or null for none. frame: the frame clause, or null
+    // for PostgreSQL's default (with an ORDER BY, RANGE BETWEEN UNBOUNDED PRECEDING
+    // AND CURRENT ROW; without, the partition).
     public static IQueryable<TResult> Over<TSource, TResult>(
         this IQueryable<TSource> source,
         Expression<Func<TSource, object?>>? partitionBy,

@@ -71,7 +71,7 @@ internal sealed partial class Translator
             : owner == typeof(MemoryExtensions)
             && name is nameof(Enumerable.Max) or nameof(Enumerable.Min)
             && Unspanned(call.Arguments[0]) is NewArrayExpression values
-                ? Extremes(values, call)
+                ? Listed(values, call)
             : name == nameof(Enumerable.Contains) && owner != typeof(string)
                 ? Membership(call)
             : name == nameof(long.Parse) && call.Object is null ? Parsed(call)
@@ -128,16 +128,25 @@ internal sealed partial class Translator
     private Shape Enumerated(MethodCallExpression call)
     {
         if (
-            call.Arguments[0]
-                is NewArrayExpression { NodeType: ExpressionType.NewArrayInit } values
+            call.Arguments[0] is NewArrayExpression values
             && call.Method.Name is nameof(Enumerable.Max) or nameof(Enumerable.Min)
         )
         {
-            return new ScalarShape(Extremes(values, call));
+            return new ScalarShape(Listed(values, call));
+        }
+        // An operator over a query or an in-memory sequence is the subquery of its
+        // Queryable form; a collection searched for an item is a list of values.
+        if (
+            Terminals.Contains(call.Method.Name)
+            && IsSequence(call.Arguments[0])
+            && (IsQueried(call.Arguments[0]) || Matched(call) is null)
+        )
+        {
+            return new ScalarShape(Subquery(call));
         }
         Shape source = Shape(call.Arguments[0]);
         return source is GroupingShape grouping ? Grouped(grouping, call)
-            : source is FrameShape frame ? Framed(frame, call)
+            : source is FrameShape frame ? Plain(() => Framed(frame, call))
             : source is GroupJoinShape group
                 ? Terminals.Contains(call.Method.Name)
                         ? new ScalarShape(Valued(Terminal(Correlated(group), call), call))
@@ -772,7 +781,7 @@ internal sealed partial class Translator
     {
         Type type = call.Type;
         string? target =
-            ScalarTypes.IsNumber(type) && !type.IsEnum
+            ScalarTypes.IsNumber(type) && !type.IsEnum && !ScalarTypes.IsWidened(type)
                 ? ScalarTypes.Number(type)
                 : Parsable.GetValueOrDefault(type);
         IEnumerable<Expression> options = call.Arguments.Skip(1);
@@ -829,8 +838,10 @@ internal sealed partial class Translator
 
     // to_timestamp reads the text in the session's zone, where a time in a
     // daylight-saving gap shifts by an hour; a fixed +00 offset put before the text
-    // keeps the time as written, taken back as UTC into a timestamp, or kept as
-    // the instant in UTC, a timestamptz, which is read with the kind Utc.
+    // keeps the time as written, taken back as UTC into a timestamp, which is of
+    // the kind Utc when the text is read as UTC. The
+    // fraction of a second is read up to the microsecond when the text has one, and
+    // a seventh digit, which PostgreSQL cannot hold, fails.
     private static SqlExpression ParsedMoment(SqlExpression text, bool universal)
     {
         SqlFunction moment = new(
@@ -844,21 +855,13 @@ internal sealed partial class Translator
                     typeof(string),
                     text.Nullable
                 ),
-                Text("TZH " + DatePattern + " HH24:MI:SS"),
+                Text("TZH " + DatePattern + " HH24:MI:SS.US"),
             ],
             typeof(DateTime),
             text.Nullable
         );
-        return universal
-            ? moment
-            : new SqlBinary(
-                "AT TIME ZONE",
-                SqlBinaryKind.Arithmetic,
-                moment,
-                Text("UTC"),
-                typeof(DateTime),
-                text.Nullable
-            );
+        SqlBinary written = Zoned(moment, typeof(DateTime));
+        return universal ? new SqlUtc(written) : written;
     }
 
     private static object? Styles(Expression option)
@@ -899,8 +902,15 @@ internal sealed partial class Translator
         (Expression source, Expression item) = call.Object is null
             ? (Unspanned(call.Arguments[0]), call.Arguments[1])
             : (call.Object, call.Arguments[0]);
-        SqlExpression value = Sql(item);
-        return Membership(Sql(source), value);
+        Shape shape = Shape(item);
+        if (shape is ObjectShape composite)
+        {
+            return Contained(Query(source), composite);
+        }
+        SqlExpression value = Scalar(shape);
+        return IsQueried(source)
+            ? Membership(Query(source), source, value)
+            : Membership(Sql(source), value);
     }
 
     private static SqlExpression Membership(SqlExpression source, SqlExpression value)

@@ -6,9 +6,18 @@ internal sealed class SqlCase(
     Type type
 ) : SqlExpression(type)
 {
+    public override IEnumerable<SqlExpression> Operands =>
+        [
+            .. Whens.SelectMany(branch => new[] { branch.Condition, branch.Result }),
+            Otherwise,
+        ];
+
     // The value is one of the branches, so it is nullable when one of them is.
     public override bool Nullable =>
         Otherwise.Nullable || Whens.Any(branch => branch.Result.Nullable);
+
+    public override SqlKind TimeKind =>
+        KindOf([.. Whens.Select(branch => branch.Result), Otherwise]);
 
     public IReadOnlyList<SqlWhen> Whens { get; } = whens;
 
@@ -16,6 +25,10 @@ internal sealed class SqlCase(
 
     public override void Render(SqlWriter writer, SqlMode mode)
     {
+        bool numeric = SqlWriter.IsNumeric([
+            .. Whens.Select(branch => branch.Result),
+            Otherwise,
+        ]);
         _ = writer.Append("CASE");
         foreach (SqlWhen branch in Whens)
         {
@@ -23,8 +36,8 @@ internal sealed class SqlCase(
                 .Append(" WHEN ")
                 .Render(branch.Condition, SqlMode.Predicate)
                 .Append(" THEN ")
-                .Render(branch.Result, SqlMode.Value);
+                .Unified(branch.Result, numeric);
         }
-        _ = writer.Append(" ELSE ").Render(Otherwise, SqlMode.Value).Append(" END");
+        _ = writer.Append(" ELSE ").Unified(Otherwise, numeric).Append(" END");
     }
 }

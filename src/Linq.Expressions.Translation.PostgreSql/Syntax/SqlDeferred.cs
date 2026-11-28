@@ -4,7 +4,11 @@ namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 // row reaches it, instead of folding the operation around it with the statement.
 internal sealed class SqlDeferred(SqlExpression value) : SqlExpression(value.Type)
 {
+    public override IEnumerable<SqlExpression> Operands => [value];
+
     public override bool Nullable => value.Nullable;
+
+    public override SqlKind TimeKind => value.TimeKind;
 
     public override void Render(SqlWriter writer, SqlMode mode)
     {

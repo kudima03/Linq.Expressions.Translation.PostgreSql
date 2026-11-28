@@ -102,7 +102,7 @@ public sealed record StringJoinTests
                         g.OrderBy(o => o.Note, StringComparer.Ordinal)
                             .Select(o => o.Number)
                     ),
-                "COALESCE(STRING_AGG(t0.\"Number\", '' ORDER BY t0.\"Note\" COLLATE \"C\" NULLS FIRST), '')"
+                "COALESCE(STRING_AGG(t0.\"Number\", '' ORDER BY REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" NULLS FIRST), '')"
             },
             {
                 g =>
@@ -113,7 +113,7 @@ public sealed record StringJoinTests
                             .Where(v => v != null)
                             .Distinct()
                     ),
-                "COALESCE(STRING_AGG(DISTINCT t0.\"Note\" COLLATE \"C\", ',' ORDER BY t0.\"Note\" COLLATE \"C\" DESC) FILTER (WHERE t0.\"Note\" IS NOT NULL), '') COLLATE \"default\""
+                "REGEXP_REPLACE(COALESCE(STRING_AGG(DISTINCT REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\", ',' ORDER BY REGEXP_REPLACE(t0.\"Note\", '([\\U00010000-\\U0010FFFF])', E'\\ud7ff\\\\1', 'g') COLLATE \"C\" DESC) FILTER (WHERE t0.\"Note\" IS NOT NULL), ''), E'\\ud7ff([\\\\U00010000-\\\\U0010FFFF])', '\\1', 'g') COLLATE \"default\""
             },
             {
                 g =>
@@ -360,26 +360,7 @@ public sealed record StringJoinTests
         new()
         {
             { g => string.Join(",", g.Select(o => o.Id)), "string values only" },
-            { g => string.Join(",", g.Select(o => o.Note).Distinct()), "never null" },
-            {
-                g =>
-                    string.Join(
-                        ",",
-                        g.OrderBy(o => o.Id).Select(o => o.Number).Distinct()
-                    ),
-                "sorted by themselves"
-            },
-            {
-                g =>
-                    string.Join(
-                        ",",
-                        g.OrderBy(o => o.Number)
-                            .ThenBy(o => o.Id)
-                            .Select(o => o.Number)
-                            .Distinct()
-                    ),
-                "sorted by themselves"
-            },
+            { g => string.Join(",", g.Select(o => o.Note).Distinct()), "may be null" },
             { g => string.Join(",", new object[] { g.Key, "a" }), "string values only" },
             { g => string.Join(",", g.Select(o => o.Number).ToArray(), 0, 1), "Join" },
         };
@@ -438,6 +419,60 @@ public sealed record StringJoinTests
             .Expression;
 
         _ = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // #134: the distinct values of a group in another order than their own come by
+    // their first occurrences in it, which STRING_AGG(DISTINCT ...) cannot give.
+    [Fact]
+    public void JoinsDistinctValuesOfGroupByFirstOccurrence()
+    {
+        Expression query = Orders
+            .GroupBy(o => o.CustomerId)
+            .Select(g =>
+                string.Join(",", g.OrderBy(o => o.Id).Select(o => o.Note).Distinct())
+            )
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT ARRAY_TO_STRING(ARRAY(SELECT u.v FROM UNNEST(ARRAY_AGG(t0."Note" ORDER BY t0."Id")) WITH ORDINALITY AS u (v, i) GROUP BY u.v ORDER BY MIN(u.i)), ',', '')
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                """
+            ),
+            new PostgreSqlQuery(query).TextValue
+        );
+    }
+
+    // #134: the elements of a group come in the order of the source, which a group
+    // of an ordered source joins them in and breaks the ties of its own order by.
+    [Fact]
+    public void JoinsAndReadsGroupOfOrderedSourceInItsOrder()
+    {
+        Expression query = Orders
+            .OrderByDescending(o => o.Id)
+            .GroupBy(o => o.CustomerId)
+            .Select(g => new
+            {
+                Numbers = string.Join(",", g.Select(o => o.Number)),
+                States = string.Join(",", g.Select(o => o.Number).Distinct()),
+                Last = g.OrderBy(o => o.IsPaid).Select(o => o.Id).Last(),
+                Final = g.Select(o => o.IsPaid).Distinct().Last(),
+            })
+            .Expression;
+
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT COALESCE(STRING_AGG(t0."Number", ',' ORDER BY t0."Id" DESC), '') AS "Numbers", ARRAY_TO_STRING(ARRAY(SELECT u.v FROM UNNEST(ARRAY_AGG(t0."Number" ORDER BY t0."Id" DESC)) WITH ORDINALITY AS u (v, i) GROUP BY u.v ORDER BY MIN(u.i)), ',', '') AS "States", (ARRAY_AGG(t0."Id" ORDER BY t0."IsPaid" DESC, t0."Id"))[1] AS "Last", (SELECT u.v FROM UNNEST(ARRAY_AGG(t0."IsPaid" ORDER BY t0."Id" DESC)) WITH ORDINALITY AS u (v, i) GROUP BY u.v ORDER BY MIN(u.i) DESC LIMIT 1) AS "Final"
+                FROM "Order" AS t0
+                GROUP BY t0."CustomerId"
+                ORDER BY MAX(t0."Id") DESC
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
     }

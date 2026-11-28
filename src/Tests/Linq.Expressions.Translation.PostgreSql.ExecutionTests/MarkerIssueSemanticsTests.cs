@@ -10,9 +10,7 @@ public sealed class MarkerIssueSemanticsTests(Database database)
 {
     // #123: the issue's frame, within a partition over a bigint key; over an integer
     // key, Range(-1.5, 0.5) holds the keys from 1 before to the current one.
-    [Fact(
-        Skip = "#123: a fractional RANGE offset over a bigint key fails in PostgreSQL (a refusal is an acceptable fix)"
-    )]
+    [Fact]
     public void SumsAFractionalRangeWithinAPartitionOverABigintKey()
     {
         database.AssertSameRows(
@@ -28,9 +26,7 @@ public sealed class MarkerIssueSemanticsTests(Database database)
 
     // #124: the aggregate of the level's filtered rows in the step's projection is a
     // window aggregate of the step, as with a relational comparison.
-    [Fact(
-        Skip = "#124: an equality with an aggregate of the level throws KeyNotFoundException"
-    )]
+    [Fact]
     public void ComparesWithAWindowAggregateOfTheLevelForEquality()
     {
         database.AssertSameRows(
@@ -51,9 +47,7 @@ public sealed class MarkerIssueSemanticsTests(Database database)
     }
 
     // #124: the count of the level's filtered rows as the test of a conditional.
-    [Fact(
-        Skip = "#124: an equality with an aggregate of the level throws KeyNotFoundException"
-    )]
+    [Fact]
     public void TestsACountOfTheLevelForEqualityInAConditional()
     {
         database.AssertSameRows(
@@ -96,7 +90,7 @@ public sealed class MarkerIssueSemanticsTests(Database database)
 
     // #142: the issue's record, whose members Id and ID are two columns. The rows are
     // read through other names, as the materializer matches names ignoring case.
-    [Fact(Skip = "#142: columns whose names differ in case only throw ArgumentException")]
+    [Fact]
     public void KeepsAPositionalRecordWhoseMembersDifferInCaseOnly()
     {
         database.AssertSameRows(
@@ -114,9 +108,7 @@ public sealed class MarkerIssueSemanticsTests(Database database)
 
     // #143: the issue's walk, whose seed reads the outer row, flattened with a result
     // selector of a value tuple.
-    [Fact(
-        Skip = "#143: a correlated recursion flattened by SelectMany is joined without LATERAL"
-    )]
+    [Fact]
     public void FlattensAWalkWhoseSeedReadsTheOuterRow()
     {
         IQueryable<ValueTuple<int, int, int>> query = Customers.SelectMany(
@@ -174,13 +166,13 @@ public sealed class MarkerIssueSemanticsTests(Database database)
     }
 
     // #125: twelve nested value tuples under DISTINCT; the paths of the innermost
-    // members share their first 63 bytes ("item2." eleven times and more).
-    [Fact(
-        Skip = "#125: derived-table column paths past 63 bytes collide in PostgreSQL (a refusal is an acceptable fix)"
-    )]
-    public void ReadsNestedValueTuplesWhosePathsExceedTheIdentifierLength()
+    // members share their first 63 bytes ("item2." eleven times and more), which is
+    // all PostgreSQL keeps of a name, also of a column of the result: the columns
+    // are refused, where the statement failed on an ambiguous one.
+    [Fact]
+    public void RefusesNestedValueTuplesWhosePathsExceedTheIdentifierLength()
     {
-        database.AssertSameRows(
+        AssertRefused(
             Nest(
                     Nest(
                         Nest(
@@ -218,12 +210,10 @@ public sealed class MarkerIssueSemanticsTests(Database database)
 
     // #125: eleven windows over one another; every Over nests the row once more, so
     // the paths of the first row's columns share their first 63 bytes.
-    [Fact(
-        Skip = "#125: derived-table column paths past 63 bytes collide in PostgreSQL (a refusal is an acceptable fix)"
-    )]
-    public void StacksWindowsUntilTheirPathsExceedTheIdentifierLength()
+    [Fact]
+    public void RefusesWindowsStackedUntilTheirPathsExceedTheIdentifierLength()
     {
-        database.AssertSameRows(
+        AssertRefused(
             Counted(
                     Counted(
                         Counted(
@@ -273,6 +263,14 @@ public sealed class MarkerIssueSemanticsTests(Database database)
                 )
                 .Where(t => t.Item2 > 0)
         );
+    }
+
+    private static void AssertRefused<T>(IQueryable<T> query)
+    {
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+            new PostgreSqlQuery(query.Expression).TextValue
+        );
+        Assert.Contains("63 bytes", exception.Message, StringComparison.Ordinal);
     }
 
     private static IQueryable<ValueTuple<int, T>> Nest<T>(IQueryable<T> source)

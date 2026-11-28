@@ -90,7 +90,7 @@ public sealed record FrameTests
             PostgreSqlFrame.RangeMonths(-1, 0).TextValue
         );
         Assert.Equal(
-            "RANGE BETWEEN INTERVAL '2147483648 months' PRECEDING AND INTERVAL '12 months' FOLLOWING",
+            "RANGE BETWEEN INTERVAL '2147483647 months' PRECEDING AND INTERVAL '12 months' FOLLOWING",
             PostgreSqlFrame.RangeMonths(int.MinValue, 12).TextValue
         );
         Assert.Equal(
@@ -272,7 +272,10 @@ public sealed record FrameTests
             { rows => rows.OrderBy(o => o.Quantity), "t0.\"Quantity\"" },
             { rows => rows.OrderBy(o => o.Points), "t0.\"Points\"" },
             { rows => rows.OrderByDescending(o => o.Total), "t0.\"Total\" DESC" },
-            { rows => rows.OrderBy(o => o.Weight), "t0.\"Weight\"" },
+            {
+                rows => rows.OrderBy(o => o.Weight),
+                "NULLIF(t0.\"Weight\", 'NaN') NULLS FIRST"
+            },
             { rows => rows.OrderBy(o => o.Priority), "t0.\"Priority\" NULLS FIRST" },
             { rows => rows.OrderBy(o => o.Status), "t0.\"Status\"" },
         };
@@ -323,7 +326,7 @@ public sealed record FrameTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT CAST(COUNT(*) OVER (ORDER BY t0."Region", t0."Name" COLLATE "C" RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS integer)
+                SELECT CAST(COUNT(*) OVER (ORDER BY t0."Region", REGEXP_REPLACE(t0."Name", '([\U00010000-\U0010FFFF])', E'\ud7ff\\1', 'g') COLLATE "C" RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS integer)
                 FROM "Customer" AS t0
                 """
             ),

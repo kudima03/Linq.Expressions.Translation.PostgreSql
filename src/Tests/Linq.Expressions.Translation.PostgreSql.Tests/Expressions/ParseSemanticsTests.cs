@@ -112,7 +112,7 @@ public sealed record ParseSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT TO_TIMESTAMP('+00 ' || t0."Number", 'TZH MM/DD/YYYY HH24:MI:SS')
+                SELECT TO_TIMESTAMP('+00 ' || t0."Number", 'TZH MM/DD/YYYY HH24:MI:SS.US')
                 FROM "Order" AS t0
                 """
             ),
@@ -134,7 +134,7 @@ public sealed record ParseSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT TO_TIMESTAMP('+00 ' || t0."Number", 'TZH MM/DD/YYYY HH24:MI:SS') AT TIME ZONE 'UTC'
+                SELECT TO_TIMESTAMP('+00 ' || t0."Number", 'TZH MM/DD/YYYY HH24:MI:SS.US') AT TIME ZONE 'UTC'
                 FROM "Order" AS t0
                 """
             ),
@@ -161,7 +161,7 @@ public sealed record ParseSemanticsTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE TO_TIMESTAMP('+00 ' || t0."Number", 'TZH MM/DD/YYYY HH24:MI:SS') > TIMESTAMP '2024-01-02 10:30:00'
+                WHERE (TO_TIMESTAMP('+00 ' || t0."Number", 'TZH MM/DD/YYYY HH24:MI:SS.US') AT TIME ZONE 'UTC') > TIMESTAMP '2024-01-02 10:30:00'
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -267,7 +267,7 @@ public sealed record ParseSemanticsTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE (TO_TIMESTAMP('+00 ' || t0."Number", 'TZH MM/DD/YYYY HH24:MI:SS') AT TIME ZONE 'UTC') > TIMESTAMP '2024-01-02 10:30:00'
+                WHERE (TO_TIMESTAMP('+00 ' || t0."Number", 'TZH MM/DD/YYYY HH24:MI:SS.US') AT TIME ZONE 'UTC') > TIMESTAMP '2024-01-02 10:30:00'
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -342,7 +342,7 @@ public sealed record ParseSemanticsTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT TO_TIMESTAMP('+00 ' || t0."Number", 'TZH MM/DD/YYYY HH24:MI:SS') AT TIME ZONE 'UTC'
+                SELECT TO_TIMESTAMP('+00 ' || t0."Number", 'TZH MM/DD/YYYY HH24:MI:SS.US') AT TIME ZONE 'UTC'
                 FROM "Order" AS t0
                 """
             ),

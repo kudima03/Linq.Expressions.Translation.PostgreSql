@@ -29,9 +29,14 @@ internal sealed class Evaluator(HashSet<Expression> candidates) : ExpressionVisi
         return candidates.Contains(node!) ? Evaluated(node!) : base.Visit(node);
     }
 
+    // A constant test decides the conditional: only the branch it takes is
+    // translated, as the other one is never reached, whatever it would do.
     protected override Expression VisitConditional(ConditionalExpression node)
     {
-        return node.Update(Visit(node.Test)!, Lazily(node.IfTrue), Lazily(node.IfFalse));
+        Expression test = Visit(node.Test)!;
+        return test is ConstantExpression { Value: bool taken }
+            ? Visit(taken ? node.IfTrue : node.IfFalse)!
+            : node.Update(test, Lazily(node.IfTrue), Lazily(node.IfFalse));
     }
 
     protected override Expression VisitBinary(BinaryExpression node)
@@ -43,6 +48,64 @@ internal sealed class Evaluator(HashSet<Expression> candidates) : ExpressionVisi
                     or ExpressionType.OrElse
             ? node.Update(Visit(node.Left)!, node.Conversion, Lazily(node.Right))
             : base.VisitBinary(node);
+    }
+
+    // Max and Min of a captured array bind to MemoryExtensions over a span of it,
+    // which is no value an expression can be folded into: once the array is a
+    // constant, they are folded as Enumerable.Max and Enumerable.Min would be.
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        Expression visited = base.VisitMethodCall(node);
+        if (
+            visited
+                is not MethodCallExpression
+                {
+                    Arguments: [MethodCallExpression span]
+                } call
+            || call.Method.DeclaringType != typeof(MemoryExtensions)
+            || call.Method.Name is not (nameof(Enumerable.Max) or nameof(Enumerable.Min))
+            || span.Method.Name != "op_Implicit"
+            || span.Arguments is not [ConstantExpression { Value: Array items }]
+        )
+        {
+            return visited;
+        }
+        // Where it may not be reached, an extreme that fails is left as it is.
+        try
+        {
+            return Expression.Constant(
+                Extreme(items, call.Method.Name == nameof(Enumerable.Max)),
+                call.Type
+            );
+        }
+        catch (InvalidOperationException) when (_lazy)
+        {
+            return visited;
+        }
+    }
+
+    // The greatest or the least of the values, nulls skipped, as the default comparer
+    // orders them; of no value, null for a type that has it and a failure otherwise.
+    private static object? Extreme(Array items, bool greatest)
+    {
+        object? extreme = null;
+        foreach (object item in items.Cast<object?>().OfType<object>())
+        {
+            int order = extreme is null
+                ? 1
+                : System.Collections.Comparer.DefaultInvariant.Compare(item, extreme);
+            if (extreme is null || (greatest ? order > 0 : order < 0))
+            {
+                extreme = item;
+            }
+        }
+        Type element = items.GetType().GetElementType()!;
+        return
+            extreme is null
+            && element.IsValueType
+            && Nullable.GetUnderlyingType(element) is null
+            ? throw new InvalidOperationException("Sequence contains no elements")
+            : extreme;
     }
 
     private Expression Lazily(Expression node)
@@ -145,7 +208,27 @@ internal sealed class Evaluator(HashSet<Expression> candidates) : ExpressionVisi
                 )
             && !node.Type.IsByRefLike
             && !IsQueryOperator(node)
+            && !IsEnumeration(node)
             && !IsClock(node);
+    }
+
+    // A call that reads a query as a sequence, string.Join or ToList of a captured
+    // IQueryable: evaluated, it would run the query while the statement is written.
+    // It is left in the tree, where the query is a subquery.
+    private static bool IsEnumeration(Expression node)
+    {
+        return node is MethodCallExpression call
+            && !typeof(IQueryable).IsAssignableFrom(call.Type)
+            && call.Arguments.Prepend(call.Object).OfType<Expression>().Any(IsQuery);
+    }
+
+    private static bool IsQuery(Expression argument)
+    {
+        Expression source = argument
+            is UnaryExpression { NodeType: ExpressionType.Convert } conversion
+            ? conversion.Operand
+            : argument;
+        return typeof(IQueryable).IsAssignableFrom(source.Type);
     }
 
     private static bool IsClock(Expression node)

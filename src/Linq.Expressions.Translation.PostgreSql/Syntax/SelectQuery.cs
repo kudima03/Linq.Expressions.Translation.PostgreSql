@@ -4,7 +4,7 @@ namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 
 internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape)
 {
-    public SqlSource? From { get; } = from;
+    public SqlSource? From { get; set; } = from;
 
     public List<SqlJoin> Joins { get; } = [];
 
@@ -18,6 +18,12 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
     public SqlExpression? Having { get; set; }
 
     public List<Ordering> Orderings { get; set; } = [];
+
+    // The keys that break the ties of an order given to the rows, which come in an
+    // order of their own that no ORDER BY states: the positions of the rows of an
+    // in-memory sequence. They order nothing until the rows are sorted, or until the
+    // first of their distinct values or groups are taken.
+    public List<Ordering> Ties { get; set; } = [];
 
     // How many of the ordering keys, the trailing ones, come from an ordering before
     // the last OrderBy, which keeps them after its own keys and those of its ThenBy.
@@ -47,8 +53,13 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
     // The order is part of the result: it decides which rows are paged or kept per key.
     public bool KeepsOrder => IsPaged || DistinctOn is not null;
 
+    // The sources are written last, the later ones first: what the statement reads of
+    // them, the positions of the rows of VALUES, is then known, also to a lateral
+    // source that reads an earlier one.
     public override void Render(SqlWriter writer)
     {
+        SqlWriter rows = writer.Part();
+        Filtered(rows);
         _ = writer.Append(Distinct ? "SELECT DISTINCT " : "SELECT ");
         if (DistinctOn is not null)
         {
@@ -57,16 +68,31 @@ internal sealed class SelectQuery(SqlSource? from, Shape shape) : SqlQuery(shape
                 .Join(DistinctOn, key => writer.Render(key, SqlMode.Value))
                 .Append(") ");
         }
-        _ = writer.Join([.. Shape.Columns(), .. Hidden], column => column.Render(writer));
+        List<ProjectionColumn> columns = [.. Shape.Columns(), .. Hidden];
+        SqlWriter.Distinguish(columns.Select(column => column.Name).OfType<string>());
+        _ = writer.Join(columns, column => column.Render(writer));
+        Stack<SqlWriter> joins = [];
+        foreach (SqlJoin join in Joins.AsEnumerable().Reverse())
+        {
+            SqlWriter joined = writer.Part();
+            join.Render(joined);
+            joins.Push(joined);
+        }
         if (From is not null)
         {
             _ = writer.Append(" FROM ");
             From.Render(writer);
         }
-        foreach (SqlJoin join in Joins)
+        foreach (SqlWriter joined in joins)
         {
-            join.Render(writer);
+            _ = writer.Append(joined);
         }
+        _ = writer.Append(rows);
+    }
+
+    // WHERE and what follows it.
+    private void Filtered(SqlWriter writer)
+    {
         if (Where is not null)
         {
             _ = writer.Append(" WHERE ").Render(Where, SqlMode.Predicate);

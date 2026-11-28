@@ -246,9 +246,7 @@ public sealed class OrderedGroupElementSemanticsTests(Database database)
     // The distinct values of 1 (paid), 2 (open) and 9 (paid) in the order of Id are
     // paid, open: the last is open, where the last of all values is paid.
     // SQL: (ARRAY_AGG(t0."IsPaid" ORDER BY t0."Id" DESC))[1], true instead of false.
-    [Fact(
-        Skip = "#134: Last of the distinct values of an ordered group is the value of the last element"
-    )]
+    [Fact]
     public void ReadsLastOfDistinctValues()
     {
         database.AssertSameRows(
@@ -411,9 +409,7 @@ public sealed class OrderedGroupElementSemanticsTests(Database database)
     // the one of the greatest Id in a descending source and the last the one of the
     // least. SQL: (ARRAY_AGG(t0."Id" ORDER BY t0."CustomerId" DESC))[1] for Last, the
     // source order lost: for the customer 1 both First and Last are 9, Last should be 1.
-    [Fact(
-        Skip = "#134: First of a sorted group breaks ties in no order instead of the source's order"
-    )]
+    [Fact]
     public void BreaksTiesInSourceOrder()
     {
         database.AssertSameRows(
@@ -457,9 +453,7 @@ public sealed class OrderedGroupElementSemanticsTests(Database database)
 
     // UTF-16 code units order U+FF21 above the surrogates of U+1F600, code points
     // below: .NET's ordinal maximum is "Ａ", COLLATE "C" yields the emoji.
-    [Fact(
-        Skip = "#133: StringComparer.Ordinal compares UTF-16 code units, COLLATE \"C\" code points"
-    )]
+    [Fact]
     public void TakesOrdinalExtremesInUtf16Order()
     {
         database.AssertSameRows(
@@ -574,9 +568,7 @@ public sealed class OrderedGroupElementSemanticsTests(Database database)
 
     // MAX(t0."Name" COLLATE "C") inside the subquery has outer-level arguments only,
     // so PostgreSQL evaluates it as an aggregate of the outer query (42803).
-    [Fact(
-        Skip = "#128: an aggregate of a subquery over outer values only is evaluated in the outer query"
-    )]
+    [Fact]
     public void TakesOrdinalExtremesOfOuterValues()
     {
         database.AssertSameRows(

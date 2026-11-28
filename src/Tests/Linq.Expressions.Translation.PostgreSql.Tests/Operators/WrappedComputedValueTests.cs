@@ -62,7 +62,7 @@ public sealed record WrappedComputedValueTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT AVG(t1."Value")
+                SELECT TRIM_SCALE(ROUND(AVG(ROUND(t1."Value", 30)), 29 - LENGTH(CAST(TRUNC(ABS(AVG(ROUND(t1."Value", 30))) / 0.79228162514264337593543950335) AS text))))
                 FROM (
                     SELECT t0."Total" * 2 AS "Value"
                     FROM "Order" AS t0

@@ -226,7 +226,7 @@ public sealed record NumericCombinationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT t0."Total" / CAST(t0."Quantity" AS numeric)
+                SELECT TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / CAST(t0."Quantity" AS numeric), 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / CAST(t0."Quantity" AS numeric)) / 0.79228162514264337593543950335) AS text))))
                 FROM "Order" AS t0
                 """
             ),
@@ -279,7 +279,7 @@ public sealed record NumericCombinationTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE (t0."Weight" * 1.5) > CAST(t0."Quantity" AS double precision)
+                WHERE ((t0."Weight" * 1.5) > CAST(t0."Quantity" AS double precision)) AND ((t0."Weight" * 1.5) <> 'NaN')
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -354,7 +354,7 @@ public sealed record NumericCombinationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT FLOOR(t0."Total" / 3)
+                SELECT FLOOR(TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / 3, 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / 3) / 0.79228162514264337593543950335) AS text)))))
                 FROM "Order" AS t0
                 """
             ),
@@ -411,7 +411,7 @@ public sealed record NumericCombinationTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE SQRT(t0."Weight") > 3
+                WHERE (SQRT(t0."Weight") > 3) AND (SQRT(t0."Weight") <> 'NaN')
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -501,7 +501,7 @@ public sealed record NumericCombinationTests
                 """
                 SELECT t0."Id"
                 FROM "Order" AS t0
-                WHERE (t0."Weight" NOT IN (CAST('NaN' AS double precision), CAST('Infinity' AS double precision), CAST('-Infinity' AS double precision))) AND (t0."Weight" > 0)
+                WHERE (t0."Weight" NOT IN (CAST('NaN' AS double precision), CAST('Infinity' AS double precision), CAST('-Infinity' AS double precision))) AND (t0."Weight" > 0) AND (t0."Weight" <> 'NaN')
                 """
             ),
             new PostgreSqlQuery(query).TextValue
@@ -654,7 +654,7 @@ public sealed record NumericCombinationTests
         Assert.Equal(
             Sql.Valid(
                 """
-                SELECT ROUND(t0."Total" / CAST(t0."Quantity" AS numeric), 2)
+                SELECT ROUND(TRIM_SCALE(ROUND(ROUND(t0."Total", 30) / CAST(t0."Quantity" AS numeric), 29 - LENGTH(CAST(TRUNC(ABS(ROUND(t0."Total", 30) / CAST(t0."Quantity" AS numeric)) / 0.79228162514264337593543950335) AS text)))), 2)
                 FROM "Order" AS t0
                 """
             ),

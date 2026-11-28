@@ -365,47 +365,43 @@ public sealed record UnsupportedOperatorTests
     }
 
     [Fact]
-    public void RejectsFirstOrDefaultWithDefaultValue()
+    public void RejectsFirstOrDefaultWithDefaultEntity()
     {
         Expression query = Customers.Executed(q => q.FirstOrDefault(new Customer()));
 
         NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("FirstOrDefault", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("single value", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void RejectsSingleOrDefaultWithDefaultValue()
+    public void RejectsSingleOrDefaultWithDefaultEntity()
     {
         Expression query = Customers.Executed(q => q.SingleOrDefault(new Customer()));
 
         NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("SingleOrDefault", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("single value", exception.Message, StringComparison.Ordinal);
     }
 
+    // #141: DefaultIfEmpty as a sequence operator is one row left joined to the rows.
     [Fact]
-    public void RejectsElementAtFromEnd()
-    {
-        Expression query = Customers.OrderBy(c => c.Id).Executed(q => q.ElementAt(^1));
-
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
-            new PostgreSqlQuery(query).TextValue
-        );
-        Assert.Contains("ElementAt", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void RejectsDefaultIfEmptyOnRoot()
+    public void LeftJoinsRootToOneRowForDefaultIfEmpty()
     {
         Expression query = Customers.DefaultIfEmpty().Expression;
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t1."Id", t1."Name", t1."Email", t1."Region", t1."IsActive"
+                FROM (SELECT 1) AS t2
+                LEFT JOIN (SELECT t0."Id", t0."Name", t0."Email", t0."Region", t0."IsActive" FROM "Customer" AS t0) AS t1 ON TRUE
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("DefaultIfEmpty", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -456,32 +452,45 @@ public sealed record UnsupportedOperatorTests
         Assert.Contains("Select", exception.Message, StringComparison.Ordinal);
     }
 
+    // #137: a selector that reads the element of the one-element root reads a VALUES
+    // row.
     [Fact]
-    public void RejectsOneElementInMemoryRootWhoseSelectorReadsTheElement()
+    public void ReadsElementOfOneElementInMemoryRootFromValues()
     {
         Expression query = new[] { 0 }
             .AsQueryable()
             .Select(x => x + Orders.Count())
             .Expression;
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Value" + (SELECT CAST(COUNT(*) AS integer) FROM "Order" AS t1)
+                FROM (VALUES (0)) AS t0 ("Value")
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void RejectsJoiningOneElementInMemoryRootWithoutSelector()
+    public void CrossJoinsOneElementInMemoryRootAsValues()
     {
         IQueryable<int> element = new[] { 0 }.AsQueryable();
         Expression query = Customers
             .SelectMany(c => element, (c, n) => c.Name)
             .Expression;
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT t0."Name"
+                FROM "Customer" AS t0
+                CROSS JOIN (VALUES (0)) AS t1 ("Value")
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("EnumerableQuery", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -593,45 +602,64 @@ public sealed record UnsupportedOperatorTests
     }
 
     [Fact]
-    public void RejectsSelectorAfterDefaultIfEmpty()
+    public void AggregatesBySelectorAfterDefaultIfEmpty()
     {
         Expression query = Orders
             .Select(o => o.Total)
             .DefaultIfEmpty()
             .Executed(q => q.Max(t => t * 2));
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT MAX(COALESCE(t1."Total", 0) * 2)
+                FROM (SELECT 1) AS t2
+                LEFT JOIN (SELECT t0."Total" FROM "Order" AS t0) AS t1 ON TRUE
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("DefaultIfEmpty", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void RejectsElementAfterDefaultIfEmpty()
+    public void TakesElementAfterDefaultIfEmpty()
     {
         Expression query = Orders
             .Select(o => o.Total)
             .DefaultIfEmpty()
             .Executed(q => q.First());
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT COALESCE(t1."Total", 0) AS "Total"
+                FROM (SELECT 1) AS t2
+                LEFT JOIN (SELECT t0."Total" FROM "Order" AS t0) AS t1 ON TRUE
+                LIMIT 1
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("DefaultIfEmpty", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void RejectsDefaultIfEmptyValueBeforeAggregate()
+    public void AggregatesAfterDefaultIfEmptyValue()
     {
         Expression query = Orders
             .Select(o => o.Total)
             .DefaultIfEmpty(5m)
             .Executed(q => q.Max());
 
-        NotSupportedException exception = Assert.Throws<NotSupportedException>(() =>
+        Assert.Equal(
+            Sql.Valid(
+                """
+                SELECT MAX(COALESCE(t1."Total", 5))
+                FROM (SELECT 1) AS t2
+                LEFT JOIN (SELECT t0."Total" FROM "Order" AS t0) AS t1 ON TRUE
+                """
+            ),
             new PostgreSqlQuery(query).TextValue
         );
-        Assert.Contains("DefaultIfEmpty", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

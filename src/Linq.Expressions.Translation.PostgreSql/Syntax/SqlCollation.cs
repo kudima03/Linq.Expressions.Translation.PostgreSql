@@ -6,6 +6,8 @@ namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 internal sealed class SqlCollation(SqlExpression operand, string collation = "C")
     : SqlExpression(typeof(string))
 {
+    public override IEnumerable<SqlExpression> Operands => [operand];
+
     public override bool Nullable => operand.Nullable;
 
     public override void Render(SqlWriter writer, SqlMode mode)

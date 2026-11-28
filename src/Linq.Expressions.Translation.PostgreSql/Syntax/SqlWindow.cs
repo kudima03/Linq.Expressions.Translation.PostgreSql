@@ -4,9 +4,17 @@ namespace Linq.Expressions.Translation.PostgreSql.Syntax;
 internal sealed class SqlWindow(
     IReadOnlyList<SqlExpression> partition,
     IReadOnlyList<Ordering> order,
-    string? frame
+    string? frame,
+    bool includesCurrentRow = true
 )
 {
+    // Whether the frame always holds the current row, so that it is never empty.
+    public bool IncludesCurrentRow { get; } = includesCurrentRow;
+
+    // The keys of the partition and of the order.
+    public IEnumerable<SqlExpression> Keys =>
+        [.. partition, .. order.Select(ordering => ordering.Key)];
+
     public void Render(SqlWriter writer)
     {
         _ = writer.Append(" OVER (");

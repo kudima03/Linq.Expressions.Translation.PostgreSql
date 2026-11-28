@@ -239,9 +239,7 @@ public sealed class ArrayExtremeSemanticsTests(Database database)
     // Basic Multilingual Plane is a surrogate pair from U+D800, which orders before
     // U+E000..U+FFFF, where COLLATE "C" compares code points.
     // Observed: GREATEST('😀', U+FFFD) is '😀' where .NET's Max is U+FFFD.
-    [Fact(
-        Skip = "#133: Max/Min with StringComparer.Ordinal order surrogate pairs after U+E000..U+FFFF (code point, not UTF-16 order)"
-    )]
+    [Fact]
     public void TakesOrdinalExtremesOfSurrogatePairs()
     {
         database.AssertSameRows(
@@ -277,9 +275,7 @@ public sealed class ArrayExtremeSemanticsTests(Database database)
 
     // new int[n] is n zeros, whose Max is 0, and new int?[n] n nulls, whose Max is
     // null. Observed: GREATEST(t0."Id"), the length taken for the only element.
-    [Fact(
-        Skip = "#128: Max/Min of new T[n] is GREATEST(n)/LEAST(n), the array's length read as its element"
-    )]
+    [Fact]
     public void TakesExtremesOfArraysOfDefaults()
     {
         database.AssertSameRows(
