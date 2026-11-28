@@ -390,6 +390,162 @@ public sealed class FrameEdgeCaseSemanticsTests(Database database)
         Assert.Empty(database.Query(sql).Rows);
     }
 
+    // #153: INTERVAL '2147483647 months' PRECEDING is subtracted from the key of each
+    // row. ERROR: timestamp out of range, over any row.
+    [Fact]
+    public void CountsRowsFromTheSmallestMonthOffset()
+    {
+        database.AssertSameRows(
+            Trees.Over(
+                Orders,
+                null,
+                rows => rows.OrderBy(o => o.CreatedAt),
+                PostgreSqlFrame.RangeMonths(int.MinValue, 0),
+                (o, w) => new { o.Id, Running = w.Rows.Count() }
+            )
+        );
+    }
+
+    // Months no timestamp can be moved by reach every key on their side and no row
+    // whose key is NULL, which has its peers; UNBOUNDED would reach those rows, and
+    // from them every row.
+    [Fact]
+    public void RangesByUnreachableMonthsOverKeysThatMayBeNull()
+    {
+        database.AssertSameRows(
+            Trees.Over(
+                Orders,
+                null,
+                rows => rows.OrderBy(o => o.ShippedOn),
+                PostgreSqlFrame.RangeMonths(int.MinValue, 0),
+                (o, w) =>
+                    new
+                    {
+                        o.Id,
+                        Count = w.Rows.Count(),
+                        Rank = w.Rank(),
+                    }
+            )
+        );
+        database.AssertSameRows(
+            Trees.Over(
+                Orders,
+                null,
+                rows => rows.OrderByDescending(o => o.ShippedOn),
+                PostgreSqlFrame.RangeMonths(-3_587_870, int.MaxValue),
+                (o, w) => new { o.Id, Count = w.Rows.Count() }
+            )
+        );
+        database.AssertSameRows(
+            Trees.Over(
+                Orders,
+                o => o.IsPaid,
+                rows => rows.OrderBy(o => o.PaidAt),
+                PostgreSqlFrame.RangeMonths(0, int.MaxValue),
+                (o, w) => new { o.Id, Count = w.Rows.Count() }
+            )
+        );
+    }
+
+    // A frame that starts past every key holds no row.
+    [Fact]
+    public void AggregatesAFrameThatStartsMonthsPastEveryKey()
+    {
+        database.AssertSameRows(
+            Trees.Over(
+                Orders,
+                null,
+                rows => rows.OrderBy(o => o.CreatedAt),
+                PostgreSqlFrame.RangeMonths(int.MaxValue, int.MaxValue),
+                (o, w) =>
+                    new
+                    {
+                        o.Id,
+                        Count = w.Rows.Count(),
+                        First = w.FirstValue(x => (int?)x.Id),
+                    }
+            )
+        );
+    }
+
+    // The keys of a bigint from end to end, and NULLs.
+    private static readonly long?[] Far =
+    [
+        long.MinValue,
+        -1,
+        null,
+        0,
+        5,
+        long.MaxValue,
+        null,
+    ];
+
+    // #153: 9223372036854775807 PRECEDING, the largest offset of a bigint key, is
+    // added to the key of each row: descending, the frame of -9223372036854775808
+    // ends at the key -1 and misses the rows of the keys from 0 on.
+    [Fact]
+    public void RangesByAnOffsetPastBigintOverBigintKeys()
+    {
+        database.AssertSameRows(
+            Trees.Over(
+                Far.AsQueryable(),
+                null,
+                rows => rows.OrderDescending(),
+                PostgreSqlFrame.Range(-decimal.MaxValue, 0),
+                (x, w) =>
+                    new
+                    {
+                        Key = x,
+                        Count = w.Rows.Count(),
+                        Rank = w.Rank(),
+                    }
+            )
+        );
+        database.AssertSameRows(
+            Trees.Over(
+                Far.AsQueryable(),
+                null,
+                rows => rows.Order(),
+                PostgreSqlFrame.Range(-9_223_372_036_854_775_808m, 0.5m),
+                (x, w) => new { Key = x, Count = w.Rows.Count() }
+            )
+        );
+        database.AssertSameRows(
+            Trees.Over(
+                Far.AsQueryable(),
+                null,
+                rows => rows.Order(),
+                PostgreSqlFrame.Range(-5, 18_446_744_073_709_551_614m),
+                (x, w) => new { Key = x, Count = w.Rows.Count() }
+            )
+        );
+        database.AssertSameRows(
+            Trees.Over(
+                Far.AsQueryable(),
+                null,
+                rows => rows.Order(),
+                PostgreSqlFrame.Range(decimal.MaxValue - 1, decimal.MaxValue),
+                (x, w) => new { Key = x, Count = w.Rows.Count() }
+            )
+        );
+    }
+
+    // A ulong is a numeric, whose keys are as far apart: the offset is not cut to
+    // the largest bigint.
+    [Fact]
+    public void RangesByAnOffsetPastBigintOverUnsignedLongKeys()
+    {
+        database.AssertSameRows(
+            Trees.Over(
+                new ulong[] { 0, 5, ulong.MaxValue }.AsQueryable(),
+                null,
+                rows => rows.Order(),
+                PostgreSqlFrame.Range(-decimal.MaxValue, 1.5m),
+                (x, w) => new { Key = (decimal)x, Count = w.Rows.Count() }
+            )
+        );
+    }
+
     [Fact]
     public void RangesOverDescendingKeys()
     {
